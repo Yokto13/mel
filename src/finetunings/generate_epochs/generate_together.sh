@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -ueo pipefail
+
+SCRIPT_PATH=/home/farhand/bc/src/finetunings/generate_epochs/generate.py
+UNIQUENAME="generate_together_tokens"
+
+TOKS_DIR=$1
+TOKS_INDEX_DIR=$2
+DEST=$3
+MODEL_NAME=$4
+BATCH_SIZE=$5
+EPOCHS=$6
+STEPS_PER_EPOCH=2000
+POS=1
+NEG=7
+CONTEXT_SIZE=64
+TYPE="mentions"
+STATE_DICT_PATH=$7
+
+if [ "$STATE_DICT_PATH" == "None" ]; then
+  PARAMETERS="$TOKS_DIR $TOKS_INDEX_DIR $DEST $MODEL_NAME $BATCH_SIZE $EPOCHS $STEPS_PER_EPOCH $POS $NEG $CONTEXT_SIZE $TYPE"
+else
+  PARAMETERS="$TOKS_DIR $TOKS_INDEX_DIR $DEST $MODEL_NAME $BATCH_SIZE $EPOCHS $STEPS_PER_EPOCH $POS $NEG $CONTEXT_SIZE $TYPE $STATE_DICT_PATH"
+fi
+
+# PARAMETERS="$TOKS_DIR $TOKS_INDEX_DIR $JOB_DIR $MODEL_NAME $BATCH_SIZE $EPOCHS $STEPS_PER_EPOCH $POS $NEG $CONTEXT_SIZE $TYPE $STATE_DICT_PATH"
+
+echo "Running from $PWD"
+
+ENV=/home/farhand/bc/venv/bin/activate
+source $ENV
+
+cd /home/farhand/bc/src
+
+python $SCRIPT_PATH $PARAMETERS
