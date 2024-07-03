@@ -21,6 +21,8 @@ from tokenization.generate_tokens import (
     tokens_for_finetuning_damuel_links,
 )
 
+from utils.extractors.orchestrator import damuel_description_tokens
+
 
 def choose_action(action):
     match action:
@@ -56,6 +58,8 @@ def choose_action(action):
             return tokens_for_finetuning_mewsli
         case "tokens_descriptions":
             return tokens_for_finetuning_damuel_descriptions
+        case "tokens_descriptions_new":
+            return damuel_description_tokens
         case "tokens_links":
             return tokens_for_finetuning_damuel_links
         case _:
