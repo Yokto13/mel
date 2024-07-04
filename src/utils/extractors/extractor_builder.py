@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Optional, Union
 
+from utils.extractors.abstract_entry_processor import AbstractEntryProcessor
 from utils.extractors.abstract_extractor import AbstractExtractor
 from utils.extractors.damuel.damuel_iterator import DamuelExtractor
 from utils.extractors.damuel.descriptions.descriptions_iterator import DamuelDescriptionsIterator
@@ -80,3 +81,20 @@ class DamuelDescriptionsExtractorBuilder(DamuelExtractorBuilder):
 
     def reset(self):
         self._product = DamuelDescriptionsIterator()
+
+
+class EntryProcessorBuilder(ABC):
+    def __init__(self) -> None:
+        self._product: Optional[AbstractExtractor] = None
+        self.reset()
+
+    @abstractmethod
+    def get_processor(self) -> AbstractEntryProcessor:
+        pass
+
+    @abstractmethod
+    def reset(self):
+        pass 
+
+    def set_size(self, size: int):
+        self._product.output_size = size
