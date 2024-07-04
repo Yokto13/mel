@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import Mock
-from data_processors.tokens.mention_qid_pair import MentionQidPair
 from pathlib import Path
 
 from transformers import BertTokenizer
@@ -23,13 +22,8 @@ def tokenizer_wrapper(tokenizer):
 
 
 @pytest.fixture
-def qid_parser():
-    return lambda x: x
-
-
-@pytest.fixture
-def entry_processor(tokenizer_wrapper, qid_parser):
-    return EntryProcessor(tokenizer_wrapper, qid_parser)
+def entry_processor(tokenizer_wrapper):
+    return EntryProcessor(tokenizer_wrapper)
 
 
 @pytest.fixture
@@ -39,32 +33,26 @@ def damuel_iterator(entry_processor):
     )
 
 
-def test_qid_parser(qid_parser):
-    qid_parser.parse = Mock()
-    qid_parser.parse.return_value = 123
-    assert qid_parser.parse("qid") == 123
-
-
 def test_entry_processor(entry_processor):
     entry_processor.tokenizer_wrapper.tokenize = Mock()
-    entry_processor.tokenizer_wrapper.tokenize.return_value = {"input_ids": [1, 2, 3]}
+    entry_processor.tokenizer_wrapper.tokenize.return_value = [1, 2, 3]
 
-    damuel_entry = {"wiki": {"title": "label", "text": "description"}, "qid": 123}
+    damuel_entry = {"wiki": {"title": "label", "text": "description"}, "qid": "Q123"}
     result = entry_processor.process_both(damuel_entry)
 
     print(result[0])
     print(result[1])
-    print(result[0] == MentionQidPair({"input_ids": [1, 2, 3]}, 123))
+    print(result[0] == ([1, 2, 3], 123))
     assert result == (
-        MentionQidPair({"input_ids": [1, 2, 3]}, 123),
-        MentionQidPair({"input_ids": [1, 2, 3]}, 123),
+        ([1, 2, 3], 123),
+        ([1, 2, 3], 123),
     )
 
 
 def test_damuel_iterator(damuel_iterator):
     tokenizer_wrapper = Mock()
     tokenizer_wrapper.tokenize = lambda x: x
-    entry_processor = EntryProcessor(tokenizer_wrapper, lambda x: int(x[1:]))
+    entry_processor = EntryProcessor(tokenizer_wrapper)
 
     entry_processor.tokenizer_wrapper = tokenizer_wrapper
     damuel_iterator.entry_processor = entry_processor
@@ -76,6 +64,6 @@ def test_damuel_iterator(damuel_iterator):
 
     results = [r for r in damuel_iterator._iterate_file(lines)]
     assert results == [
-        (MentionQidPair("label1", 1), MentionQidPair("description1", 1)),
-        (MentionQidPair("label2", 2), MentionQidPair("description2", 2)),
+        (("label1", 1), ("description1", 1)),
+        (("label2", 2), ("description2", 2)),
     ]

@@ -1,4 +1,5 @@
 from data_processors.tokens.tokens_cutter import TokensCutter
+from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
 from data_processors.tokens.mewsli.tokens_iterator import (
     MewsliTokensIterator,
     ContextMewsliTokensIterator,
@@ -12,18 +13,15 @@ class MewsliTokensIteratorFinetuning(MewsliTokensIterator):
         tokenizer,
         max_mention_tokens=-1,
         expected_size=64,
-        treat_qids_as_ints=True,
         mention_token="[M]",
     ):
         self.mention_token = mention_token
-        tokenizer.add_special_tokens({"cls_token": mention_token})
         super().__init__(
             mewsli_tsv_path,
             tokenizer,
             max_mention_tokens,
             True,
             expected_size,
-            treat_qids_as_ints,
         )
         assert mention_token in tokenizer.get_vocab()
 
@@ -38,21 +36,23 @@ class ContextMewsliTokensIteratorFinetuning(ContextMewsliTokensIterator):
     def _get_tokens_from_text_and_row(self, text, row):
         mention_slice = self.mewsli_tokens_itarator.get_mention_slice_from_row(row)
         text, mention_slice = self._add_class_token(text, mention_slice)
+        wrapper = (
+            TokenizerWrapper(
+                self.mewsli_tokens_itarator.tokenizer,
+                self.mewsli_tokens_itarator.expected_size,
+            ),
+        )
         token_cutter = TokensCutter(
             text,
-            self.mewsli_tokens_itarator.tokenizer,
+            wrapper,
             self.mewsli_tokens_itarator.expected_size,
         )
         try:
             cutted = token_cutter.cut_mention_with_context(mention_slice)
         except ValueError:  # one span in Tamil Mewsli appears invalid
             print("error in mewsli span")
-            cutted = token_cutter.tokenizer(
+            cutted = wrapper.tokenize(
                 "",
-                return_tensors="pt",
-                padding="max_length",
-                truncation=True,
-                max_length=self.expected_size,
             )
         return cutted
 

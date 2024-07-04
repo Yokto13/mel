@@ -35,4 +35,3 @@ def test_creates_description_tokens(director: Director, tokenizing_params):
     for a in extractor:
         print(a)
         print(tokenizing_params.tokenizer.decode(a[0]))
-    assert False

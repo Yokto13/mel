@@ -4,7 +4,6 @@ from pathlib import Path
 
 from transformers import BertTokenizer
 
-from data_processors.tokens.mention_qid_pair import MentionQidPair
 from data_processors.tokens.damuel.descriptions.for_finetuning import (
     TokenizerWrapper,
     DamuelDescriptionsTokensIteratorFinetuning,
@@ -13,7 +12,9 @@ from data_processors.tokens.damuel.descriptions.for_finetuning import (
 
 @pytest.fixture
 def tokenizer():
-    return BertTokenizer.from_pretrained("setu4993/LEALLA-small")
+    tokenizer = BertTokenizer.from_pretrained("setu4993/LEALLA-small")
+    tokenizer.add_tokens(["[M]"])
+    return tokenizer
 
 
 @pytest.fixture
@@ -35,16 +36,18 @@ def test_finetuning_iterator_initialization(finetuning_damuel_iterator):
 
 def test_finetuning_iterator_process_to_one(finetuning_damuel_iterator):
     finetuning_damuel_iterator.entry_processor.tokenizer_wrapper.tokenize = Mock()
-    finetuning_damuel_iterator.entry_processor.tokenizer_wrapper.tokenize.return_value = {
-        "input_ids": [1, 2, 3]
-    }
+    finetuning_damuel_iterator.entry_processor.tokenizer_wrapper.tokenize.return_value = [
+        1,
+        2,
+        3,
+    ]
 
     damuel_entry = {"wiki": {"title": "label", "text": "description"}, "qid": "Q1"}
     result = finetuning_damuel_iterator.entry_processor.process_to_one(
         damuel_entry, finetuning_damuel_iterator.name_token
     )
 
-    assert result == MentionQidPair({"input_ids": [1, 2, 3]}, 1)
+    assert result == ([1, 2, 3], 1)
     assert (
         finetuning_damuel_iterator.entry_processor.tokenizer_wrapper.tokenize.call_args[
             0

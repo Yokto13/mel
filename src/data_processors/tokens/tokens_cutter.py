@@ -2,27 +2,29 @@ from functools import partial
 
 
 class TokensCutter:
-    def __init__(self, text, tokenizer, expected_size):
+    def __init__(self, text, tokenizer_wrapper, expected_size):
         self.text = text
-        self.tokenizer = tokenizer
+        # self.tokenizer = tokenizer
+        self.tokenizer_wrapper = tokenizer_wrapper
         self.expected_size = expected_size
-        self.be_of_all = tokenizer(text, return_tensors="pt", add_special_tokens=False)
+
+        # Sometimes sidestepping the wrapper is necessery unless we want to rewrite old code.
+        self.be_of_all = self.tokenizer_wrapper.tokenizer(
+            text, return_tensors="np", add_special_tokens=False
+        )
         self.all_tokens = self.be_of_all["input_ids"][0]
 
     def set_text(self, text):
         self.text = text
-        self.be_of_all = self.tokenizer(
-            text, return_tensors="pt", add_special_tokens=False
+        self.be_of_all = self.tokenizer_wrapper.tokenizer(
+            text, return_tensors="np", add_special_tokens=False
         )
         self.all_tokens = self.be_of_all["input_ids"][0]
 
     def cut_mention_name(self, entity_name_slice_in_chars):
         mention_text = self.text[entity_name_slice_in_chars]
-        return self.tokenizer(
+        return self.tokenizer_wrapper.tokenize(
             mention_text,
-            return_tensors="pt",
-            padding="max_length",
-            truncation=True,
             max_length=self.expected_size,
         )
 
@@ -94,11 +96,8 @@ class TokensCutter:
     def _mid_cut(self, left, right):
         char_start = self.be_of_all.token_to_chars(left).start
         char_end = self.be_of_all.token_to_chars(right - 1).end
-        return self.tokenizer(
+        return self.tokenizer_wrapper.tokenize(
             self.text[char_start:char_end],
-            return_tensors="pt",
-            padding="max_length",
-            truncation=True,
             max_length=self.expected_size,
         )
 
@@ -107,21 +106,15 @@ class TokensCutter:
             self.size_no_special_tokens - 1, len(self.all_tokens) - 1
         )
         char_end = self.be_of_all.token_to_chars(end_tok_candidate)
-        return self.tokenizer(
+        return self.tokenizer_wrapper.tokenize(
             self.text[: char_end.end],
-            return_tensors="pt",
-            padding="max_length",
-            truncation=True,
             max_length=self.expected_size,
         )
 
     def _more_on_left_cut(self):
         start_tok_candidate = max(0, len(self.all_tokens) - self.size_no_special_tokens)
         char_start = self.be_of_all.token_to_chars(start_tok_candidate)
-        return self.tokenizer(
+        return self.tokenizer_wrapper.tokenize(
             self.text[char_start.start :],
-            return_tensors="pt",
-            padding="max_length",
-            truncation=True,
             max_length=self.expected_size,
         )

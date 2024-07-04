@@ -1,12 +1,10 @@
-from data_processors.tokens.mention_qid_pair import MentionQidPair
 from src.data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
 from src.data_processors.tokens.tokens_cutter import TokensCutter
 
 
 class EntryProcessor:
-    def __init__(self, tokenizer_wrapper, qid_parser, only_wiki):
+    def __init__(self, tokenizer_wrapper, only_wiki):
         self.tokenizer_wrapper = tokenizer_wrapper
-        self.qid_parser = qid_parser
         self.only_wiki = only_wiki
 
     def process_both(self, damuel_entry: dict) -> list[tuple]:
@@ -14,18 +12,18 @@ class EntryProcessor:
             return None
         wiki = damuel_entry["wiki"]
         wiki_processor = WikiProcessorBoth(
-            self.tokenizer_wrapper, wiki, self.only_wiki, self.qid_parser
+            self.tokenizer_wrapper,
+            wiki,
+            self.only_wiki,
         )
         return list(wiki_processor)
 
-    def process_to_one(
-        self, damuel_entry: dict, mention_token: str
-    ) -> list[MentionQidPair]:
+    def process_to_one(self, damuel_entry: dict, mention_token: str) -> list:
         if "wiki" not in damuel_entry:
             return None
         wiki = damuel_entry["wiki"]
         wiki_processor = WikiProcessorFinetuning(
-            self.tokenizer_wrapper, wiki, self.only_wiki, self.qid_parser, mention_token
+            self.tokenizer_wrapper, wiki, self.only_wiki, mention_token
         )
         return list(wiki_processor)
 
@@ -36,17 +34,15 @@ class WikiProcessorBoth:
         tokenizer_wrapper: TokenizerWrapper,
         wiki,
         only_wiki: bool,
-        qid_parser,
         init_token_cutter=True,
     ) -> None:
         self.wiki = wiki
         self.text = wiki["text"]
         self.tokenizer_wrapper = tokenizer_wrapper
-        self.qid_parser = qid_parser
         self.tokens_cutter = None
         if init_token_cutter:
             self.tokens_cutter = TokensCutter(
-                self.text, tokenizer_wrapper.tokenizer, tokenizer_wrapper.expected_size
+                self.text, tokenizer_wrapper, tokenizer_wrapper.expected_size
             )
         self.only_wiki = only_wiki
         self.damuel_tokens = wiki["tokens"]
@@ -60,7 +56,7 @@ class WikiProcessorBoth:
                 yield link_processed
 
     def process_link(self, link):
-        qid = self.qid_parser(link["qid"])
+        qid = int(link["qid"][1:])
 
         start = link["start"]
         end = link["end"] - 1
@@ -76,10 +72,10 @@ class WikiProcessorBoth:
             print(e)
             print(f"Error in mention: {self.text[mention_slice_chars]}")
             return None
-        mention_pair = MentionQidPair(cutted_tokens, qid)
+        mention_pair = (cutted_tokens, qid)
 
         entity_name_tokens = self.tokens_cutter.cut_mention_name(mention_slice_chars)
-        entity_name_pair = MentionQidPair(entity_name_tokens, qid)
+        entity_name_pair = (entity_name_tokens, qid)
 
         return entity_name_pair, mention_pair
 
@@ -97,11 +93,10 @@ class WikiProcessorFinetuning(WikiProcessorBoth):
         tokenizer_wrapper: TokenizerWrapper,
         wiki,
         only_wiki: bool,
-        qid_parser,
         mention_token: str,
         expected_chars_per_token: int = 5,
     ) -> None:
-        super().__init__(tokenizer_wrapper, wiki, only_wiki, qid_parser, False)
+        super().__init__(tokenizer_wrapper, wiki, only_wiki, False)
 
         self.expected_chars_per_token = expected_chars_per_token
         self.char_window = (
@@ -110,7 +105,7 @@ class WikiProcessorFinetuning(WikiProcessorBoth):
         self.mention_token = mention_token
 
     def process_link(self, link):
-        qid = self.qid_parser(link["qid"])
+        qid = int(link["qid"][1:])
 
         start = link["start"]
         end = link["end"] - 1
@@ -128,14 +123,15 @@ class WikiProcessorFinetuning(WikiProcessorBoth):
             )
         )
 
+        # Ugly side stepping of tokenizer wrapper
         self.token_cutter = TokensCutter(
             text_with_special_around_mention,
-            self.tokenizer_wrapper.tokenizer,
+            self.tokenizer_wrapper,
             self.tokenizer_wrapper.expected_size,
         )
 
         cutted_tokens = self.token_cutter.cut_mention_with_context(mention_slice_chars)
-        return MentionQidPair(cutted_tokens, qid)
+        return (cutted_tokens, qid)
 
     def _apply_char_window(self, text, mention_slice_chars):
         """Cuts char_window chars around mention from the text and recalculates the slice.

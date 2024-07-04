@@ -15,7 +15,6 @@ class DamuelLinksTokensIteratorFinetuning(DamuelLinksIterator):
         only_wiki=True,
         expected_size=64,
         filename_is_ok: Callable[[str], bool] = None,
-        treat_qids_as_ints=True,
     ):
         super().__init__(
             damuel_path,
@@ -23,14 +22,13 @@ class DamuelLinksTokensIteratorFinetuning(DamuelLinksIterator):
             only_wiki,
             expected_size,
             filename_is_ok,
-            treat_qids_as_ints,
         )
 
-        self.tokenizer.add_special_tokens({"cls_token": mention_token})
         self.mention_token = mention_token
+        assert self.mention_token in tokenizer.get_vocab()
 
         self.entry_processor = EntryProcessor(
-            TokenizerWrapper(tokenizer, expected_size), self.qid_parser, only_wiki
+            TokenizerWrapper(tokenizer, expected_size), only_wiki
         )
 
     def _iterate_file(self, f):

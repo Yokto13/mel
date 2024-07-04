@@ -12,7 +12,6 @@ class DamuelIterator(ABC):
         tokenizer,
         expected_size=64,
         filename_is_ok: Callable[[str], bool] = None,
-        treat_qids_as_ints=True,
     ):
         self.damuel_path = damuel_path
         if not isinstance(damuel_path, Path):
@@ -20,8 +19,6 @@ class DamuelIterator(ABC):
         self.expected_size = expected_size
         self.tokenizer = tokenizer
         self.filename_is_ok = filename_is_ok
-        self.treat_qids_as_ints = treat_qids_as_ints
-        self.qid_parser = self._get_qid_parser()
 
     def __iter__(self):
         for file in sorted(list(self.damuel_path.iterdir())):
@@ -41,18 +38,6 @@ class DamuelIterator(ABC):
         else:
             return file.open("r")
 
-    def _qid_to_int(self, qid):
-        return int(qid[1:])
-
-    def _qid_to_str(self, qid):
-        return qid
-
-    def _get_qid_parser(self):
-        if self.treat_qids_as_ints:
-            return self._qid_to_int
-        else:
-            return self._qid_to_str
-
     @abstractmethod
     def _iterate_file(self, f):
         pass
@@ -66,9 +51,6 @@ class DamuelLinksIterator(DamuelIterator):
         only_wiki=True,
         expected_size=64,
         filename_is_ok: Callable[[str], bool] = None,
-        treat_qids_as_ints=True,
     ):
-        super().__init__(
-            damuel_path, tokenizer, expected_size, filename_is_ok, treat_qids_as_ints
-        )
+        super().__init__(damuel_path, tokenizer, expected_size, filename_is_ok)
         self.only_wiki = only_wiki

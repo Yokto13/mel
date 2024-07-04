@@ -1,10 +1,6 @@
-from data_processors.tokens.mention_qid_pair import MentionQidPair
-
-
 class EntryProcessor:
-    def __init__(self, tokenizer_wrapper, qid_parser):
+    def __init__(self, tokenizer_wrapper):
         self.tokenizer_wrapper = tokenizer_wrapper
-        self.qid_parser = qid_parser
 
     def process_both(self, damuel_entry: dict) -> tuple:
         label = self.extract_label(damuel_entry)
@@ -15,14 +11,14 @@ class EntryProcessor:
         if description is None:
             description = ""
 
-        qid = self.qid_parser(damuel_entry["qid"])
+        qid = int(damuel_entry["qid"][1:])
 
         label_tokens = self.tokenizer_wrapper.tokenize(label)
         description_tokens = self.tokenizer_wrapper.tokenize(description)
 
         return (
-            MentionQidPair(label_tokens, qid),
-            MentionQidPair(description_tokens, qid),
+            (label_tokens, qid),
+            (description_tokens, qid),
         )
 
     def process_to_one(self, damuel_entry: dict, label_token: str = None) -> tuple:
@@ -39,9 +35,9 @@ class EntryProcessor:
 
         text = self._construct_text_from_label_and_description(label, description)
 
-        qid = self.qid_parser(damuel_entry["qid"])
-
-        return MentionQidPair(self.tokenizer_wrapper.tokenize(text), qid)
+        qid = int(damuel_entry["qid"][1:])
+        print(self.tokenizer_wrapper.tokenize(text))
+        return self.tokenizer_wrapper.tokenize(text), qid
 
     def extract_description(self, damuel_entry):
         if "wiki" in damuel_entry:

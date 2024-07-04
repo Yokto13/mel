@@ -15,18 +15,19 @@ class DamuelDescriptionsTokensIteratorFinetuning(DamuelIterator):
         name_token="[M]",
         expected_size=64,
         filename_is_ok: Callable[[str], bool] = None,
-        treat_qids_as_ints=True,
     ):
         super().__init__(
-            damuel_path, tokenizer, expected_size, filename_is_ok, treat_qids_as_ints
+            damuel_path,
+            tokenizer,
+            expected_size,
+            filename_is_ok,
         )
 
-        self.tokenizer.add_special_tokens({"cls_token": name_token})
         self.name_token = name_token
+        assert self.name_token in tokenizer.get_vocab()
 
         self.entry_processor = EntryProcessor(
             TokenizerWrapper(self.tokenizer, expected_size),
-            self.qid_parser,
         )
 
     def _iterate_file(self, f):
