@@ -1,5 +1,6 @@
 from src.utils.extractors.damuel.parser import DamuelParser
 
+
 class DescriptionTokenizer:
     class MissingLabelException(Exception):
         pass
@@ -7,8 +8,10 @@ class DescriptionTokenizer:
     def __init__(self, tokenizer_wrapper):
         self.tokenizer_wrapper = tokenizer_wrapper
 
-    def __call__(self, description_damuel_entry: dict, label_token: str = None) -> tuple:
-        try: 
+    def __call__(
+        self, description_damuel_entry: dict, label_token: str = None
+    ) -> tuple:
+        try:
             label, description, qid = self._get_data(description_damuel_entry)
         except self.MissingLabelException:
             return None
@@ -44,5 +47,3 @@ class DescriptionTokenizer:
 
     def _wrap_label(self, label, label_token):
         return f"{label_token}{label}{label_token}"
-
-

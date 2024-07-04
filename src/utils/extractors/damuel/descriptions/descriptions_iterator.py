@@ -6,6 +6,7 @@ from utils.extractors.damuel.damuel_iterator import DamuelExtractor
 from utils.extractors.damuel.parser import DamuelParser
 from utils.extractors.data_type import DataType
 
+
 class DamuelDescriptionsIterator(DamuelExtractor):
     # def __init__(
     #     self,

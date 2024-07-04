@@ -3,12 +3,14 @@ from transformers import BertTokenizerFast
 
 from data_processors.tokens.tokens_cutter import TokensCutter
 
+
 @pytest.fixture
 def setup_tokens_cutter():
     tokenizer = BertTokenizerFast.from_pretrained("setu4993/LEALLA-small")
     text = "This is a test text"
     expected_size = 10
     return TokensCutter(text, tokenizer, expected_size)
+
 
 @pytest.fixture
 def setup_tokens_cutter_lorem_ipsum():
@@ -17,8 +19,10 @@ def setup_tokens_cutter_lorem_ipsum():
     expected_size = 64
     return TokensCutter(lorem_ipsum, tokenizer, expected_size)
 
+
 def detokenize_text(tokenizer, input_ids):
     return tokenizer.decode(input_ids, skip_special_tokens=True)
+
 
 class TestTokensCutter:
     def test_cut_mention_name_short_text(self, setup_tokens_cutter):
@@ -29,12 +33,22 @@ class TestTokensCutter:
     def test_cut_mention_name_short_text_decode(self, setup_tokens_cutter):
         name = setup_tokens_cutter.cut_mention_name(slice(0, 4))
 
-        returned_text = detokenize_text(setup_tokens_cutter.tokenizer, name["input_ids"][0])
+        returned_text = detokenize_text(
+            setup_tokens_cutter.tokenizer, name["input_ids"][0]
+        )
 
         assert returned_text == setup_tokens_cutter.text[0:4]
 
-
-    @pytest.mark.parametrize("name_slice", [slice(0, 4), slice(0, 10), slice(5, 20), slice(123, 1423), slice(99999, 10 ** 5)])
+    @pytest.mark.parametrize(
+        "name_slice",
+        [
+            slice(0, 4),
+            slice(0, 10),
+            slice(5, 20),
+            slice(123, 1423),
+            slice(99999, 10**5),
+        ],
+    )
     def test_cut_mention_name_long_text(self, setup_tokens_cutter, name_slice):
         setup_tokens_cutter.set_text("abcdefghij" * 10000)
 
@@ -51,14 +65,20 @@ class TestTokensCutter:
         assert mention["input_ids"].shape[1] == 10
 
     def test_cut_mention_middle_size(self, setup_tokens_cutter_lorem_ipsum):
-        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(slice(200, 220))
+        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(
+            slice(200, 220)
+        )
 
         assert mention["input_ids"].shape[1] == 64
 
     def test_cut_mention_middle_text(self, setup_tokens_cutter_lorem_ipsum):
-        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(slice(200, 220))
+        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(
+            slice(200, 220)
+        )
 
-        returned_text = detokenize_text(setup_tokens_cutter_lorem_ipsum.tokenizer, mention["input_ids"][0])
+        returned_text = detokenize_text(
+            setup_tokens_cutter_lorem_ipsum.tokenizer, mention["input_ids"][0]
+        )
 
         assert returned_text in setup_tokens_cutter_lorem_ipsum.text
         assert setup_tokens_cutter_lorem_ipsum.text[200:220] in returned_text
@@ -71,24 +91,33 @@ class TestTokensCutter:
     def test_cut_mention_beginning_text(self, setup_tokens_cutter_lorem_ipsum):
         mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(slice(0, 19))
 
-        returned_text = detokenize_text(setup_tokens_cutter_lorem_ipsum.tokenizer, mention["input_ids"][0])
+        returned_text = detokenize_text(
+            setup_tokens_cutter_lorem_ipsum.tokenizer, mention["input_ids"][0]
+        )
 
         assert returned_text in setup_tokens_cutter_lorem_ipsum.text
         assert setup_tokens_cutter_lorem_ipsum.text[0:19] in returned_text
 
     def test_cut_mention_end_size(self, setup_tokens_cutter_lorem_ipsum):
         text_len = len(setup_tokens_cutter_lorem_ipsum.text)
-        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(slice(text_len-30, text_len))
+        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(
+            slice(text_len - 30, text_len)
+        )
 
         assert mention["input_ids"].shape[1] == 64
 
     def test_cut_mention_end_text(self, setup_tokens_cutter_lorem_ipsum):
         text_len = len(setup_tokens_cutter_lorem_ipsum.text)
-        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(slice(text_len-30, text_len))
+        mention = setup_tokens_cutter_lorem_ipsum.cut_mention_with_context(
+            slice(text_len - 30, text_len)
+        )
 
-        returned_text = detokenize_text(setup_tokens_cutter_lorem_ipsum.tokenizer, mention["input_ids"][0])
+        returned_text = detokenize_text(
+            setup_tokens_cutter_lorem_ipsum.tokenizer, mention["input_ids"][0]
+        )
 
         assert returned_text in setup_tokens_cutter_lorem_ipsum.text
-        assert setup_tokens_cutter_lorem_ipsum.text[text_len-30:text_len] in returned_text
-
-    
+        assert (
+            setup_tokens_cutter_lorem_ipsum.text[text_len - 30 : text_len]
+            in returned_text
+        )

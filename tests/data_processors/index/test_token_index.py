@@ -25,10 +25,12 @@ def test_token_index_query(example_data):
     index = TokenIndex(embs, qids, tokens, attentions)
     query_emb = np.random.rand(128)
     query_qid = np.random.choice(qids)
-    pos_results, neg_results = index.query(query_emb, query_qid, positive_cnt=1, neg_cnt=7)
+    pos_results, neg_results = index.query(
+        query_emb, query_qid, positive_cnt=1, neg_cnt=7
+    )
     print(pos_results, neg_results)
-    assert len(pos_results[0]) == 1  
-    assert len(neg_results[0]) == 7  
+    assert len(pos_results[0]) == 1
+    assert len(neg_results[0]) == 7
 
 
 def test_token_index_query_batched(example_data):

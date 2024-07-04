@@ -11,9 +11,11 @@ from data_processors.tokens.damuel.descriptions.both import (
     DamuelDescriptionsTokensIteratorBoth,
 )
 
+
 @pytest.fixture
 def tokenizer():
     return BertTokenizer.from_pretrained("setu4993/LEALLA-small")
+
 
 @pytest.fixture
 def tokenizer_wrapper(tokenizer):

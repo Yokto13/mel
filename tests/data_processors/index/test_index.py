@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from data_processors.index.index import Index 
+from data_processors.index.index import Index
 
 
 @pytest.fixture()
@@ -39,6 +39,7 @@ def test_index_from_dir(data, tmp_path):
 
 def test_index_from_iterable_and_model(data):
     embs, qids = data
+
     class ExampleModel:
         def forward_only_embeddings(self, embs):
             return embs
@@ -47,9 +48,7 @@ def test_index_from_iterable_and_model(data):
             pass
 
     model = ExampleModel()
-    dataloader = torch.utils.data.DataLoader(
-        list(zip(embs, qids)), batch_size=1
-    )
+    dataloader = torch.utils.data.DataLoader(list(zip(embs, qids)), batch_size=1)
     index = Index.from_iterable_and_model(dataloader, model)
     assert len(index) == len(embs)
 
