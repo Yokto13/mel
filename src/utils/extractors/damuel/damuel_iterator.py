@@ -13,7 +13,7 @@ class DamuelExtractor(AbstractExtractor):
         self.file_acceptor: Callable[[str], bool] = None
 
     def __iter__(self):
-        for file in sorted(list(self.damuel_path.iterdir())):
+        for file in sorted(list(self.source.iterdir())):
             if (
                 file.is_file()
                 and file.name.startswith("part")

@@ -1,7 +1,7 @@
-from abc import ABC
+from collections.abc import Iterable
 from pathlib import Path
 
 
-class AbstractExtractor(ABC.Iterator):
+class AbstractExtractor(Iterable):
     def __init__(self) -> None:
         self.source: Path = None

@@ -1,10 +1,10 @@
-from abc import ABC
+from collections.abc import Callable
 from pathlib import Path
 
 from utils.extractors.output_type import OutputType
 
 
-class AbstractEntryProcessor(ABC.Callable):
+class AbstractEntryProcessor(Callable):
     def __init__(self) -> None:
         self.source: Path = None
         self.output_type: OutputType = None

@@ -5,18 +5,17 @@ class DescriptionTokenizer:
     class MissingLabelException(Exception):
         pass
 
-    def __init__(self, tokenizer_wrapper):
+    def __init__(self, tokenizer_wrapper, label_token=None):
         self.tokenizer_wrapper = tokenizer_wrapper
+        self.label_token = label_token
 
-    def __call__(
-        self, description_damuel_entry: dict, label_token: str = None
-    ) -> tuple:
+    def __call__(self, description_damuel_entry: dict) -> tuple:
         try:
             label, description, qid = self._get_data(description_damuel_entry)
         except self.MissingLabelException:
             return None
 
-        label = self._wrap_label_if_requested(label, label_token)
+        label = self._wrap_label_if_requested(label)
 
         text = self._construct_text_from_label_and_description(label, description)
 
@@ -37,9 +36,9 @@ class DescriptionTokenizer:
 
         return label, description, qid
 
-    def _wrap_label_if_requested(self, label, label_token):
-        if label_token is not None:
-            return self._wrap_label(label, label_token)
+    def _wrap_label_if_requested(self, label):
+        if self.label_token is not None:
+            return self._wrap_label(label, self.label_token)
         return label
 
     def _construct_text_from_label_and_description(self, label, description):

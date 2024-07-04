@@ -8,7 +8,6 @@ from utils.extractors.damuel.damuel_iterator import DamuelExtractor
 from utils.extractors.damuel.descriptions.descriptions_iterator import (
     DamuelDescriptionsIterator,
 )
-from utils.extractors.data_type import DataType
 
 
 class ExtractorBuilder(ABC):
@@ -16,9 +15,10 @@ class ExtractorBuilder(ABC):
         self._product: Optional[AbstractExtractor] = None
         self.reset()
 
-    @abstractmethod
     def get_extractor(self) -> AbstractExtractor:
-        pass
+        product = self._product
+        self.reset()
+        return product
 
     @abstractmethod
     def reset(self):
@@ -28,7 +28,7 @@ class ExtractorBuilder(ABC):
         source = ExtractorBuilder._enusre_path_obj(source)
         self._product.source = source
 
-    def set_entry_processor(self, processor):
+    def set_entry_processor(self, processor, filter_nones=True):
         self._product = ExtractorWrapper(self._product, processor)
 
     @classmethod
@@ -40,13 +40,17 @@ class ExtractorBuilder(ABC):
 
 class ExtractorWrapper:
     # TODO: think of better way of doing this.
-    def __init__(self, original, f):
+    def __init__(self, original, f, filter_nones=True):
         # This is needed to sidestep the overriden __setattr__ method
         super().__setattr__("_original", original)
         self.__extractor_wrapper_f = f
+        self.__extractor_wrapper_filter_nones = filter_nones
 
     def __iter__(self):
-        return map(self.__extractor_wrapper_f, iter(self._original))
+        res = map(self.__extractor_wrapper_f, iter(self._original))
+        if self.__extractor_wrapper_filter_nones:
+            res = filter(lambda x: x is not None, res)
+        return res
 
     def __getattr__(self, name):
         attr = getattr(self._original, name)
@@ -78,30 +82,24 @@ class DamuelExtractorBuilder(ExtractorBuilder):
 
         self.set_file_acceptor(file_acceptor)
 
-    def get_extractor(self) -> DamuelExtractor:
-        pass
-
 
 class DamuelDescriptionsExtractorBuilder(DamuelExtractorBuilder):
-    def get_extractor(self) -> DamuelDescriptionsIterator:
-        return self._product
-
     def reset(self):
         self._product = DamuelDescriptionsIterator()
 
 
-class EntryProcessorBuilder(ABC):
-    def __init__(self) -> None:
-        self._product: Optional[AbstractExtractor] = None
-        self.reset()
+# class EntryProcessorBuilder(ABC):
+#     def __init__(self) -> None:
+#         self._product: Optional[AbstractExtractor] = None
+#         self.reset()
 
-    @abstractmethod
-    def get_processor(self) -> AbstractEntryProcessor:
-        pass
+#     @abstractmethod
+#     def get_processor(self) -> AbstractEntryProcessor:
+#         pass
 
-    @abstractmethod
-    def reset(self):
-        pass
+#     @abstractmethod
+#     def reset(self):
+#         pass
 
-    def set_size(self, size: int):
-        self._product.output_size = size
+#     def set_size(self, size: int):
+#         self._product.output_size = size

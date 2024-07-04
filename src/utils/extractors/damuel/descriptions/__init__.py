@@ -1,1 +1,1 @@
-from .for_finetuning import DamuelDescriptionsIterator
+from .descriptions_iterator import DamuelDescriptionsIterator
