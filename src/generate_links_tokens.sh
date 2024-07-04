@@ -2,12 +2,12 @@
 
 set -ueo pipefail
 
-VENV=...
+VENV=../venv/bin/activate
 MODEL="setu4993/LEALLA-base"
-SOURCE="path/to/damuel"
+SOURCE="/home/farhand/damuel_spark_workdir/damuel_1.0_es"
 EXPECTED_SIZE=64
-DEST="..."
-WORKERS=1
+DEST="/home/farhand/dump"
+WORKERS=64
 
 source $VENV
 

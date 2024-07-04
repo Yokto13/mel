@@ -2,11 +2,11 @@
 
 set -ueo pipefail
 
-VENV=...
+VENV=../venv/bin/activate
 MODEL="setu4993/LEALLA-base"
-SOURCE="path/to/mentions.tsv"
+SOURCE="/home/farhand/bc/data/mewsli/mewsli-9/output/dataset/ta/mentions.tsv"
 EXPECTED_SIZE=64
-DEST="..."
+DEST="/home/farhand/dump"
 WORKERS=1
 
 source $VENV

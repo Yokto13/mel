@@ -9,8 +9,7 @@ from math import inf
 import multiprocessing
 
 from transformers import BertTokenizerFast
-
-sys.path.append("/home/farhand/bc/src")
+import numpy as np
 
 from data_processors.tokens.damuel.descriptions.both import (
     DamuelDescriptionsTokensIteratorBoth,
@@ -28,28 +27,36 @@ from src.data_processors.tokens.mewsli.for_finetuning import (
     MewsliTokensIteratorFinetuning,
 )
 
-per_save = 10**4
+per_save = 10**5
+
+
+def save_token_qid_pairs(pairs, output_path):
+    print("Saving", len(pairs), "items")
+    tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint16)
+    qids = np.empty(len(pairs), dtype=np.uint32)
+    for i in range(len(pairs)):
+        # print(pairs[i][0])
+        tokens[i] = pairs[i][0]
+        qids[i] = pairs[i][1]
+    np.savez_compressed(output_path, tokens=tokens, qids=qids)
 
 
 def entity_names_save(entity_names, mentions, output_dir):
-    hv = abs(hash(abs(hash(mentions[0])) + abs(hash(mentions[-1]))))
+    hv = abs(hash(abs(hash(str(mentions[0]))) + abs(hash(str(mentions[-1])))))
 
     print(f"Saving to file {hv}")
 
-    with lzma.open(f"" + output_dir + f"/entity_names_{hv}.xz", "wb") as f:
-        pickle.dump(entity_names, f)
-    with lzma.open(f"" + output_dir + f"/mentions_{hv}.xz", "wb") as f:
-        pickle.dump(mentions, f)
+    save_token_qid_pairs(entity_names, output_dir + f"/entity_names_{hv}.npz")
+    save_token_qid_pairs(mentions, output_dir + f"/mentions_{hv}.npz")
 
 
 def mentions_save(mentions, output_dir, name="mentions"):
-    hv = abs(hash(abs(hash(mentions[0])) + abs(hash(mentions[-1]))))
+    hv = abs(hash(abs(hash(str(mentions[0]))) + abs(hash(str(mentions[-1])))))
 
     print(f"Saving to file {hv}")
 
-    print(f"" + output_dir + f"/{name}_{hv}.xz")
-    with lzma.open(f"" + output_dir + f"/{name}_{hv}.xz", "wb") as f:
-        pickle.dump(mentions, f)
+    print(f"" + output_dir + f"/{name}_{hv}.npz")
+    save_token_qid_pairs(mentions, output_dir + f"/{name}_{hv}.npz")
 
 
 def get_iterator_class(type):
@@ -77,8 +84,6 @@ def get_iterators(args, kwargs, iterator_class, workers):
     if (
         iterator_class == MewsliTokensIteratorBoth
         or iterator_class == MewsliTokensIteratorFinetuning
-        or iterator_class == DamuelDescriptionsTokensIteratorBoth
-        or iterator_class == DamuelDescriptionsTokensIteratorFinetuning
     ):
         if "only_wiki" in kwargs:
             del kwargs["only_wiki"]
@@ -87,7 +92,15 @@ def get_iterators(args, kwargs, iterator_class, workers):
         for i in range(workers):
             print(i)
             part_f = partial(is_part_good_for_iterator, workers=workers, r=i)
-            yield iterator_class(*args, **kwargs, filename_is_ok=part_f)
+            if (
+                iterator_class == DamuelDescriptionsTokensIteratorBoth
+                or iterator_class == DamuelDescriptionsTokensIteratorFinetuning
+            ):
+                if "only_wiki" in kwargs:
+                    del kwargs["only_wiki"]
+                yield iterator_class(*args, **kwargs, filename_is_ok=part_f)
+            else:
+                yield iterator_class(*args, **kwargs, filename_is_ok=part_f)
 
 
 def solve(iterator, output_dir):
@@ -133,6 +146,7 @@ def solve_only_names(iterator, output_dir):
 
 def main(model_name, data_path, context_size, type, output_dir, workers=1):
     tokenizer = BertTokenizerFast.from_pretrained(model_name)
+    tokenizer.add_tokens("[M]")
 
     iterator_class = get_iterator_class(type)
 
@@ -142,7 +156,6 @@ def main(model_name, data_path, context_size, type, output_dir, workers=1):
             {
                 "expected_size": context_size,
                 "only_wiki": True,
-                "treat_qids_as_ints": True,
             },
             iterator_class,
             workers,

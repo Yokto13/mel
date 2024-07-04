@@ -30,22 +30,20 @@ class MewsliTokensIteratorFinetuning(MewsliTokensIterator):
 
 
 class ContextMewsliTokensIteratorFinetuning(ContextMewsliTokensIterator):
-    def __init__(self, mewsli_tokens_itarator) -> None:
-        super().__init__(mewsli_tokens_itarator)
+    def __init__(self, mewsli_tokens_iterator) -> None:
+        super().__init__(mewsli_tokens_iterator)
 
     def _get_tokens_from_text_and_row(self, text, row):
-        mention_slice = self.mewsli_tokens_itarator.get_mention_slice_from_row(row)
+        mention_slice = self.mewsli_tokens_iterator.get_mention_slice_from_row(row)
         text, mention_slice = self._add_class_token(text, mention_slice)
-        wrapper = (
-            TokenizerWrapper(
-                self.mewsli_tokens_itarator.tokenizer,
-                self.mewsli_tokens_itarator.expected_size,
-            ),
+        wrapper = TokenizerWrapper(
+            self.mewsli_tokens_iterator.tokenizer,
+            self.mewsli_tokens_iterator.expected_size,
         )
         token_cutter = TokensCutter(
             text,
             wrapper,
-            self.mewsli_tokens_itarator.expected_size,
+            self.mewsli_tokens_iterator.expected_size,
         )
         try:
             cutted = token_cutter.cut_mention_with_context(mention_slice)
@@ -57,9 +55,9 @@ class ContextMewsliTokensIteratorFinetuning(ContextMewsliTokensIterator):
         return cutted
 
     def _add_class_token(self, text, mention_slice):
-        new_text = f"{text[:mention_slice.start]}{self.mewsli_tokens_itarator.mention_token} {text[mention_slice]} {self.mewsli_tokens_itarator.mention_token}{text[mention_slice.stop:]}"
+        new_text = f"{text[:mention_slice.start]}{self.mewsli_tokens_iterator.mention_token} {text[mention_slice]} {self.mewsli_tokens_iterator.mention_token}{text[mention_slice.stop:]}"
         new_slice = slice(
-            mention_slice.start + len(self.mewsli_tokens_itarator.mention_token) + 1,
-            mention_slice.stop + len(self.mewsli_tokens_itarator.mention_token) + 1,
+            mention_slice.start + len(self.mewsli_tokens_iterator.mention_token) + 1,
+            mention_slice.stop + len(self.mewsli_tokens_iterator.mention_token) + 1,
         )
         return new_text, new_slice

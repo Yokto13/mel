@@ -36,7 +36,6 @@ class EntryProcessor:
         text = self._construct_text_from_label_and_description(label, description)
 
         qid = int(damuel_entry["qid"][1:])
-        print(self.tokenizer_wrapper.tokenize(text))
         return self.tokenizer_wrapper.tokenize(text), qid
 
     def extract_description(self, damuel_entry):

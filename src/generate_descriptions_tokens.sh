@@ -7,7 +7,7 @@ MODEL="setu4993/LEALLA-base"
 SOURCE="/home/farhand/damuel_spark_workdir/damuel_1.0_ta"
 EXPECTED_SIZE=64
 DEST="/home/farhand/dump"
-WORKERS=40
+WORKERS=1
 
 source $VENV
 

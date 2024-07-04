@@ -11,6 +11,5 @@ class TokenizerWrapper:
             truncation=True,
             max_length=max_length or self.expected_size,
         )
-        print(tokens)
         assert len(tokens["input_ids"]) <= self.expected_size
         return tokens["input_ids"][0]
