@@ -4,28 +4,20 @@ from pathlib import Path
 from typing import Callable
 import lzma
 
+from utils.extractors.abstract_extractor import AbstractExtractor
 
-class DamuelIterator(ABC):
-    def __init__(
-        self,
-        damuel_path,
-        tokenizer,
-        expected_size,
-        filenumber_is_ok: Callable[[str], bool]
-    ):
-        self.damuel_path = damuel_path
-        if not isinstance(damuel_path, Path):
-            self.damuel_path = Path(damuel_path)
-        self.expected_size = expected_size
-        self.tokenizer = tokenizer
-        self.filenumber_is_ok = filenumber_is_ok
+
+class DamuelExtractor(AbstractExtractor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.file_acceptor: Callable[[str], bool] = None
 
     def __iter__(self):
         for file in sorted(list(self.damuel_path.iterdir())):
             if (
                 file.is_file()
                 and file.name.startswith("part")
-                and self.filenumber_is_ok(int(file.name.split('-')[-1]))
+                and self.file_acceptor(file.name)
             ):
                 print(os.getpid(), file, flush=True)
                 with self._get_file_obj(file) as f:
@@ -44,7 +36,7 @@ class DamuelIterator(ABC):
 
 
 # proc je to tady ??????
-class DamuelLinksIterator(DamuelIterator):
+class DamuelLinksIterator(DamuelExtractor):
     def __init__(
         self,
         damuel_path,

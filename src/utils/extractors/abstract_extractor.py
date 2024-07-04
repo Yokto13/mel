@@ -1,6 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from pathlib import Path
 
-class AbstractExtractor(ABC):
-    @abstractmethod
-    def extract(self, dest):
-        pass
+
+class AbstractExtractor(ABC.Iterator):
+    def __init__(self) -> None:
+        self.source: Path = None

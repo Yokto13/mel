@@ -1,1 +1,1 @@
-from .damuel_iterator import DamuelIterator
+from .damuel_iterator import DamuelExtractor

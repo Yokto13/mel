@@ -4,7 +4,7 @@ from multiprocessing import Pool
 import numpy as np
 from transformers import BertTokenizerFast
 
-from utils.extractors.damuel import DamuelIterator
+from utils.extractors.damuel import DamuelExtractor
 from utils.extractors.damuel.descriptions import DamuelDescriptionsIterator
 from utils.argument_wrappers import ensure_datatypes
 
@@ -32,7 +32,7 @@ def is_k_th(x, n, k):
     return x % n == k
 
 
-def iterate(iterator: DamuelIterator, output_path: str):
+def iterate(iterator: DamuelExtractor, output_path: str):
     data = []
     print("Starting iteration")
     i = 0

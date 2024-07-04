@@ -1,14 +1,15 @@
-class EntryProcessor:
+from src.utils.extractors.damuel.parser import DamuelParser
+
+class DescriptionTokenizer:
     class MissingLabelException(Exception):
         pass
 
     def __init__(self, tokenizer_wrapper):
         self.tokenizer_wrapper = tokenizer_wrapper
-        self.parser = _Parser()
 
-    def __call__(self, damuel_entry: dict, label_token: str = None) -> tuple:
+    def __call__(self, description_damuel_entry: dict, label_token: str = None) -> tuple:
         try: 
-            label, description, qid = self._get_data(damuel_entry)
+            label, description, qid = self._get_data(description_damuel_entry)
         except self.MissingLabelException:
             return None
 
@@ -21,10 +22,10 @@ class EntryProcessor:
     def _get_tokens(self, text):
         return self.tokenizer_wrapper.tokenize(text)["input_ids"][0]
 
-    def _get_data(self, damuel_entry):
-        label = self.parser.parse_label(damuel_entry)
-        description = self.parser.parse_description(damuel_entry)
-        qid = self.parser.parse_qid(damuel_entry)
+    def _get_data(self, description_damuel_entry):
+        label = DamuelParser.parse_label(description_damuel_entry)
+        description = DamuelParser.parse_description(description_damuel_entry)
+        qid = DamuelParser.parse_qid(description_damuel_entry)
 
         if label is None:
             raise self.MissingLabelException("Label is missing.")
@@ -44,20 +45,4 @@ class EntryProcessor:
     def _wrap_label(self, label, label_token):
         return f"{label_token}{label}{label_token}"
 
-class _Parser:
-    def parse_description(self, damuel_entry):
-        if "wiki" in damuel_entry:
-            return damuel_entry["wiki"]["text"]
-        elif "description" in damuel_entry:
-            return damuel_entry["description"]
-        return None
 
-    def parse_label(self, damuel_entry):
-        if "label" in damuel_entry:
-            return damuel_entry["label"]
-        elif "wiki" in damuel_entry:
-            return damuel_entry["wiki"]["title"]
-        return None
-
-    def parse_qid(self, damuel_entry):
-        return int(damuel_entry["qid"][1:])
