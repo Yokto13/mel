@@ -1,4 +1,5 @@
-print("Imports started")
+from functools import partial
+
 from fire import Fire
 import wandb
 
@@ -25,6 +26,14 @@ from tokenization.generate_tokens import (
     tokens_for_at_links,
     tokens_for_at_mewsli,
 )
+
+from tokenization.tokenize_mewsli import tokens_for_all_mewsli
+from tokenization.tokenize_damuel import tokens_for_all_damuel
+
+tokens_for_all_mewsli_at = partial(tokens_for_all_mewsli, ignore_context=True)
+tokens_for_all_damuel_at = partial(tokens_for_all_damuel, ignore_context=True)
+tokens_for_all_mewsli_finetuning = partial(tokens_for_all_mewsli, ignore_context=False)
+tokens_for_all_damuel_finetuning = partial(tokens_for_all_damuel, ignore_context=False)
 
 from utils.extractors.orchestrator import damuel_description_tokens
 
@@ -75,6 +84,14 @@ def choose_action(action):
             return tokens_for_at_links
         case "tokens_mewsli_at":
             return tokens_for_at_mewsli
+        case "tokens_for_all_mewsli_at":
+            return tokens_for_all_mewsli_at
+        case "tokens_for_all_damuel_at":
+            return tokens_for_all_damuel_at
+        case "tokens_for_all_mewsli_finetuning":
+            return tokens_for_all_mewsli_finetuning
+        case "tokens_for_all_damuel_finetuning":
+            return tokens_for_all_damuel_finetuning
         case _:
             raise ValueError(f"Unknown action: {action}")
 
