@@ -15,7 +15,9 @@ model_name = "setu4993/LEALLA-base"
 def process(p: Path):
     out_lang_path = OUT / p.name
     out_lang_path.mkdir(parents=True, exist_ok=True)
-    tokens_for_finetuning_mewsli(model_name, p, context_size, out_lang_path, workers)
+    tokens_for_finetuning_mewsli(
+        model_name, p / "mentions.tsv", context_size, out_lang_path, workers
+    )
 
 
 for p in MEWSLI.iterdir():
