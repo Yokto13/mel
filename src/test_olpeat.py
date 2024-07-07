@@ -14,5 +14,5 @@ print(t.get_vocab()["[PAD]"])
 
 ol = OLPEAT(Path("/home/farhand/dump_small"), "setu4993/LEALLA-base")
 ol.train(gpus_available=4)
-ol.recall_at(10, Path("/home/farhand/dump_small"))
-ol.recall_at(1, Path("/home/farhand/dump_small"))
+print(ol.recall_at(10, Path("/home/farhand/dump_small")))
+print(ol.recall_at(1, Path("/home/farhand/dump_small")))

@@ -21,7 +21,7 @@ def process(p: Path):
     l = out_lang_path / "links"
     l.mkdir(parents=True, exist_ok=True)
     tokens_for_finetuning_damuel_descriptions(model_name, p, context_size, d, workers)
-    tokens_for_finetuning_damuel_descriptions(model_name, p, context_size, l, workers)
+    tokens_for_finetuning_damuel_links(model_name, p, context_size, l, workers)
 
 
 for p in DAMUEL.iterdir():
