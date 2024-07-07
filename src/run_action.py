@@ -1,3 +1,4 @@
+print("Imports started")
 from fire import Fire
 import wandb
 
@@ -15,13 +16,19 @@ from finetunings.finetune_model.train import train
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, rename, remove_duplicates
 
+print("Importing problematic part")
 from tokenization.generate_tokens import (
     tokens_for_finetuning_mewsli,
     tokens_for_finetuning_damuel_descriptions,
     tokens_for_finetuning_damuel_links,
+    tokens_for_at_descriptions,
+    tokens_for_at_links,
+    tokens_for_at_mewsli,
 )
 
 from utils.extractors.orchestrator import damuel_description_tokens
+
+print("Imports finished")
 
 
 def choose_action(action):
@@ -62,11 +69,18 @@ def choose_action(action):
             return damuel_description_tokens
         case "tokens_links":
             return tokens_for_finetuning_damuel_links
+        case "tokens_descriptions_at":
+            return tokens_for_at_descriptions
+        case "tokens_links_at":
+            return tokens_for_at_links
+        case "tokens_mewsli_at":
+            return tokens_for_at_mewsli
         case _:
             raise ValueError(f"Unknown action: {action}")
 
 
 def main(*args):
+    print("hello")
     wandb.init(project=f"test-{args[0]}", config={"action": args[0], "args": args[1:]})
     action_descriptor = args[0]
     action = choose_action(action_descriptor)

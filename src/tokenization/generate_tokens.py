@@ -1,12 +1,10 @@
 # from multiprocessing import set_start_method
 # set_start_method("spawn")
 from functools import partial
-import lzma
-import sys
 import fire
-import pickle
 from math import inf
 import multiprocessing
+from enum import Enum, auto
 
 from transformers import BertTokenizerFast
 import numpy as np
@@ -30,6 +28,18 @@ from src.data_processors.tokens.mewsli.for_finetuning import (
 per_save = 10**5
 
 
+class GenerationType(Enum):
+    FINETUNING_LINKS = auto()
+    FINETUNING_DESCRIPTIONS = auto()
+    FINETUNING_MEWSLI = auto()
+    OLD_MEWSLI = auto()
+    OLD_LINKS = auto()
+    OLD_DESCRIPTIONS = auto()
+    MENTIONS_LINKS = auto()
+    MENTIONS_DESCRIPTIONS = auto()
+    MENTIONS_MEWSLI = auto()
+
+
 def save_token_qid_pairs(pairs, output_path):
     print("Saving", len(pairs), "items")
     tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint16)
@@ -46,8 +56,8 @@ def entity_names_save(entity_names, mentions, output_dir):
 
     print(f"Saving to file {hv}")
 
-    save_token_qid_pairs(entity_names, output_dir + f"/entity_names_{hv}.npz")
-    save_token_qid_pairs(mentions, output_dir + f"/mentions_{hv}.npz")
+    save_token_qid_pairs(entity_names, str(output_dir) + f"/entity_names_{hv}.npz")
+    save_token_qid_pairs(mentions, str(output_dir) + f"/mentions_{hv}.npz")
 
 
 def mentions_save(mentions, output_dir, name="mentions"):
@@ -55,23 +65,24 @@ def mentions_save(mentions, output_dir, name="mentions"):
 
     print(f"Saving to file {hv}")
 
-    print(f"" + output_dir + f"/{name}_{hv}.npz")
-    save_token_qid_pairs(mentions, output_dir + f"/{name}_{hv}.npz")
+    print(f"" + str(output_dir) + f"/{name}_{hv}.npz")
+    save_token_qid_pairs(mentions, str(output_dir) + f"/{name}_{hv}.npz")
 
 
-def get_iterator_class(type):
-    if type == "links" or type == "links_names":
-        return DamuelLinksTokensIteratorBoth
-    elif type == "descs" or type == "descs_names":
-        return DamuelDescriptionsTokensIteratorBoth
-    if type == "links_together":
-        return DamuelLinksTokensIteratorFinetuning
-    elif type == "descs_together":
-        return DamuelDescriptionsTokensIteratorFinetuning
-    elif type == "mewsli_together":
-        return MewsliTokensIteratorFinetuning
-    elif type == "mewsli" or type == "mewsli_names":
-        return MewsliTokensIteratorBoth
+def get_iterator_class(generation_type):
+    match generation_type:
+        case GenerationType.MENTIONS_LINKS | GenerationType.OLD_LINKS:
+            return DamuelLinksTokensIteratorBoth
+        case GenerationType.OLD_DESCRIPTIONS | GenerationType.MENTIONS_DESCRIPTIONS:
+            return DamuelDescriptionsTokensIteratorBoth
+        case GenerationType.FINETUNING_LINKS:
+            return DamuelLinksTokensIteratorFinetuning
+        case GenerationType.FINETUNING_DESCRIPTIONS:
+            return DamuelDescriptionsTokensIteratorFinetuning
+        case GenerationType.FINETUNING_MEWSLI:
+            return MewsliTokensIteratorFinetuning
+        case GenerationType.OLD_MEWSLI | GenerationType.MENTIONS_MEWSLI:
+            return MewsliTokensIteratorBoth
 
 
 def is_part_good_for_iterator(part, workers, r):
@@ -144,11 +155,18 @@ def solve_only_names(iterator, output_dir):
     mentions_save(entity_names, output_dir, name="entity_names")
 
 
-def main(model_name, data_path, context_size, type, output_dir, workers=1):
+def main(
+    model_name,
+    data_path,
+    context_size,
+    generation_type: GenerationType,
+    output_dir,
+    workers=1,
+):
     tokenizer = BertTokenizerFast.from_pretrained(model_name)
     tokenizer.add_tokens("[M]")
 
-    iterator_class = get_iterator_class(type)
+    iterator_class = get_iterator_class(generation_type)
 
     iterators = list(
         get_iterators(
@@ -162,12 +180,21 @@ def main(model_name, data_path, context_size, type, output_dir, workers=1):
         )
     )
 
-    if "together" in type:
-        solve_f = solve_only_contexts
-    elif "names" in type:
-        solve_f = solve_only_names
-    else:
-        solve_f = solve
+    match generation_type:
+        case (
+            GenerationType.FINETUNING_DESCRIPTIONS
+            | GenerationType.FINETUNING_LINKS
+            | GenerationType.FINETUNING_MEWSLI
+        ):
+            solve_f = solve_only_contexts
+        case (
+            GenerationType.MENTIONS_DESCRIPTIONS
+            | GenerationType.MENTIONS_LINKS
+            | GenerationType.MENTIONS_MEWSLI
+        ):
+            solve_f = solve_only_names
+        case _:
+            solve_f = solve
 
     solve_with_output = partial(solve_f, output_dir=output_dir)
 
@@ -180,21 +207,38 @@ def main(model_name, data_path, context_size, type, output_dir, workers=1):
 def tokens_for_finetuning_mewsli(
     model_name, data_path, context_size, output_dir, workers
 ):
-    run_type = "mewsli_together"
+    run_type = GenerationType.FINETUNING_MEWSLI
     main(model_name, data_path, context_size, run_type, output_dir, workers)
 
 
 def tokens_for_finetuning_damuel_descriptions(
     model_name, data_path, context_size, output_dir, workers
 ):
-    run_type = "descs_together"
+    run_type = GenerationType.FINETUNING_DESCRIPTIONS
     main(model_name, data_path, context_size, run_type, output_dir, workers)
 
 
 def tokens_for_finetuning_damuel_links(
     model_name, data_path, context_size, output_dir, workers
 ):
-    run_type = "links_together"
+    run_type = GenerationType.FINETUNING_LINKS
+    main(model_name, data_path, context_size, run_type, output_dir, workers)
+
+
+def tokens_for_at_links(model_name, data_path, context_size, output_dir, workers):
+    run_type = GenerationType.MENTIONS_LINKS
+    main(model_name, data_path, context_size, run_type, output_dir, workers)
+
+
+def tokens_for_at_mewsli(model_name, data_path, context_size, output_dir, workers):
+    run_type = GenerationType.MENTIONS_MEWSLI
+    main(model_name, data_path, context_size, run_type, output_dir, workers)
+
+
+def tokens_for_at_descriptions(
+    model_name, data_path, context_size, output_dir, workers
+):
+    run_type = GenerationType.MENTIONS_DESCRIPTIONS
     main(model_name, data_path, context_size, run_type, output_dir, workers)
 
 
