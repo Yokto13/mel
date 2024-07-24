@@ -1,3 +1,4 @@
+""" Original MELUDR implementation with a few tweaks that make it work with current paths."""
 from collections import Counter, defaultdict
 from hashlib import sha1
 import sys
@@ -11,10 +12,8 @@ import wandb
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
-sys.path.append("/home/farhand/bc")
-
-from src.models.index import Index
-from src.experiments.helpers.paths_validator import paths_exist
+from data_processors.index.index import Index
+from utils.argument_wrappers import paths_exist
 
 
 class SimpleDataset(Dataset):
@@ -75,23 +74,15 @@ def load_embs(dir_path):
     if isinstance(dir_path, str):
         dir_path = Path(dir_path)
 
-    embs_all, qids_all = [], []
+    data = np.load(dir_path / "embs_qids.npz")
+    embs = data["embs"]
+    qids = data["qids"]
 
-    for fname in sorted(dir_path.iterdir()):
-        if not fname.name.startswith("embs"):
-            continue
-        print("Loading", fname)
-        embs = np.load(fname)
-        qids = np.load(dir_path / f"qids_{fname.stem.split('_')[1]}.npy")
-
-        for emb, qid in zip(embs, qids):
-            embs_all.append(emb)
-            qids_all.append(qid)
-    return embs_all, qids_all
+    return embs, qids
 
 
 @paths_exist(path_arg_ids=[0, 1])
-def main(
+def meludr_olpeat(
     damuel_entities: str,
     mewsli: str,
     R,
@@ -206,4 +197,4 @@ def main(
 
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    fire.Fire(meludr_olpeat)

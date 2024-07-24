@@ -41,7 +41,7 @@ class GenerationType(Enum):
 
 
 def save_token_qid_pairs(pairs, output_path):
-    print("Saving", len(pairs), "items")
+    # print("Saving", len(pairs), "items")
     tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint16)
     qids = np.empty(len(pairs), dtype=np.uint32)
     for i in range(len(pairs)):
@@ -54,7 +54,7 @@ def save_token_qid_pairs(pairs, output_path):
 def entity_names_save(entity_names, mentions, output_dir):
     hv = abs(hash(abs(hash(str(mentions[0]))) + abs(hash(str(mentions[-1])))))
 
-    print(f"Saving to file {hv}")
+    # print(f"Saving to file {hv}")
 
     save_token_qid_pairs(entity_names, str(output_dir) + f"/entity_names_{hv}.npz")
     save_token_qid_pairs(mentions, str(output_dir) + f"/mentions_{hv}.npz")
@@ -63,9 +63,9 @@ def entity_names_save(entity_names, mentions, output_dir):
 def mentions_save(mentions, output_dir, name="mentions"):
     hv = abs(hash(abs(hash(str(mentions[0]))) + abs(hash(str(mentions[-1])))))
 
-    print(f"Saving to file {hv}")
+    # print(f"Saving to file {hv}")
 
-    print(f"" + str(output_dir) + f"/{name}_{hv}.npz")
+    # print(f"" + str(output_dir) + f"/{name}_{hv}.npz")
     save_token_qid_pairs(mentions, str(output_dir) + f"/{name}_{hv}.npz")
 
 
@@ -101,7 +101,7 @@ def get_iterators(args, kwargs, iterator_class, workers):
         yield iterator_class(*args, **kwargs)
     else:
         for i in range(workers):
-            print(i)
+            # print(i)
             part_f = partial(is_part_good_for_iterator, workers=workers, r=i)
             if (
                 iterator_class == DamuelDescriptionsTokensIteratorBoth
@@ -198,7 +198,7 @@ def main(
 
     solve_with_output = partial(solve_f, output_dir=output_dir)
 
-    print(f"Running with {workers} workers")
+    # print(f"Running with {workers} workers")
 
     with multiprocessing.Pool(workers) as p:
         p.map(solve_with_output, iterators)

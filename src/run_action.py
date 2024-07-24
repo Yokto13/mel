@@ -94,7 +94,7 @@ def choose_action(action):
             return tokens_for_all_mewsli_finetuning
         case "tokens_for_all_damuel_finetuning":
             return tokens_for_all_damuel_finetuning
-        case "embs_from_tokens":
+        case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
         case _:
             raise ValueError(f"Unknown action: {action}")

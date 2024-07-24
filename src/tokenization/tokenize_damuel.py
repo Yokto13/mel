@@ -1,4 +1,5 @@
 from pathlib import Path
+from tqdm import tqdm
 
 from tokenization.generate_tokens import (
     tokens_for_finetuning_damuel_descriptions,
@@ -9,7 +10,7 @@ from tokenization.generate_tokens import (
 
 
 def process(p: Path, out, workers, context_size, model_name, ignore_context):
-    print("Procesing", p)
+    # print("Procesing", p)
     out_lang_path = out / p.name
     out_lang_path.mkdir(parents=True, exist_ok=False)
     d = out_lang_path / "descs"
@@ -32,7 +33,7 @@ def tokens_for_all_damuel(
     damuel = Path(damuel)
     out = Path(out)
 
-    for p in damuel.iterdir():
+    for p in tqdm(list(damuel.iterdir())):
         if not p.is_dir() or "wikidata" in p.name:
             continue
         try:
