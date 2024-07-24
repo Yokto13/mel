@@ -9,9 +9,13 @@ from tokenization.generate_tokens import (
 )
 
 
+def _get_lang_from_name(name):
+    return name.split('_')[-1]
+
+
 def process(p: Path, out, workers, context_size, model_name, ignore_context):
     # print("Procesing", p)
-    out_lang_path = out / p.name
+    out_lang_path = out / _get_lang_from_name(p.name)
     out_lang_path.mkdir(parents=True, exist_ok=False)
     d = out_lang_path / "descs"
     d.mkdir(parents=True, exist_ok=True)

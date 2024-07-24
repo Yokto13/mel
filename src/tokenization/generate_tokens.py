@@ -42,7 +42,7 @@ class GenerationType(Enum):
 
 def save_token_qid_pairs(pairs, output_path):
     # print("Saving", len(pairs), "items")
-    tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint16)
+    tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint32)
     qids = np.empty(len(pairs), dtype=np.uint32)
     for i in range(len(pairs)):
         # print(pairs[i][0])
