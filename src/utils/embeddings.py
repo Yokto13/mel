@@ -1,3 +1,5 @@
+""" Utils for embedding tokens.
+"""
 import logging
 from pathlib import Path
 from tqdm import tqdm
@@ -5,6 +7,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn as nn
+from transformers import BertModel
 
 
 def _load_tokens(source_dir: Path):
@@ -67,25 +70,24 @@ def _embed(toks, model, batch_size=(16384 * 4)):
 
 
 def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
+    """
+    Given a directory with (multiple) token_qid npz files embedds them with model and returns
+    tuple (embs, qids) of two very large arrays.
+
+    TODO: This might easily be a problem if there is a large number of tokens and they do not fit in RAM.
+    """
     toks, qids = _load_tokens(source_dir)
     embs = _embed(toks, model, batch_size)
     return embs, qids
 
 
-def embs_from_tokens(source, model_name, batch_size, dest):
-    from transformers import BertModel
+def embs_from_tokens_and_model_name(source, model_name, batch_size, dest):
+    model = BertModel.from_pretrained(model_name)
+    embs_from_tokens_and_model(source, model, batch_size, dest)
 
+
+def embs_from_tokens_and_model(source, model, batch_size, dest):
     embs, qids = get_embs_and_qids(
-        Path(source), BertModel.from_pretrained(model_name), batch_size
+        Path(source), model, batch_size
     )
     np.savez_compressed(f"{dest}/embs_qids.npz", embs=embs, qids=qids)
-
-
-class Cacher:
-    def __init__(self) -> None:
-        self.cache = dict()
-
-    def get_embs_and_qids(self, source_dir: Path, model: nn.Module, batch_size=16384):
-        if source_dir in self.cache:
-            return self.cache[source_dir]
-        return get_embs_and_qids(source_dir, model, batch_size)

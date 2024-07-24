@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 from transformers import BertModel
 
-from .embeddings import Cacher
 from data_processors.index.index import Index
 
 

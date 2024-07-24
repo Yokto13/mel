@@ -7,7 +7,7 @@ from baselines.alias_table.all_languages import all_languages
 from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.from_tokens import one_language
 from baselines.alias_table.string_similarity import string_similarity
-from baselines.olpeat.embeddings import embs_from_tokens
+from utils.embeddings import embs_from_tokens_and_model_name
 
 from data_processors.tokens.duplicates_filter_script import run_duplicates_filter_script
 
@@ -95,7 +95,7 @@ def choose_action(action):
         case "tokens_for_all_damuel_finetuning":
             return tokens_for_all_damuel_finetuning
         case "embs_from_tokens":
-            return embs_from_tokens
+            return embs_from_tokens_and_model_name
         case _:
             raise ValueError(f"Unknown action: {action}")
 
