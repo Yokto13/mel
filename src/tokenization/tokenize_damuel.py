@@ -9,8 +9,9 @@ from tokenization.generate_tokens import (
 
 
 def process(p: Path, out, workers, context_size, model_name, ignore_context):
+    print("Procesing", p)
     out_lang_path = out / p.name
-    out_lang_path.mkdir(parents=True, exist_ok=True)
+    out_lang_path.mkdir(parents=True, exist_ok=False)
     d = out_lang_path / "descs"
     d.mkdir(parents=True, exist_ok=True)
     l = out_lang_path / "links"
@@ -34,4 +35,7 @@ def tokens_for_all_damuel(
     for p in damuel.iterdir():
         if not p.is_dir() or "wikidata" in p.name:
             continue
-        process(p, out, workers, context_size, model_name, ignore_context)
+        try:
+            process(p, out, workers, context_size, model_name, ignore_context)
+        except FileExistsError:
+            print(p, "exists... Skipping!")

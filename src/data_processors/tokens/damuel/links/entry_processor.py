@@ -60,9 +60,13 @@ class WikiProcessorBoth:
 
         start = link["start"]
         end = link["end"] - 1
-        mention_slice_chars = slice(
-            self.damuel_tokens[start]["start"], self.damuel_tokens[end]["end"]
-        )
+        try:
+            mention_slice_chars = slice(
+                self.damuel_tokens[start]["start"], self.damuel_tokens[end]["end"]
+            )
+        except IndexError:
+            print("Index Error, skipping")
+            return None
 
         try:
             cutted_tokens = self.tokens_cutter.cut_mention_with_context(
@@ -109,9 +113,14 @@ class WikiProcessorFinetuning(WikiProcessorBoth):
 
         start = link["start"]
         end = link["end"] - 1
-        mention_slice_chars = slice(
-            self.damuel_tokens[start]["start"], self.damuel_tokens[end]["end"]
-        )
+
+        try:
+            mention_slice_chars = slice(
+                self.damuel_tokens[start]["start"], self.damuel_tokens[end]["end"]
+            )
+        except IndexError:
+            print("Index Error, skipping...")
+            return None
 
         smaller_text, mention_slice_chars = self._apply_char_window(
             self.text, mention_slice_chars

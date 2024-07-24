@@ -72,6 +72,15 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
     return embs, qids
 
 
+def embs_from_tokens(source, model_name, batch_size, dest):
+    from transformers import BertModel
+
+    embs, qids = get_embs_and_qids(
+        Path(source), BertModel.from_pretrained(model_name), batch_size
+    )
+    np.savez_compressed(f"{dest}/embs_qids.npz", embs=embs, qids=qids)
+
+
 class Cacher:
     def __init__(self) -> None:
         self.cache = dict()
