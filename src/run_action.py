@@ -7,6 +7,8 @@ from baselines.alias_table.all_languages import all_languages
 from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.from_tokens import one_language
 from baselines.alias_table.string_similarity import string_similarity
+from baselines.olpeat.meludr_olpeat import meludr_olpeat
+
 from utils.embeddings import embs_from_tokens_and_model_name
 
 from data_processors.tokens.duplicates_filter_script import run_duplicates_filter_script
@@ -18,7 +20,6 @@ from finetunings.finetune_model.train import train
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, rename, remove_duplicates
 
-print("Importing problematic part")
 from tokenization.generate_tokens import (
     tokens_for_finetuning_mewsli,
     tokens_for_finetuning_damuel_descriptions,
@@ -96,6 +97,8 @@ def choose_action(action):
             return tokens_for_all_damuel_finetuning
         case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
+        case "meludr_olpeat":
+            return meludr_olpeat
         case _:
             raise ValueError(f"Unknown action: {action}")
 
