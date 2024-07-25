@@ -27,7 +27,7 @@ class DamuelIterator(ABC):
                 and file.name.startswith("part")
                 and (self.filename_is_ok is None or self.filename_is_ok(file.name))
             ):
-                # print(os.getpid(), file, flush=True)
+                print(os.getpid(), file, flush=True)
                 with self._get_file_obj(file) as f:
                     for dato in self._iterate_file(f):
                         yield dato

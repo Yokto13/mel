@@ -8,6 +8,7 @@ from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.from_tokens import one_language
 from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.meludr_olpeat import meludr_olpeat
+from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
 
 from utils.embeddings import embs_from_tokens_and_model_name
 
@@ -35,6 +36,7 @@ from tokenization.tokenize_damuel import tokens_for_all_damuel
 
 tokens_for_all_mewsli_at = partial(tokens_for_all_mewsli, ignore_context=True)
 tokens_for_all_damuel_at = partial(tokens_for_all_damuel, ignore_context=True)
+tokens_for_all_damuel_at_pages = partial(tokens_for_all_damuel, ignore_context=True, only_pages=True)
 tokens_for_all_mewsli_finetuning = partial(tokens_for_all_mewsli, ignore_context=False)
 tokens_for_all_damuel_finetuning = partial(tokens_for_all_damuel, ignore_context=False)
 
@@ -67,6 +69,8 @@ def choose_action(action):
             return string_similarity
         case "recalls":
             return run_recall_calculation
+        case "meludr_recalls":
+            return meludr_run_recall_calculation
         case "rename":
             return rename
         case "remove_duplicates":
@@ -91,6 +95,8 @@ def choose_action(action):
             return tokens_for_all_mewsli_at
         case "tokens_for_all_damuel_at":
             return tokens_for_all_damuel_at
+        case "tokens_for_all_damuel_at_pages":
+            return tokens_for_all_damuel_at_pages
         case "tokens_for_all_mewsli_finetuning":
             return tokens_for_all_mewsli_finetuning
         case "tokens_for_all_damuel_finetuning":
@@ -105,7 +111,7 @@ def choose_action(action):
 
 def main(*args):
     print("hello")
-    wandb.init(project=f"test-{args[0]}", config={"action": args[0], "args": args[1:]})
+    wandb.init(project=f"EL-{args[0]}", config={"action": args[0], "args": args[1:]})
     action_descriptor = args[0]
     action = choose_action(action_descriptor)
     print(f"Running {action_descriptor} with args {args[1:]}")

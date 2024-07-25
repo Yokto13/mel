@@ -12,6 +12,7 @@ import numpy as np
 
 from data_processors.tokens.damuel.descriptions.both import (
     DamuelDescriptionsTokensIteratorBoth,
+    DamuelDescriptionsPagesTokensIteratorBoth
 )
 from data_processors.tokens.damuel.links.both import DamuelLinksTokensIteratorBoth
 from data_processors.tokens.damuel.descriptions.for_finetuning import (
@@ -39,6 +40,7 @@ class GenerationType(Enum):
     MENTIONS_LINKS = auto()
     MENTIONS_DESCRIPTIONS = auto()
     MENTIONS_MEWSLI = auto()
+    MENTIONS_DESCRIPTIONS_PAGES = auto()
 
 
 def save_token_qid_pairs(pairs, output_path):
@@ -58,7 +60,7 @@ def save_token_qid_pairs(pairs, output_path):
 def mentions_save(mentions, output_dir, name="mentions"):
     hv = abs(hash(abs(hash(str(mentions[0]))) + abs(hash(str(mentions[-1])))))
 
-    # print(f"Saving to file {hv}")
+    print(f"Saving to file {hv}", "len", len(mentions))
 
     # print(f"" + str(output_dir) + f"/{name}_{hv}.npz")
     save_token_qid_pairs(mentions, str(output_dir) + f"/{name}_{hv}.npz")
@@ -79,6 +81,8 @@ def get_iterator_class(generation_type):
             return DamuelLinksTokensIteratorBoth
         case GenerationType.OLD_DESCRIPTIONS | GenerationType.MENTIONS_DESCRIPTIONS:
             return DamuelDescriptionsTokensIteratorBoth
+        case GenerationType.MENTIONS_DESCRIPTIONS_PAGES:
+            return DamuelDescriptionsPagesTokensIteratorBoth
         case GenerationType.FINETUNING_LINKS:
             return DamuelLinksTokensIteratorFinetuning
         case GenerationType.FINETUNING_DESCRIPTIONS:
@@ -92,6 +96,7 @@ def get_iterator_class(generation_type):
 def is_part_good_for_iterator(part, workers, r):
     if "." in part:
         part = part.split(".")[0]
+    # print(int(part.split("-")[1]), workers, r)
     return int(part.split("-")[1]) % workers == r
 
 
@@ -105,11 +110,11 @@ def get_iterators(args, kwargs, iterator_class, workers):
         yield iterator_class(*args, **kwargs)
     else:
         for i in range(workers):
-            # print(i)
             part_f = partial(is_part_good_for_iterator, workers=workers, r=i)
             if (
                 iterator_class == DamuelDescriptionsTokensIteratorBoth
                 or iterator_class == DamuelDescriptionsTokensIteratorFinetuning
+                or iterator_class == DamuelDescriptionsPagesTokensIteratorBoth
             ):
                 if "only_wiki" in kwargs:
                     del kwargs["only_wiki"]
@@ -195,6 +200,7 @@ def main(
             GenerationType.MENTIONS_DESCRIPTIONS
             | GenerationType.MENTIONS_LINKS
             | GenerationType.MENTIONS_MEWSLI
+            | GenerationType.MENTIONS_DESCRIPTIONS_PAGES
         ):
             solve_f = solve_only_names
         case _:
@@ -245,6 +251,12 @@ def tokens_for_at_descriptions(
     run_type = GenerationType.MENTIONS_DESCRIPTIONS
     main(model_name, data_path, context_size, run_type, output_dir, workers)
 
+
+def tokens_for_at_descriptions_pages(
+    model_name, data_path, context_size, output_dir, workers
+):
+    run_type = GenerationType.MENTIONS_DESCRIPTIONS_PAGES
+    main(model_name, data_path, context_size, run_type, output_dir, workers)
 
 if __name__ == "__main__":
     fire.Fire(main)
