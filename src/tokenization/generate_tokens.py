@@ -1,5 +1,10 @@
-# from multiprocessing import set_start_method
-# set_start_method("spawn")
+"""The core logic for generating tokens.
+
+TODO:
+    - *mentions_save* and entity_names_save do pretty much the same thing but were kept for compatibility reasons.
+    Are they still needed?
+    - get_iterators is hard to read. Maybe refactor?
+"""
 from functools import partial
 import os
 import fire
@@ -27,7 +32,7 @@ from src.data_processors.tokens.mewsli.for_finetuning import (
     MewsliTokensIteratorFinetuning,
 )
 
-per_save = 10**5
+SAVE_EACH = 10**5
 
 
 class GenerationType(Enum):
@@ -44,6 +49,11 @@ class GenerationType(Enum):
 
 
 def save_token_qid_pairs(pairs, output_path):
+    """
+    Saves token qid pairs with numpy.savez_compressed
+
+    Previously used lzma + pickle which was extremely slow.
+    """
     if os.path.exists(output_path):
         print(f"Warning: The file '{output_path}' already exists and will be overwritten.")
     
@@ -131,7 +141,7 @@ def solve(iterator, output_dir):
         entity_names.append(entity_name)
         mentions.append(context)
 
-        if len(entity_names) == per_save:
+        if len(entity_names) == SAVE_EACH:
             entity_names_save(entity_names, mentions, output_dir)
             entity_names = []
             mentions = []
@@ -145,7 +155,7 @@ def solve_only_contexts(iterator, output_dir):
     for context in iterator:
         mentions.append(context)
 
-        if len(mentions) == per_save:
+        if len(mentions) == SAVE_EACH:
             mentions_save(mentions, output_dir)
             mentions = []
 
@@ -157,7 +167,7 @@ def solve_only_names(iterator, output_dir):
     for entity_name, context in iterator:
         entity_names.append(entity_name)
 
-        if len(entity_names) == per_save:
+        if len(entity_names) == SAVE_EACH:
             mentions_save(entity_names, output_dir, name="entity_names")
             entity_names = []
 
@@ -213,6 +223,9 @@ def main(
     with multiprocessing.Pool(workers) as p:
         p.map(solve_with_output, iterators)
 
+###########################################################################################
+#### Methods below serve as facades making generating different types of tokens easier ####
+###########################################################################################
 
 def tokens_for_finetuning_mewsli(
     model_name, data_path, context_size, output_dir, workers
