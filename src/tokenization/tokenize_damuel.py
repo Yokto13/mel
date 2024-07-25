@@ -21,7 +21,7 @@ class _DamuelGenerationType(Enum):
     FINETUNING=auto()
 
 
-def process(p: Path, out, workers, context_size, model_name, generation_type: _DamuelGenerationType):
+def _process(p: Path, out, workers, context_size, model_name, generation_type: _DamuelGenerationType):
     # print("Procesing", p)
     out_lang_path = out / _get_lang_from_name(p.name)
     out_lang_path.mkdir(parents=True, exist_ok=False)
@@ -39,6 +39,8 @@ def process(p: Path, out, workers, context_size, model_name, generation_type: _D
             )
             tokens_for_finetuning_damuel_links(model_name, p, context_size, l, workers)
         case _DamuelGenerationType.IGNORE_CONTEXT_PAGES:
+            # TODO: there should be more freedom over choosing the generation types.
+            # Currently the Iterators sometimes disregard SRP which makes any custom tokenization very hard.
             tokens_for_at_descriptions_pages(model_name, p, context_size, d, workers)
 
 
@@ -51,7 +53,20 @@ def _choose_generation_type(ignore_context, only_pages):
 
 def tokens_for_all_damuel(
     damuel, out, workers, context_size, model_name, ignore_context, only_pages=False
-):
+):  
+    """Tokenizes the whole DaMuEL. Parameters constrain the tokenization.
+
+    Args:
+        damuel (str): path to directory containing directory per each DaMuEL language.
+        out (str): output path.
+        workers (int): number of workers to use. The computation utilizes subprocess, should always be <= 500.
+        context_size (int): Then number of tokens that the result will have.
+        model_name (str): Path to the model.
+        ignore_context (bool): If True, tokenizes only the label/title.
+        only_pages (bool, optional): When a language specic entry lacks a page it is skipped. 
+            This currently generates only description tokens and requires ignore_context=True.
+            Defaults to False.
+    """
     damuel = Path(damuel)
     out = Path(out)
 
@@ -62,6 +77,6 @@ def tokens_for_all_damuel(
         if not p.is_dir() or "wikidata" in p.name:
             continue
         try:
-            process(p, out, workers, context_size, model_name, generation_type)
+            _process(p, out, workers, context_size, model_name, generation_type)
         except FileExistsError:
             print(p, "exists... Skipping!")
