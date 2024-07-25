@@ -1,6 +1,7 @@
 # from multiprocessing import set_start_method
 # set_start_method("spawn")
 from functools import partial
+import os
 import fire
 from math import inf
 import multiprocessing
@@ -41,23 +42,17 @@ class GenerationType(Enum):
 
 
 def save_token_qid_pairs(pairs, output_path):
-    # print("Saving", len(pairs), "items")
+    if os.path.exists(output_path):
+        print(f"Warning: The file '{output_path}' already exists and will be overwritten.")
+    
     tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint32)
     qids = np.empty(len(pairs), dtype=np.uint32)
-    for i in range(len(pairs)):
-        # print(pairs[i][0])
-        tokens[i] = pairs[i][0]
-        qids[i] = pairs[i][1]
+    
+    for i, (token, qid) in enumerate(pairs):
+        tokens[i] = token
+        qids[i] = qid
+
     np.savez_compressed(output_path, tokens=tokens, qids=qids)
-
-
-def entity_names_save(entity_names, mentions, output_dir):
-    hv = abs(hash(abs(hash(str(mentions[0]))) + abs(hash(str(mentions[-1])))))
-
-    # print(f"Saving to file {hv}")
-
-    save_token_qid_pairs(entity_names, str(output_dir) + f"/entity_names_{hv}.npz")
-    save_token_qid_pairs(mentions, str(output_dir) + f"/mentions_{hv}.npz")
 
 
 def mentions_save(mentions, output_dir, name="mentions"):
@@ -67,6 +62,15 @@ def mentions_save(mentions, output_dir, name="mentions"):
 
     # print(f"" + str(output_dir) + f"/{name}_{hv}.npz")
     save_token_qid_pairs(mentions, str(output_dir) + f"/{name}_{hv}.npz")
+
+
+def entity_names_save(entity_names, mentions, output_dir):
+    hv = abs(hash(abs(hash(mentions[0])) + abs(hash(mentions[-1]))))
+
+    print(f"Saving to file {hv}")
+
+    save_token_qid_pairs(entity_names, output_dir + f"/entity_names_{hv}.npz")
+    save_token_qid_pairs(mentions, output_dir + f"/mentions_{hv}.npz")
 
 
 def get_iterator_class(generation_type):
