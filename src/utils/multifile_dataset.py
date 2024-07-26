@@ -43,4 +43,5 @@ class MultiFileDataset(IterableDataset):
 
 def _npz_loader(file_path):
     d = np.load(file_path)
-    return d["tokens"], d["qids"]
+    for t, q in zip(d["tokens"], d["qids"]):
+        yield t, q
