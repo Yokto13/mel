@@ -6,4 +6,15 @@ cd ../../
 
 VENV=../venv/bin/activate
 source $VENV
-python run_action.py tokens_for_all_mewsli_finetuning "/home/farhand/bc/data/mewsli/mewsli-9/output/dataset" "/home/farhand/tokens_mewsli_finetuning" 1 64 "setu4993/LEALLA-base"
+
+RESULT="$OUTPUTS/tokens_mewsli_finetuning"
+
+if [ -d "$RESULT" ]; then
+    echo "Directory exists. Removing it."
+    rm -r "$RESULT"
+else
+    echo "Directory does not exist. Creating it..."
+    mkdir -p "$RESULT"
+fi
+
+python run_action.py tokens_for_all_mewsli_finetuning "$MEWSLI/mewsli-9/output/dataset" $RESULT 1 64 "setu4993/LEALLA-base"
