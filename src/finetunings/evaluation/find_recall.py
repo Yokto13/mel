@@ -148,6 +148,7 @@ def filter_repeated_embs(damuel_embs, damuel_qids, R):
 
     Very optional thing, saves some memory, especially when mentions without context are used.
     """
+    print("FILTERING EMBS!")
     if not damuel_embs.flags["C_CONTIGUOUS"]:  # need this for sha1 to work
         damuel_embs = np.ascontiguousarray(damuel_embs)
 
@@ -181,7 +182,7 @@ def find_recall(
 ):
     damuel_embs, damuel_qids = load_damuel(damuel_entities, damuel_links)
     R = min(R, len(damuel_qids))
-    # damuel_embs, damuel_qids = filter_repeated_embs(damuel_embs, damuel_qids, R)
+    damuel_embs, damuel_qids = filter_repeated_embs(damuel_embs, damuel_qids, R)
 
     mewsli_embs, mewsli_qids = load_mewsli(mewsli)
 

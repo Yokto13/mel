@@ -1,5 +1,6 @@
 """ Utils for embedding tokens.
 """
+
 import logging
 from pathlib import Path
 from tqdm import tqdm
@@ -21,7 +22,7 @@ def _load_tokens(source_dir: Path):
         data_len += toks.shape[0]
         tok_dim = toks.shape[1]
 
-    tokens = np.empty((data_len, tok_dim), dtype=np.uint16)
+    tokens = np.empty((data_len, tok_dim), dtype=np.uint32)
     qids = np.empty(data_len, dtype=np.uint32)
     idx = 0
     for file in tqdm(source_dir.iterdir(), desc="Loading toks and qids."):
@@ -87,7 +88,5 @@ def embs_from_tokens_and_model_name(source, model_name, batch_size, dest):
 
 
 def embs_from_tokens_and_model(source, model, batch_size, dest):
-    embs, qids = get_embs_and_qids(
-        Path(source), model, batch_size
-    )
+    embs, qids = get_embs_and_qids(Path(source), model, batch_size)
     np.savez_compressed(f"{dest}/embs_qids.npz", embs=embs, qids=qids)

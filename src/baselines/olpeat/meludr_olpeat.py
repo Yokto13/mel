@@ -90,16 +90,6 @@ def meludr_olpeat(
     damuel_links: str = None,
     bs=32,
 ):
-    wandb.init(
-        project="no-training-entities",
-        config={
-            "R": R,
-            "use_scann": use_scann,
-            "damuel_entities": damuel_entities,
-            "mewsli": mewsli,
-            "damuel_links": damuel_links,
-        },
-    )
 
     if damuel_links is not None:
         print("Loading DAMUEL links...")
