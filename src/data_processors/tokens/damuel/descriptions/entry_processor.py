@@ -1,9 +1,41 @@
-class EntryProcessor:
-    def __init__(self, tokenizer_wrapper):
-        self.tokenizer_wrapper = tokenizer_wrapper
+import functools
 
+
+def _should_skip(wrapped):
+    """
+    Decorator that decides whether method should process entry.
+
+    Expects signature (self, entry).
+    If method should not process entry, the method is not call and None is returned.
+
+    This might be unecessary too complex but I did not want to rewrite logic of all the different process_* methods.
+    """
+
+    def _should_entry_be_skipped(*args, **kwargs):
+        self = args[0]
+        entry = args[1]
+        assert type(entry) == dict
+        if self.only_pages and "wiki" not in entry:
+            return True
+        return False
+
+    @functools.wraps(wrapped)
+    def _wrapper(*args, **kwargs):
+        if _should_entry_be_skipped(*args, **kwargs):
+            return None
+        return wrapped(*args, **kwargs)
+
+    return _wrapper
+
+
+class EntryProcessor:
+    def __init__(self, tokenizer_wrapper, only_pages=False):
+        self.tokenizer_wrapper = tokenizer_wrapper
+        self.only_pages = only_pages
+
+    @_should_skip
     def process_both(self, damuel_entry: dict) -> tuple:
-        label = self.extract_label(damuel_entry)
+        label = self.extract_title(damuel_entry)
         description = self.extract_description(damuel_entry)
 
         if label is None:
@@ -21,8 +53,9 @@ class EntryProcessor:
             (description_tokens, qid),
         )
 
+    @_should_skip
     def process_to_one(self, damuel_entry: dict, label_token: str = None) -> tuple:
-        label = self.extract_label(damuel_entry)
+        label = self.extract_title(damuel_entry)
         description = self.extract_description(damuel_entry)
 
         if label is None:
@@ -45,11 +78,11 @@ class EntryProcessor:
             return damuel_entry["description"]
         return None
 
-    def extract_label(self, damuel_entry):
-        if "label" in damuel_entry:
-            return damuel_entry["label"]
-        elif "wiki" in damuel_entry:
+    def extract_title(self, damuel_entry):
+        if "wiki" in damuel_entry:
             return damuel_entry["wiki"]["title"]
+        elif "label" in damuel_entry:
+            return damuel_entry["label"]
         return None
 
     def _construct_text_from_label_and_description(self, label, description):
