@@ -143,36 +143,6 @@ def get_scann_index(embs, qids):
     return index.scann_index
 
 
-def filter_repeated_embs(damuel_embs, damuel_qids, R):
-    """Removes embeddings that are the same.
-
-    Very optional thing, saves some memory, especially when mentions without context are used.
-    """
-    print("FILTERING EMBS!")
-    if not damuel_embs.flags["C_CONTIGUOUS"]:  # need this for sha1 to work
-        damuel_embs = np.ascontiguousarray(damuel_embs)
-
-    emb_qid_d = defaultdict(Counter)
-    for emb, qid in zip(damuel_embs, damuel_qids):
-        emb_qid_d[sha1(emb.tobytes()).hexdigest()][qid] += 1
-
-    # keep only top R qids per emb
-    for emb_hash, qid_counter in emb_qid_d.items():
-        emb_qid_d[emb_hash] = [qid for qid, _ in qid_counter.most_common(R)]
-
-    new_embs, new_qids = [], []
-    for emb, qid in zip(damuel_embs, damuel_qids):
-        emb_hash = sha1(emb.tobytes()).hexdigest()
-        if qid in emb_qid_d[emb_hash]:
-            new_embs.append(emb)
-            new_qids.append(qid)
-
-    damuel_embs = np.array(new_embs)
-    damuel_qids = np.array(new_qids)
-
-    return damuel_embs, damuel_qids
-
-
 @paths_exist(path_arg_ids=[0, 1])
 def find_recall(
     damuel_entities: str,
@@ -182,7 +152,6 @@ def find_recall(
 ):
     damuel_embs, damuel_qids = load_damuel(damuel_entities, damuel_links)
     R = min(R, len(damuel_qids))
-    damuel_embs, damuel_qids = filter_repeated_embs(damuel_embs, damuel_qids, R)
 
     mewsli_embs, mewsli_qids = load_mewsli(mewsli)
 
