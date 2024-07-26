@@ -22,4 +22,4 @@ else
     mkdir $RESULT
 fi
 
-python run_action.py "embs_from_tokens_and_model_name" $INPUT "setu4993/LEALLA-base" 16384 $RESULT
+python run_action.py "embs_from_tokens_and_model_name" $INPUT "setu4993/LEALLA-small" 16384 $RESULT

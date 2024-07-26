@@ -16,4 +16,4 @@ else
     echo "Directory does not exist."
 fi
 
-python run_action.py tokens_for_all_damuel_at "$DAMUEL/1.0" "$RESULT" 128 64 "setu4993/LEALLA-base"
+python run_action.py tokens_for_all_damuel_at "$DAMUEL" "$RESULT" 128 64 "setu4993/LEALLA-base"
