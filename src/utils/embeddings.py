@@ -57,7 +57,7 @@ def _embed(dataset, model, batch_size=(16384 * 4)):
             qids.extend(batch_qids)
             embeddings.extend(batch_embeddings)
 
-    return np.array(batch_embeddings), np.array(qids)
+    return np.array(embeddings), np.array(qids)
 
 
 def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):

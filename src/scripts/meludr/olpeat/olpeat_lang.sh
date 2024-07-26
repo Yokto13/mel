@@ -14,8 +14,8 @@ MEWSLI_INPUT="$OUTPUTS/embs_mewsli_at/$LANG"
 
 cd ../../embs
 
-sbatch --wait -p "gpu-troja" -G 1 -C "gpuram16G" mewsli_at_lang.sh "$LANG"
-sbatch --wait -p "gpu-troja" -G 8 -C "gpuram16G" --mem=220G damuel_at_lang.sh "$LANG"
+sbatch --wait -p "gpu-troja,gpu-ms" -G 1 -C "gpuram16G" mewsli_at_lang.sh "$LANG"
+sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=220G damuel_at_lang.sh "$LANG"
 
 cd ../meludr/olpeat
 
