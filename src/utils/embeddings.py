@@ -19,6 +19,19 @@ def _create_attention_mask(toks, padding_value=0):
 
 
 def _embed(dataset, model, batch_size=(16384 * 4)):
+    """embeds dataset and returns embeddings, qids tuple.
+
+    Note that all embeddings are held in memory at once which can consume a lot of RAM.
+    TODO: We could implement some incremental saving.
+
+    Args:
+        dataset (Dataset/IterableDataset):
+        model: Model for embedding the dataset, last pooling_layer is used
+        batch_size (int, optional): Defaults to (16384 * 4).
+
+    Returns:
+        tuple[np.arr, np.arr]: Embs and qids.
+    """
     model.eval()
 
     # We usually work with IterableDataset subclass so no multiprocessing

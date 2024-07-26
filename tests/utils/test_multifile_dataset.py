@@ -1,7 +1,6 @@
 import pytest
 import os
 import numpy as np
-import torch
 from torch.utils.data import DataLoader
 from utils.multifile_dataset import MultiFileDataset, _npz_loader
 
