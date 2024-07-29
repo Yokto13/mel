@@ -7,13 +7,13 @@ from torch.utils.data import IterableDataset
 
 class OnlyOnceDataset(IterableDataset):
     def __init__(self, iterable_dataset: IterableDataset):
-        self.iterable_dataset = iterable_dataset
+        self._iterable_dataset = iterable_dataset
         self._db = _OnlyOnceTokens()
 
     def __iter__(self):
-        for toks, qids in OnlyOnceDataset:
+        for toks, qids in self._iterable_dataset:
             if (res := self._db(toks)) is not None:
-                return res, qids
+                yield res, qids
 
 
 class _OnlyOnceTokens:
@@ -25,11 +25,12 @@ class _OnlyOnceTokens:
         if self._hasher is None:
             self._init_hasher(len(toks))
 
-        h = self._hasher(toks)
+        h = self._hasher(len(toks))
 
-        if h not in self.memory or self._toks_in_memory(h, toks):
+        if h not in self.memory or not self._toks_in_memory(h, toks):
             self._add(h, toks)
             return toks
+        return None
 
     def _init_hasher(self, cnt):
         self._hasher = _TokensHasher(cnt)
@@ -38,7 +39,7 @@ class _OnlyOnceTokens:
         self.memory[h].append(toks)
 
     def _toks_in_memory(self, h, toks):
-        return toks in self.memory[h]
+        return any(np.array_equal(toks, x) for x in self.memory[h])
 
 
 class _TokensHasher:
@@ -52,10 +53,12 @@ class _TokensHasher:
         # won't overflow because power are uint64
         # could probably by done faster (the modulo part)
         res = self.powers * toks
+        print(self.powers, toks, res)
         res %= self.P
 
         h = 0
         for x in res:
+            print(h, x)
             if x == 0:
                 return h
             h += x
@@ -63,6 +66,6 @@ class _TokensHasher:
         return h
 
     def _init_powers(self, cnt):
-        self.powers = np.ones(cnt, dtype=np.uint64)
+        self.powers = np.ones(cnt, dtype=np.int64)
         for i in range(1, cnt):
             self.powers[i] = (self.powers[i - 1] * self.a) % self.P
