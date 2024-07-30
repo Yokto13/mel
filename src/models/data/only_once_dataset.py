@@ -19,7 +19,7 @@ class OnlyOnceDataset(IterableDataset):
 class OnlyOnceTokens:
     def __init__(self) -> None:
         self.memory = self.init_memory()
-        self._hasher = None
+        self.hasher = None
 
     def process_hash(self, h, toks):
         if self.is_missing(h, toks):
@@ -40,15 +40,15 @@ class OnlyOnceTokens:
         return any(np.array_equal(toks, x) for x in self.memory[h])
 
     def __call__(self, toks):
-        if self._hasher is None:
+        if self.hasher is None:
             self._init_hasher(len(toks))
 
-        h = self._hasher(len(toks))
+        h = self.hasher(toks)
 
         return self.process_hash(h, toks)
 
     def _init_hasher(self, cnt):
-        self._hasher = _TokensHasher(cnt)
+        self.hasher = _TokensHasher(cnt)
 
 
 class _TokensHasher:

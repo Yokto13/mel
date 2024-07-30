@@ -49,10 +49,11 @@ def test_only_once_tokens():
     # Test with new tokens
     toks2 = np.array([4, 5, 6])
     result3 = tokens_db(toks2)
+    assert len(tokens_db.memory) == 2
     assert np.array_equal(result3, toks2)
 
 
-def test_tokens_hasher():
+def test_tokens():
     hasher = _TokensHasher(3)
 
     # Test hash computation
@@ -72,7 +73,7 @@ def test_tokens_hasher():
     assert hash1 != hash3
 
 
-def test_tokens_hasher_initialization():
+def test_tokens_initialization():
     hasher = _TokensHasher(5)
     assert hasher.P == int(10**9 + 7)
     assert hasher.a == 3
@@ -89,6 +90,7 @@ def test_only_once_tokens_edge_cases():
     assert np.array_equal(result_empty, toks_empty)
 
     # Test with very large tokens
+    tokens_db = OnlyOnceTokens()
     toks_large = np.array([10**9, 10**9 + 1, 10**9 + 2])
     result_large = tokens_db(toks_large)
     assert np.array_equal(result_large, toks_large)

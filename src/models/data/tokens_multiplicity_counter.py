@@ -14,7 +14,7 @@ class TokensMultiplicityCounter(OnlyOnceTokens):
         if self.is_missing(h, toks):
             self.add(h, toks)
         self.increase(h, toks)
-        return self.count(h, toks)
+        return self._count(h, toks)
 
     def add(self, h, toks):
         self.memory[h].append([toks, 0])
@@ -25,8 +25,11 @@ class TokensMultiplicityCounter(OnlyOnceTokens):
     def increase(self, h, toks):
         self.memory[h][self._get_index_in_cell_h(h, toks)][1] += 1
 
-    def count(self, h, toks):
+    def _count(self, h, toks):
         return self.memory[h][self._get_index_in_cell_h(h, toks)][1]
+
+    def count(self, toks):
+        h = self.hasher(toks)
 
     def _get_index_in_cell_h(self, h, toks):
         idx_after_h = 0
