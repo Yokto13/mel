@@ -18,7 +18,13 @@ def _create_attention_mask(toks, padding_value=0):
     return (toks != padding_value).long()
 
 
-def embed(dataset, model, batch_size=(16384 * 4), return_tokens=False):
+def embed(
+    dataset,
+    model,
+    batch_size=(16384 * 4),
+    return_qids=True,
+    return_tokens=False,
+):
     """embeds dataset and returns embeddings, qids tuple.
 
     Note that all embeddings are held in memory at once which can consume a lot of RAM.
@@ -28,9 +34,12 @@ def embed(dataset, model, batch_size=(16384 * 4), return_tokens=False):
         dataset (Dataset/IterableDataset):
         model: Model for embedding the dataset, last pooling_layer is used
         batch_size (int, optional): Defaults to (16384 * 4).
+        return_qids (bool, optional): Defaults to True.
+        return_tokens (bool, optional): Defaults to False.
 
     Returns:
-        tuple[np.arr, np.arr]: Embs and qids.
+        list[np.arr...]: First element corresponds to embeddings,
+            then qids then tokens follow (in this order) if requested.
     """
     model.eval()
 
@@ -42,11 +51,12 @@ def embed(dataset, model, batch_size=(16384 * 4), return_tokens=False):
     else:
         model = torch.nn.DataParallel(model)
 
-    qids = []
     embeddings = []
 
     if return_tokens:
         tokens = []
+    if return_qids:
+        qids = []
 
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
@@ -57,13 +67,18 @@ def embed(dataset, model, batch_size=(16384 * 4), return_tokens=False):
                 attention_mask = attention_mask.cuda()
             batch_embeddings = model(batch_toks, attention_mask).pooler_output
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
-            qids.extend(batch_qids)
             embeddings.extend(batch_embeddings)
             if return_tokens:
                 tokens.extend(batch_toks)
+
+            if return_qids:
+                qids.extend(batch_qids)
+    res = [np.array(embeddings)]
+    if return_qids:
+        res.append(np.array(qids))
     if return_tokens:
-        return np.array(embeddings), np.array(qids), np.array(tokens)
-    return np.array(embeddings), np.array(qids)
+        res.append(np.array(tokens))
+    return res
 
 
 def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):

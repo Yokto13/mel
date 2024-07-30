@@ -18,8 +18,26 @@ class OnlyOnceDataset(IterableDataset):
 
 class OnlyOnceTokens:
     def __init__(self) -> None:
-        self.memory = defaultdict(list)
+        self.memory = self.init_memory()
         self._hasher = None
+
+    def process_hash(self, h, toks):
+        if self.is_missing(h, toks):
+            self.add(h, toks)
+            return toks
+        return None
+
+    def init_memory(self):
+        return defaultdict(list)
+
+    def add(self, h, toks):
+        self.memory[h].append(toks)
+
+    def is_missing(self, h, toks):
+        return h not in self.memory or not self.toks_in_memory(h, toks)
+
+    def toks_in_memory(self, h, toks):
+        return any(np.array_equal(toks, x) for x in self.memory[h])
 
     def __call__(self, toks):
         if self._hasher is None:
@@ -27,19 +45,10 @@ class OnlyOnceTokens:
 
         h = self._hasher(len(toks))
 
-        if h not in self.memory or not self._toks_in_memory(h, toks):
-            self._add(h, toks)
-            return toks
-        return None
+        return self.process_hash(h, toks)
 
     def _init_hasher(self, cnt):
         self._hasher = _TokensHasher(cnt)
-
-    def _add(self, h, toks):
-        self.memory[h].append(toks)
-
-    def _toks_in_memory(self, h, toks):
-        return any(np.array_equal(toks, x) for x in self.memory[h])
 
 
 class _TokensHasher:
@@ -53,12 +62,10 @@ class _TokensHasher:
         # won't overflow because power are uint64
         # could probably by done faster (the modulo part)
         res = self.powers * toks
-        print(self.powers, toks, res)
         res %= self.P
 
         h = 0
         for x in res:
-            print(h, x)
             if x == 0:
                 return h
             h += x
