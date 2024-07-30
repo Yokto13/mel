@@ -5,7 +5,10 @@ from models.data.only_once_dataset import OnlyOnceTokens
 
 
 class TokensMultiplicityCounter(OnlyOnceTokens):
-    """Counter for tokens."""
+    """Counter for tokens.
+
+    TODO: unintuitive to use. Consider refactoring it (especially interface).
+    """
 
     def __init__(self) -> None:
         super().__init__()
