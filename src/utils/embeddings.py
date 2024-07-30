@@ -18,7 +18,7 @@ def _create_attention_mask(toks, padding_value=0):
     return (toks != padding_value).long()
 
 
-def _embed(dataset, model, batch_size=(16384 * 4)):
+def embed(dataset, model, batch_size=(16384 * 4), return_tokens=False):
     """embeds dataset and returns embeddings, qids tuple.
 
     Note that all embeddings are held in memory at once which can consume a lot of RAM.
@@ -45,6 +45,9 @@ def _embed(dataset, model, batch_size=(16384 * 4)):
     qids = []
     embeddings = []
 
+    if return_tokens:
+        tokens = []
+
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
@@ -56,7 +59,10 @@ def _embed(dataset, model, batch_size=(16384 * 4)):
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
             qids.extend(batch_qids)
             embeddings.extend(batch_embeddings)
-
+            if return_tokens:
+                tokens.extend(batch_toks)
+    if return_tokens:
+        return np.array(embeddings), np.array(qids), np.array(tokens)
     return np.array(embeddings), np.array(qids)
 
 
@@ -66,7 +72,7 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
     tuple (embs, qids) of two very large arrays.
     """
     dataset = MultiFileDataset(source_dir)
-    embs, qids = _embed(dataset, model, batch_size)
+    embs, qids = embed(dataset, model, batch_size)
     return embs, qids
 
 
