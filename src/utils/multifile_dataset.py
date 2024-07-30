@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 import numpy as np
 import torch
@@ -39,6 +40,13 @@ class MultiFileDataset(IterableDataset):
             for i, file_path in enumerate(self.file_list):
                 if i % num_workers == worker_id:
                     yield from self._load_data(file_path)
+
+    def __len__(self):
+        c = deepcopy(self)
+        cnt = 0
+        for _ in c:
+            cnt += 1
+        return cnt
 
 
 def _npz_loader(file_path):

@@ -75,3 +75,8 @@ def test_multi_worker_iter(temp_data_dir):
 
     assert len(all_tokens) == 9  # 3 files * 3 tokens each
     assert len(all_qids) == 9  # 3 files * 3 qids each
+
+
+def test_len(temp_data_dir):
+    dataset = MultiFileDataset(temp_data_dir)
+    assert len(dataset) == 9

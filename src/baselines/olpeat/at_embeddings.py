@@ -20,24 +20,25 @@ import torch
 import torch.nn as nn
 
 from models.data.only_once_dataset import OnlyOnceDataset
+from models.data.tokens_searcher import TokensSearcher
 from utils.embeddings import embed
 from utils.multifile_dataset import MultiFileDataset
 
 
-def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
+def embed_for_at_to(source_dir: Path, model: nn.Module, output_dir: Path, batch_size=16384):
     """
     Given a directory with (multiple) token_qid npz files embedds them with model and returns
     tuple (embs, qids) of two very large arrays.
     """
     dataset = MultiFileDataset(source_dir)
     dataset = OnlyOnceDataset(dataset)
-    embs, qids, tokens = embed(dataset, model, batch_size, return_tokens=True)
+    embs, tokens = embed(
+        dataset, model, batch_size, return_tokens=True, return_qids=False
+    )
 
-    searcher = get_searcher(tokens, embs)
+    searcher = TokensSearcher(tokens, embs)
 
     dataset = MultiFileDataset(source_dir)
 
-
-def get_searcher(tokens, metadata):
-    return TokensSearcher.
+def _map_dataset_to_embeddings(datset, searcher):
     

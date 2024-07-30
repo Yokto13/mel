@@ -8,7 +8,7 @@ from torch.utils.data import IterableDataset
 class OnlyOnceDataset(IterableDataset):
     def __init__(self, iterable_dataset: IterableDataset):
         self._iterable_dataset = iterable_dataset
-        self._db = _OnlyOnceTokens()
+        self._db = OnlyOnceTokens()
 
     def __iter__(self):
         for toks, qids in self._iterable_dataset:
@@ -16,7 +16,7 @@ class OnlyOnceDataset(IterableDataset):
                 yield res, qids
 
 
-class _OnlyOnceTokens:
+class OnlyOnceTokens:
     def __init__(self) -> None:
         self.memory = defaultdict(list)
         self._hasher = None

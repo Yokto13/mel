@@ -4,7 +4,7 @@ from torch.utils.data import IterableDataset
 # Import the classes you want to test
 from models.data.only_once_dataset import (
     OnlyOnceDataset,
-    _OnlyOnceTokens,
+    OnlyOnceTokens,
     _TokensHasher,
 )
 
@@ -35,7 +35,7 @@ def test_only_once_dataset():
 
 
 def test_only_once_tokens():
-    tokens_db = _OnlyOnceTokens()
+    tokens_db = OnlyOnceTokens()
 
     # Test with initial tokens
     toks1 = np.array([1, 2, 3])
@@ -81,7 +81,7 @@ def test_tokens_hasher_initialization():
 
 
 def test_only_once_tokens_edge_cases():
-    tokens_db = _OnlyOnceTokens()
+    tokens_db = OnlyOnceTokens()
 
     # Test with empty array
     toks_empty = np.array([])
@@ -95,7 +95,7 @@ def test_only_once_tokens_edge_cases():
 
 
 def test_only_once_tokens_long():
-    tokens_db = _OnlyOnceTokens()
+    tokens_db = OnlyOnceTokens()
 
     toks_large = np.array(np.arange(10000))
     result_large = tokens_db(toks_large)
