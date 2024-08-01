@@ -69,7 +69,7 @@ def embed(
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
             embeddings.extend(batch_embeddings)
             if return_tokens:
-                tokens.extend(batch_toks)
+                tokens.extend(batch_toks.cpu().numpy())
 
             if return_qids:
                 qids.extend(batch_qids)

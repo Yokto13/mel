@@ -7,6 +7,7 @@ from baselines.alias_table.all_languages import all_languages
 from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.from_tokens import one_language
 from baselines.alias_table.string_similarity import string_similarity
+from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.meludr_olpeat import meludr_olpeat
 from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
 
@@ -36,7 +37,9 @@ from tokenization.tokenize_damuel import tokens_for_all_damuel
 
 tokens_for_all_mewsli_at = partial(tokens_for_all_mewsli, ignore_context=True)
 tokens_for_all_damuel_at = partial(tokens_for_all_damuel, ignore_context=True)
-tokens_for_all_damuel_at_pages = partial(tokens_for_all_damuel, ignore_context=True, only_pages=True)
+tokens_for_all_damuel_at_pages = partial(
+    tokens_for_all_damuel, ignore_context=True, only_pages=True
+)
 tokens_for_all_mewsli_finetuning = partial(tokens_for_all_mewsli, ignore_context=False)
 tokens_for_all_damuel_finetuning = partial(tokens_for_all_damuel, ignore_context=False)
 
@@ -105,6 +108,8 @@ def choose_action(action):
             return embs_from_tokens_and_model_name
         case "meludr_olpeat":
             return meludr_olpeat
+        case "embs_from_tokens_and_model_name_at":
+            return embs_from_tokens_and_model_name_at
         case _:
             raise ValueError(f"Unknown action: {action}")
 

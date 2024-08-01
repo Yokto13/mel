@@ -10,7 +10,7 @@ class TokensMultiplicityCounter(OnlyOnceTokens):
     TODO: unintuitive to use. Consider refactoring it (especially interface).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, hasher=None) -> None:
         super().__init__()
 
     def process_hash(self, h, toks):
@@ -33,6 +33,7 @@ class TokensMultiplicityCounter(OnlyOnceTokens):
 
     def count(self, toks):
         h = self.hasher(toks)
+        return self._count(h, toks)
 
     def _get_index_in_cell_h(self, h, toks):
         idx_after_h = 0
