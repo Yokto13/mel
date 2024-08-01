@@ -1,18 +1,28 @@
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, dataclass
+from copy import deepcopy
 from hashlib import sha1
+import itertools
 from pathlib import Path
 import sys
+from typing import Optional
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import fire
 import numpy as np
+from torch.utils.data import IterableDataset
 import wandb
 
 from data_processors.index.index import Index
+from utils.multifile_dataset import MultiFileDataset
 
 # from models.index import Index
 from utils.argument_wrappers import paths_exist
+
+
+class _DamuelPaths:
+    descs: Optional[Path]
+    links: Optional[Path]
 
 
 def get_unique_n(iterable, n):
@@ -111,49 +121,79 @@ def get_scann_index(embs, qids):
     return index.scann_index
 
 
-def filter_repeated_embs(damuel_embs, damuel_qids, R):
-    """Removes embeddings that are the same.
+def _get_wanted_qids_per_tokens(tokens_dataset, R):
+    def load_data():
+        data = defaultdict(Counter)
+        for toks, qid in tokens_dataset:
+            data[tuple(toks)][qid] += 1
+        return data
 
-    Very optional thing, saves some memory, especially when mentions without context are used.
-    """
-    print("FILTERING EMBS!")
-    if not damuel_embs.flags["C_CONTIGUOUS"]:  # need this for sha1 to work
-        damuel_embs = np.ascontiguousarray(damuel_embs)
+    def choose_top_R(tokens_qids: dict[int, Counter]):
+        for k in tokens_qids:
+            tokens_qids[k] = tokens_qids[k].most_common(R)
 
-    emb_qid_d = defaultdict(Counter)
-    for emb, qid in zip(damuel_embs, damuel_qids):
-        emb_qid_d[sha1(emb.tobytes()).hexdigest()][qid] += 1
-
-    # keep only top R qids per emb
-    for emb_hash, qid_counter in emb_qid_d.items():
-        emb_qid_d[emb_hash] = [qid for qid, _ in qid_counter.most_common(R)]
-
-    new_embs, new_qids = [], []
-    for emb, qid in zip(damuel_embs, damuel_qids):
-        emb_hash = sha1(emb.tobytes()).hexdigest()
-        if qid in emb_qid_d[emb_hash]:
-            new_embs.append(emb)
-            new_qids.append(qid)
-
-    damuel_embs = np.array(new_embs)
-    damuel_qids = np.array(new_qids)
-
-    return damuel_embs, damuel_qids
+    all_tokens_qids = load_data()
+    return choose_top_R(all_tokens_qids)
 
 
-@paths_exist(path_arg_ids=[0, 1])
+def _get_tokens_embs_mapping(damuel_paths: _DamuelPaths):
+    def load(path: Optional[Path] = None):
+        if path is None:
+            return [], []
+        d = np.load(path)
+        return d["tokens"], d["embs"]
+
+    mapping = {}
+    for toks, embs in itertools.chain(
+        zip(load(damuel_paths.descs)), zip(load(damuel_paths.links))
+    ):
+        mapping[tuple[toks]] = embs
+    return mapping
+
+
+def _get_data_for_searcher(tokens_qids: dict, damue_paths: _DamuelPaths):
+    def get_cnt_of_searcher_items():
+        return sum((len(v) for v in tokens_qids.values()))
+
+    def first(x):
+        return next(iter(x))
+
+    tokens_embs = _get_data(damue_paths)
+    searcher_items_cnt = get_cnt_of_searcher_items()
+    embs = np.array(
+        (searcher_items_cnt, len(first(tokens_embs.values()))), dtype=np.float16
+    )
+    qids = np.array(searcher_items_cnt, dtype=np.int32)
+
+    idx = 0
+    for toks, item_qids in tokens_qids.items():
+        emb = tokens_embs[tuple(toks)]
+        embs[idx : idx + len(qids)] = emb
+        qids[idx : idx + len(qids)] = item_qids
+    return embs, qids
+
+
+def _get_data(tokens_dataset: IterableDataset, damuel_paths: _DamuelPaths, R):
+    tokens_qids = _get_wanted_qids_per_tokens(deepcopy(tokens_dataset), R)
+    embs, qids = _get_data_for_searcher(tokens_qids, damuel_paths)
+    return embs, qids
+
+
+@paths_exist(path_arg_ids=[0, 1, 2])
 def find_recall(
-    damuel_entities: str,
-    mewsli: str,
+    damuel_embs_descs: str,
+    damuel_tokens: str,
+    mewsli_embs: str,
     R,
-    damuel_links: str = None,
+    damuel_embs_links: str = None,
 ):
-    damuel_embs, damuel_qids = load_damuel(damuel_entities, damuel_links)
-    R = min(R, len(damuel_qids))
+    dataset = MultiFileDataset(damuel_tokens)
+    damuel_embs, damuel_qids = _get_data(
+        dataset, _DamuelPaths(damuel_embs_descs, damuel_embs_links), R
+    )
     print("len(damuel_embs)", len(damuel_embs))
-    damuel_embs, damuel_qids = filter_repeated_embs(damuel_embs, damuel_qids, R)
 
-    mewsli_embs, mewsli_qids = load_mewsli(mewsli)
+    mewsli_embs, mewsli_qids = load_mewsli(mewsli_embs)
 
     print(damuel_embs.shape, damuel_qids.shape)
     scann_index = get_scann_index(damuel_embs, damuel_qids)
