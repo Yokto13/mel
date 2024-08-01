@@ -47,50 +47,8 @@ def embed_for_at_to(
     embs, tokens = embed(
         dataset, model, batch_size, return_tokens=True, return_qids=False
     )
-    print("embedded")
 
-    dataset = MultiFileDataset(source_dir)
-    print("Building counter...")
-    counter = _get_multiplicity_counter(dataset)
-    print("counter built")
-
-    print("building searcher...")
-    searcher = {tuple(tok): emb for tok, emb in zip(tokens, embs)}
-    print("searcher built")
-
-    dataset = MultiFileDataset(source_dir)
-    embs, qids, multiplicities = _map_dataset_to_result(
-        dataset, searcher, counter, len(embs[0])
-    )
-
-    np.savez_compressed(
-        output_dir / "embs_qids_counts", embs=embs, qids=qids, counts=multiplicities
-    )
-
-
-def _map_dataset_to_result(
-    dataset, searcher: TokensSearcher, counter: TokensMultiplicityCounter, embs_size
-):
-    item_count = len(dataset)
-
-    embs = np.empty((item_count, embs_size), dtype=np.float16)
-    qids = np.empty((item_count, embs_size), dtype=np.int32)
-    multiplicities = np.empty((item_count, embs_size), dtype=np.int32)
-
-    for i, (toks, qid) in enumerate(dataset):
-        embs[i] = searcher[tuple(toks)]
-        qids[i] = qid
-        multiplicities[i] = counter[qid][tuple(toks)]
-    return embs, qids, multiplicities
-
-
-def _get_multiplicity_counter(dataset):
-    counter = {}
-    for toks, qid in dataset:
-        if qid not in counter:
-            counter[qid] = defaultdict(int)
-        counter[qid][tuple(toks)] += 1
-    return counter
+    np.savez_compressed(output_dir / "embs_tokens", embs=embs, tokens=tokens)
 
 
 def embs_from_tokens_and_model_name_at(source, model_name, batch_size, dest):

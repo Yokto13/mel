@@ -10,6 +10,7 @@ from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.meludr_olpeat import meludr_olpeat
 from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
+from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 
 from utils.embeddings import embs_from_tokens_and_model_name
 
@@ -110,6 +111,8 @@ def choose_action(action):
             return meludr_olpeat
         case "embs_from_tokens_and_model_name_at":
             return embs_from_tokens_and_model_name_at
+        case "find_recall_olpeat":
+            return find_recall_olpeat
         case _:
             raise ValueError(f"Unknown action: {action}")
 
