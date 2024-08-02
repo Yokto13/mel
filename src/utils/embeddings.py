@@ -2,6 +2,7 @@
 """
 
 import logging
+import itertools
 from pathlib import Path
 from tqdm import tqdm
 
@@ -13,9 +14,30 @@ from transformers import BertModel
 
 from utils.multifile_dataset import MultiFileDataset
 
+_logger = logging.getLogger("utils.embeddings")
+
 
 def _create_attention_mask(toks, padding_value=0):
     return (toks != padding_value).long()
+
+
+class _Processer:
+    def __init__(self, each) -> None:
+        self._currently = 0
+        self._next_print_gen = iter(itertools.count(step=each))
+        self._next_print = next(self._next_print_gen)
+
+    def __call__(self, current_iter_items_cnt):
+        self._currently += current_iter_items_cnt
+        if self._should_log():
+            self._log()
+            self._next_print = next(self._next_print_gen)
+
+    def _should_log(self):
+        return self._currently >= self._next_print
+
+    def _log(self):
+        _logger.info(f"{self._currently} elements processed.")
 
 
 def embed(
@@ -58,6 +80,8 @@ def embed(
     if return_qids:
         qids = []
 
+    log_processer = _Processer(each=10**6)
+
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
@@ -70,9 +94,9 @@ def embed(
             embeddings.extend(batch_embeddings)
             if return_tokens:
                 tokens.extend(batch_toks.cpu().numpy())
-
             if return_qids:
                 qids.extend(batch_qids)
+            log_processer(len(batch_qids))
     res = [np.array(embeddings)]
     if return_qids:
         res.append(np.array(qids))
