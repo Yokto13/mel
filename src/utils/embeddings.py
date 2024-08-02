@@ -46,7 +46,7 @@ def embed(
     batch_size=(16384 * 4),
     return_qids=True,
     return_tokens=False,
-):
+) -> list[np.ndarray]:
     """embeds dataset and returns embeddings, qids tuple.
 
     Note that all embeddings are held in memory at once which can consume a lot of RAM.
@@ -89,6 +89,9 @@ def embed(
             if torch.cuda.is_available():
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
+            # _logger.debug(
+            # f"batch_toks.shape, attention_mask.shape: {batch_toks.shape}, {attention_mask.shape}"
+            # )
             batch_embeddings = model(batch_toks, attention_mask).pooler_output
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
             embeddings.extend(batch_embeddings)
@@ -118,6 +121,21 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
 def embs_from_tokens_and_model_name(source, model_name, batch_size, dest):
     model = BertModel.from_pretrained(model_name)
     embs_from_tokens_and_model(source, model, batch_size, dest)
+
+
+def embs_from_tokens_model_name_and_state_dict(
+    source_path: str,
+    model_name: str,
+    batch_size: int,
+    dest_path: str,
+    state_dict_path: str | None,
+):
+    model = BertModel.from_pretrained(model_name)
+    if state_dict_path is not None:
+        _logger.debug("Loading model state dict")
+        d = torch.load(state_dict_path)
+        model.load_state_dict(d)
+    embs_from_tokens_and_model(source_path, model, batch_size, dest_path)
 
 
 def embs_from_tokens_and_model(source, model, batch_size, dest):
