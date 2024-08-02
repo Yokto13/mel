@@ -42,6 +42,6 @@ else
     mkdir -p $DESCS_PAGES
 fi
 
-python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/links" "setu4993/LEALLA-small" 16384 "$LINKS"
-python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/descs" "setu4993/LEALLA-small" 16384 "$DESCS"
-python run_action.py "embs_from_tokens_and_model_name_at" "$OUTPUTS/tokens_damuel_at_pages/$LANG/descs" "setu4993/LEALLA-small" 16384 "$DESCS_PAGES"
+python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/links" "setu4993/LEALLA-small" 196608 "$LINKS"
+python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/descs" "setu4993/LEALLA-small" 196608 "$DESCS"
+python run_action.py "embs_from_tokens_and_model_name_at" "$OUTPUTS/tokens_damuel_at_pages/$LANG/descs" "setu4993/LEALLA-small" 196608 "$DESCS_PAGES"
