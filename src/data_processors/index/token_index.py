@@ -146,19 +146,12 @@ class TokenIndex(Index):
                 if mentions and not cls.is_mentions(fn):
                     continue
                 if context is None:
-                    with open(fn, "rb") as f:
-                        entity_names = pickle.load(f)
-                        context = (
-                            entity_names[0]
-                            .tokenization_output["input_ids"]
-                            .numpy()
-                            .shape[1]
-                        )
-                hash_str = cls.extract_hash(fn)
-                embs_fn = embs_path / f"embs_{hash_str}.npy"
-                embs = np.load(embs_fn)
-                size += len(embs)
-                dim = embs.shape[1]
+                    entity_names = np.load(fn)
+                    context = entity_names["tokens"].shape[1]
+            embs_fn = embs_path / f"embs_qids.npz"
+            embs = np.load(embs_fn)["embs"]
+            size += len(embs)
+            dim = embs.shape[1]
             return size, dim, context
 
         data_size, dim, context_size = get_size_dim_context()

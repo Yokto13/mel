@@ -14,7 +14,7 @@ def _wanted_hash(hash_str, m, r):
 
 def _copy_all_tokens(source, dest, m=1, r=0):
     for fn in sorted(os.listdir(source)):
-        if not fn.endswith("xz"):
+        if not fn.endswith("npz"):
             continue
         hash_str = fn.split("_")[-1].split(".")[0]
         if not _wanted_hash(hash_str, m, r):
@@ -23,10 +23,8 @@ def _copy_all_tokens(source, dest, m=1, r=0):
 
 
 @ensure_datatypes([Path, Path, int, int, bool], {})
-def move_tokens(source, dest, m=1, r=0, unpack=True):
+def move_tokens(source, dest, m=1, r=0):
     _copy_all_tokens(source, dest, m, r)
-    if unpack:
-        decompress_files_in_directory(dest)
 
 
 @ensure_datatypes([Path, str, str], {})

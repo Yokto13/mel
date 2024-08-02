@@ -50,15 +50,6 @@ if [ ! "$(ls -A $DAMUEL_LINKS_TOKENS)" ]; then
     python $ACTION_SCRIPT "copy" "$DAMUEL_LINKS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS" "$N_OF_ROUNDS" "$ROUND_ID"
 fi
 
-if [ ! "$(ls -A $MEWSLI_TOKENS)" ]; then
-    python $ACTION_SCRIPT "copy" "$MEWSLI_TOKENS_RAW" "$MEWSLI_TOKENS"
-fi
-
-if [ ! "$(ls -A $DAMUEL_DESC_TOKENS)" ]; then
-    python $ACTION_SCRIPT "copy" "$DAMUEL_DESC_TOKENS_RAW" "$DAMUEL_DESC_TOKENS"
-fi
-
-
 # ====================DAMUEL DESC EMBS====================
 
 DAMUEL_FOR_INDEX_DIR="$WORKDIR/damuel_for_index_$ROUND_ID"
@@ -67,7 +58,7 @@ mkdir -p "$DAMUEL_FOR_INDEX_DIR"
 
 if [ ! "$(ls -A $DAMUEL_FOR_INDEX_DIR)" ]; then
     echo "Running embs generating for damuel"
-    python $ACTION_SCRIPT "embs" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" "$DAMUEL_FOR_INDEX_DIR" "$STATE_DICT"
+    python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 16384 "$DAMUEL_FOR_INDEX_DIR" "$STATE_DICT"
 fi
 
 # ====================DAMUEL DESC TOKEN INDEX====================
