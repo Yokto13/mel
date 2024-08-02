@@ -43,7 +43,7 @@ class RecallCalculator:
 
     def _get_neighboring_qids(self, queries_embs, k):
         qids_per_query = []
-        neighbors, dists = self.scann_index.search_batched(
+        neighbors, _ = self.scann_index.search_batched(
             queries_embs, final_num_neighbors=max(100000, k)
         )
         for ns in neighbors:

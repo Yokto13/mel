@@ -1,7 +1,10 @@
 from functools import partial
 import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
+
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 from fire import Fire
 import wandb
