@@ -25,7 +25,10 @@ create_symlinks() {
     if [ -d "$source_dir" ]; then
         for item in "$source_dir"/*; do
             if [ -e "$item" ]; then
-                ln -sf "$item" "$target_dir/"
+                echo "$item"
+                local basename=$(basename "$item")
+                local target_path="$target_dir/$basename"
+                ln -sf "$item" "$target_path"
             fi
         done
     fi
