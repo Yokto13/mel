@@ -18,7 +18,10 @@ from baselines.olpeat.meludr_olpeat import meludr_olpeat
 from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 
-from utils.embeddings import embs_from_tokens_and_model_name
+from utils.embeddings import (
+    embs_from_tokens_and_model_name,
+    embs_from_tokens_model_name_and_state_dict,
+)
 
 from data_processors.tokens.duplicates_filter_script import run_duplicates_filter_script
 
@@ -57,7 +60,7 @@ print("Imports finished")
 
 def choose_action(action):
     match action:
-        case "embs":
+        case "embs":  # This one should be replaced by the new one from utils
             return generate_embs
         case "token_index":
             return build_and_save_token_index
@@ -119,6 +122,8 @@ def choose_action(action):
             return embs_from_tokens_and_model_name_at
         case "find_recall_olpeat":
             return find_recall_olpeat
+        case "embs_from_tokens_model_name_and_state_dict":
+            return embs_from_tokens_model_name_and_state_dict
         case _:
             raise ValueError(f"Unknown action: {action}")
 
