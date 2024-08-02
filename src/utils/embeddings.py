@@ -27,7 +27,7 @@ class _Processer:
         self._next_print_gen = iter(itertools.count(step=each))
         self._next_print = next(self._next_print_gen)
 
-    def __call__(self, current_iter_items_cnt):
+    def log(self, current_iter_items_cnt):
         self._currently += current_iter_items_cnt
         if self._should_log():
             self._log()
@@ -96,7 +96,7 @@ def embed(
                 tokens.extend(batch_toks.cpu().numpy())
             if return_qids:
                 qids.extend(batch_qids)
-            log_processer(len(batch_qids))
+            log_processer.log(len(batch_qids))
     res = [np.array(embeddings)]
     if return_qids:
         res.append(np.array(qids))
