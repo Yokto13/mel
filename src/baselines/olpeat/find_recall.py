@@ -1,5 +1,4 @@
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 import itertools
 import logging
 from pathlib import Path
@@ -9,9 +8,7 @@ from typing import Optional
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 from collections.abc import Iterable
-import fire
 import numpy as np
-from torch.utils.data import IterableDataset
 import wandb
 
 from data_processors.index.index import Index
@@ -20,12 +17,6 @@ from utils.multifile_dataset import MultiFileDataset
 from utils.argument_wrappers import paths_exist
 
 _logger = logging.getLogger("baselines.olpeat.find_recall")
-
-
-@dataclass
-class _DamuelPaths:
-    descs: Optional[Path]
-    links: Optional[Path]
 
 
 def get_unique_n(iterable: Iterable, n: int):
@@ -171,8 +162,25 @@ class _DamuelLoader:
 class OLPEAT:
     @paths_exist(path_arg_ids=[1, 2, 3, 4])
     def __init__(
-        self, descs_embs_path, links_embs_path, mewsli_embs_path, damuel_tokens_path
+        self,
+        descs_embs_path: str,
+        links_embs_path: str,
+        mewsli_embs_path: str,
+        damuel_tokens_path: str,
     ) -> None:
+        """Inits OLPEAT which can be used to evaluate alias tables with embeddings.
+
+        Args:
+            descs_embs_path (str): Path to embedded DaMuEL mentions from descriptions.
+            links_embs_path (str): Path to embedded DaMuEL mentions from links.
+            mewsli_embs_path (str): Path to embedded Mewsli-9 language.
+            damuel_tokens_path (str): Path to directory with DaMuEL tokens corresponding to the embeddings above.
+
+        Note:
+            All embeddings above should be produced by olpeat.at_embeddings which saves not only embeddings but also corresponding
+            tokens. This allows OLPEAT to construct the dataset from the knowledge of damuel_tokens_path.
+            Please read README in olpeat folder for more info.
+        """
         mewsli_loader = _MewsliLoader(mewsli_embs_path)
         self.mewsli_embs, self.mewsli_qids = mewsli_loader.get_data()
 
