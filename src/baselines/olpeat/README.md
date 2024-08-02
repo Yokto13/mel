@@ -8,7 +8,7 @@ The calculation has two steps:
 ### DaMuEL
 In `at_embeddings.py`. 
 Produces the embeddings but saves them as toks, embs pairs.
-Each toks is also embeded only once.
+Every token array is also embeded only once.
 We cannot train on the result but we can use it as mapping later.
 
 ### Mewsli-9
