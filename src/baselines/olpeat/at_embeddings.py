@@ -48,7 +48,7 @@ def embed_for_at_to(
         dataset, model, batch_size, return_tokens=True, return_qids=False
     )
 
-    np.savez_compressed(output_dir / "embs_tokens", embs=embs, tokens=tokens)
+    np.savez_compressed(output_dir / "embs_tokens.npz", embs=embs, tokens=tokens)
 
 
 def embs_from_tokens_and_model_name_at(source, model_name, batch_size, dest):

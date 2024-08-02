@@ -1,4 +1,7 @@
 from functools import partial
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 from fire import Fire
 import wandb
