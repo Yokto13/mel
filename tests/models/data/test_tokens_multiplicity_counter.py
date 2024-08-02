@@ -36,7 +36,7 @@ def test_add(tokens_counter):
     toks = np.array([1, 2, 3])
     tokens_counter.add(h, toks)
     assert tokens_counter.toks_in_memory(h, toks)
-    assert tokens_counter.count(h, toks) == 0
+    assert tokens_counter._count(h, toks) == 0
 
 
 def test_toks_in_memory(tokens_counter):
@@ -55,7 +55,7 @@ def test_increase(tokens_counter):
     tokens_counter.increase(h, toks)
     tokens_counter.increase(h, toks)
     tokens_counter.increase(h, toks)
-    assert tokens_counter.count(h, toks) == 3
+    assert tokens_counter._count(h, toks) == 3
 
 
 def test_get_index_in_cell_h_single_token(tokens_counter):

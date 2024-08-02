@@ -1,8 +1,12 @@
 from copy import deepcopy
+import logging
 import os
+
 import numpy as np
 import torch
 from torch.utils.data import IterableDataset
+
+_logger = logging.getLogger("utils.multifile_dataset")
 
 
 class MultiFileDataset(IterableDataset):
@@ -13,11 +17,15 @@ class MultiFileDataset(IterableDataset):
         self._data_loader = self._choose_loader(file_pattern)
 
     def _get_file_list(self):
-        return [
-            os.path.join(self.data_dir, f)
-            for f in os.listdir(self.data_dir)
-            if f.endswith(self.file_pattern[1:])
-        ]
+        file_list = sorted(
+            [
+                os.path.join(self.data_dir, f)
+                for f in os.listdir(self.data_dir)
+                if f.endswith(self.file_pattern[1:])
+            ]
+        )
+        _logger.debug(str(file_list))
+        return file_list
 
     def _load_data(self, file_path):
         return self._data_loader(file_path)

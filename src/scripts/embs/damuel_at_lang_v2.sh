@@ -22,6 +22,7 @@ if [ -d "$DESCS" ]; then
 else
     echo "Directory does not exist. Creating $DESCS."
     mkdir -p $DESCS
+    python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/descs" "setu4993/LEALLA-small" 196608 "$DESCS"
 fi
 
 if [ -d "$LINKS" ]; then
@@ -31,17 +32,7 @@ if [ -d "$LINKS" ]; then
 else
     echo "Directory does not exist. Creating $LINKS."
     mkdir -p $LINKS
+    python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/links" "setu4993/LEALLA-small" 196608 "$LINKS"
 fi
 
-if [ -d "$DESCS_PAGES" ]; then
-    echo "Directory exists. Cleaning it."
-    rm -r "$DESCS_PAGES"
-    mkdir $DESCS_PAGES
-else
-    echo "Directory does not exist. Creating $DESCS_PAGES."
-    mkdir -p $DESCS_PAGES
-fi
-
-python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/links" "setu4993/LEALLA-small" 16384 "$LINKS"
-python run_action.py "embs_from_tokens_and_model_name_at" "$INPUT/descs" "setu4993/LEALLA-small" 16384 "$DESCS"
-python run_action.py "embs_from_tokens_and_model_name_at" "$OUTPUTS/tokens_damuel_at_pages/$LANG/descs" "setu4993/LEALLA-small" 16384 "$DESCS_PAGES"
+# python run_action.py "embs_from_tokens_and_model_name_at" "$OUTPUTS/tokens_damuel_at_pages/$LANG/descs" "setu4993/LEALLA-small" 196608 "$DESCS_PAGES"
