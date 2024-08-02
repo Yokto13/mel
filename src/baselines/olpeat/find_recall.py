@@ -63,13 +63,13 @@ class RecallCalculator:
 
 
 class _MewsliLoader:
-    def __init__(self, dir_path):
-        if isinstance(dir_path, str):
-            dir_path = Path(dir_path)
-        self.dir_path = dir_path
+    def __init__(self, data_path):
+        if isinstance(data_path, str):
+            data_path = Path(data_path)
+        self.data_path = data_path
 
     def _load_embs(self) -> tuple[np.ndarray, np.ndarray]:
-        data = np.load(self.dir_path / "embs_qids.npz")
+        data = np.load(self.data_path)
         embs_all = data["embs"]
         qids_all = data["qids"]
         return embs_all, qids_all

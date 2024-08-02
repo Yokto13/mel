@@ -11,7 +11,7 @@ DAMUEL_TOKENS="$OUTPUTS/tokens_damuel_at/$LANG/all"
 DESCS="$DAMUEL_INPUT/descs/embs_tokens.npz"
 DESCS_PAGES="$DAMUEL_INPUT/descs_pages/embs_tokens.npz"
 LINKS="$DAMUEL_INPUT/links/embs_tokens.npz"
-MEWSLI_INPUT="$OUTPUTS/embs_mewsli_at/$LANG"
+MEWSLI_INPUT="$OUTPUTS/embs_mewsli_at/$LANG/embs_qids.npz"
 
 cd ../embs
 
