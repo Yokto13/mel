@@ -8,12 +8,18 @@ from torch.utils.data import IterableDataset
 class OnlyOnceDataset(IterableDataset):
     def __init__(self, iterable_dataset: IterableDataset):
         self._iterable_dataset = iterable_dataset
-        self._db = OnlyOnceTokens()
+        # self._db = OnlyOnceTokens()
+        self._db = set()
 
     def __iter__(self):
         for toks, qids in self._iterable_dataset:
-            if (res := self._db(toks)) is not None:
-                yield res, qids
+            # tolist first provides 2-3x times speed up when converting to tuple
+            tup_toks = tuple(toks.tolist())
+            if tup_toks not in self._db:
+                self._db.add(tup_toks)
+                yield toks, qids
+            # if (res := self._db(toks)) is not None:
+            # yield res, qids
 
 
 class OnlyOnceTokens:
