@@ -74,6 +74,7 @@ mkdir -p "$DAMUEL_LINKS_DIR"
 if [ ! "$(ls -A $DAMUEL_LINKS_DIR)" ]; then
     echo "Running embs generating for damuel links"
     python $ACTION_SCRIPT "embed_links_for_generation" "$DAMUEL_LINKS_TOKENS" "$MODEL_PATH" 16384 "$DAMUEL_LINKS_DIR" "$STATE_DICT"
+fi
 
 # ====================GENERATING BATCHES====================
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import pickle
 import sys
 import blosc
+import numpy as np
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
@@ -60,7 +61,11 @@ def load_epoch_blosc(path, epoch):
     with open(path / f"epoch_{epoch}.dat", "rb") as f:
         compressed = f.read()
     decompressed = blosc.decompress(compressed)
-    return pickle.loads(decompressed)
+
+
+def load_epoch_npz(path, epoch):
+    d = np.load(path / f"epoch_{epoch}.npz")
+    return d["X"], d["lines"], d["Y"]
 
 
 def batch_recall(outputs, target, k=1):
@@ -223,28 +228,16 @@ def train(
     print("STATE_DICT_PATH:", MODEL_PATH)
 
     foundation_model = BertModel.from_pretrained(FOUNDATION_MODEL_PATH)
-    if "mentions" in TYPE:
-        tokenizer = BertTokenizerFast.from_pretrained(FOUNDATION_MODEL_PATH)
-        tokenizer.add_special_tokens({"cls_token": "[M]"})
-        foundation_model.resize_token_embeddings(len(tokenizer))
 
-    criterion = nn.CrossEntropyLoss()
-    if "gillick_loss" in TYPE:
-        print("USING GILLICK LOSS")
-        criterion = gillick_loss
-
-    print("Number of tokens in tokenizer:", len(tokenizer))
-
-    model = create_model(TYPE, foundation_model, LOGIT_MULTIPLIER, MODEL_PATH)
+    model = create_default_model(foundation_model, MODEL_PATH)
 
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    if "decay" in TYPE:
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, decay)
-
     running_averages = RunningAverages(_RUNNING_AVERAGE_SMALL, _RUNNING_AVERAGE_BIG)
+
+    criterion = nn.CrossEntropyLoss()
 
     print("Starting training")
     for epoch in range(EPOCHS):
@@ -253,13 +246,13 @@ def train(
 
         train_loss = 0
 
-        batches = load_epoch_blosc(DATASET_DIR, epoch)
+        batches = load_epoch_npz(DATASET_DIR, epoch)
         print(f"Loaded {len(batches)} batches")
         epoch_steps = len(batches)
 
         print("EPOCH:", epoch)
 
-        for batch in tqdm(batches):
+        for batch in tqdm(zip(*batches), total=len(batches[0])):
 
             batch_embs, batch_frenemies, labels = batch
 
@@ -271,14 +264,10 @@ def train(
 
             outputs = model(batch_embs, batch_frenemies)
 
-            if should_multiply_logits_outside(TYPE):
-                outputs = outputs * LOGIT_MULTIPLIER
+            outputs = outputs * LOGIT_MULTIPLIER
 
             labels = labels.to(device)
-            if "gillick_loss" in TYPE:
-                loss = criterion(outputs, labels, model)
-            else:
-                loss = criterion(outputs, labels)
+            loss = criterion(outputs, labels)
 
             loss.backward()
             optimizer.step()
@@ -314,9 +303,6 @@ def train(
                 wand_dict,
             )
         print(f"Train loss: {train_loss / epoch_steps}")
-
-        if "decay" in TYPE:
-            scheduler.step()
 
         model.to("cpu")
         if epoch % 50 == 0:

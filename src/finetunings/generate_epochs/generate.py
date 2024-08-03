@@ -1,18 +1,14 @@
 from pathlib import Path
-import pickle
 import sys
-from time import time
 
 from utils.multifile_dataset import MultiFileDataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
-import blosc
 from fire import Fire
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
-from transformers import BertModel, BertTokenizerFast
+from transformers import BertModel
 from tqdm import tqdm
 
 # from data_processors.index.token_index import TokenIndex
@@ -21,8 +17,7 @@ from models.searcher import ScaNNSearcher
 from utils.loaders import get_emb_state_dict, load_embs_and_qids
 from finetunings.generate_epochs.datasets import (
     TokensIterableDataset,
-    StatefulIterableDataset,
-    DamuelNeighborsIterableDataset,
+    DamuelNeighborsIterator,
 )
 
 # Settings ===========================================
@@ -92,35 +87,31 @@ def generate(
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
     tokens = np.array([x[0] for x in multifile_dataset])
 
-    embs_dataset = TokensIterableDataset(LINKS_EMBS_DIR)
-    stateful_dataset = StatefulIterableDataset(embs_dataset)
-    damuel_neighbors_iterable_dataset = DamuelNeighborsIterableDataset(
-        batch_sampler,
-        stateful_dataset,
+    dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
+    damuel_neighbors_iterator = DamuelNeighborsIterator(
+        dataset,
         BATCH_SIZE,
-        CONTEXT_SIZE,
-        POS,
         NEG,
-        model,
-        device,
+        batch_sampler,
         tokens,
+        CONTEXT_SIZE,
     )
 
-    data_loader = DataLoader(
-        damuel_neighbors_iterable_dataset,
-        batch_size=1,
-    )
+    gen = iter(damuel_neighbors_iterator)
 
     for epoch in range(EPOCHS):
         epoch_steps_counter = 0
 
-        batches = []
+        X, lines, Y = None, None, None
 
-        for batch in tqdm(data_loader, total=STEPS_PER_EPOCH):
-            batch = [x[0] for x in batch]
-
-            batches.append(batch)
-
+        for i, (x, line, y) in tqdm(enumerate(gen), total=STEPS_PER_EPOCH):
+            if i == 0:
+                X = np.empty((STEPS_PER_EPOCH, *x.shape), dtype=np.int32)
+                lines = np.empty((STEPS_PER_EPOCH, *line.shape), dtype=np.int32)
+                Y = np.empty((STEPS_PER_EPOCH, *y.shape), dtype=np.int32)
+            X[i] = x
+            lines[i] = line
+            Y[i] = y
             epoch_steps_counter += 1
             if epoch_steps_counter == STEPS_PER_EPOCH:
                 epoch_steps_counter = 0
@@ -129,10 +120,12 @@ def generate(
         print("Saving")
 
         # save compressed with lzma and pickle
-        with open(OUTPUT_DIR / f"epoch_{epoch}.dat", "wb") as f:
-            data = pickle.dumps(batches)
-            data = blosc.compress(data)
-            f.write(data)
+        np.savez_compressed(
+            OUTPUT_DIR / f"epoch_{epoch}.npz",
+            X=np.array(X),
+            lines=np.array(lines),
+            Y=np.array(Y),
+        )
 
         print("Saved")
 
