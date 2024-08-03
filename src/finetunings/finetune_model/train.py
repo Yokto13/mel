@@ -231,6 +231,8 @@ def train(
 
     model = create_default_model(foundation_model, MODEL_PATH)
 
+    model = nn.DataParallel(model)
+
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
@@ -248,7 +250,7 @@ def train(
 
         batches = load_epoch_npz(DATASET_DIR, epoch)
         print(f"Loaded {len(batches)} batches")
-        epoch_steps = len(batches)
+        epoch_steps = len(batches[0])
 
         print("EPOCH:", epoch)
 
@@ -258,6 +260,7 @@ def train(
 
             batch_embs = torch.tensor(batch_embs, dtype=torch.int32)
             batch_frenemies = torch.tensor(batch_frenemies, dtype=torch.int32)
+            labels = torch.tensor(labels, dtype=torch.float32)
 
             batch_embs = batch_embs.to(device)
             batch_frenemies = batch_frenemies.to(device)

@@ -43,10 +43,8 @@ def generate(
     BATCH_SIZE: int,
     EPOCHS: int,
     STEPS_PER_EPOCH: int,
-    POS: int,
     NEG: int,
     CONTEXT_SIZE: int,
-    TYPE: str = "entity_names",
     STATE_DICT_PATH: str = None,
 ):
     LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
@@ -65,14 +63,11 @@ def generate(
     print("BATCH_SIZE:", BATCH_SIZE)
     print("EPOCHS:", EPOCHS)
     print("STEPS_PER_EPOCH:", STEPS_PER_EPOCH)
-    print("POS:", POS)
     print("NEG:", NEG)
     print("CONTEXT_SIZE:", CONTEXT_SIZE)
-    print("TYPE:", TYPE)
     print("STATE_DICT_PATH:", STATE_DICT_PATH)
 
     model = BertModel.from_pretrained(MODEL_PATH)
-    TYPE = "mentions"
 
     if STATE_DICT_PATH:
         state_dict = get_emb_state_dict(STATE_DICT_PATH)
@@ -108,7 +103,7 @@ def generate(
             if i == 0:
                 X = np.empty((STEPS_PER_EPOCH, *x.shape), dtype=np.int32)
                 lines = np.empty((STEPS_PER_EPOCH, *line.shape), dtype=np.int32)
-                Y = np.empty((STEPS_PER_EPOCH, *y.shape), dtype=np.int32)
+                Y = np.empty((STEPS_PER_EPOCH, *y.shape), dtype=np.float32)
             X[i] = x
             lines[i] = line
             Y[i] = y

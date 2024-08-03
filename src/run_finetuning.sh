@@ -111,9 +111,17 @@ fi
 
 STATE_DICT="$WORKDIR/models_0/final.pth"
 
-if [ ! -e "$WORKDIR/models_1/final.pth" ]; then
+# if [ ! -e "$WORKDIR/models_1/final.pth" ]; then
+if [ ! -e "$WORKDIR/models_1/finaal.pth" ]; then
     echo "Running round 1"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 1 "$TYPE" "$N_OF_ROUNDS" $NEG
+fi
+
+if [ ! -e "$WORKDIR/models_2/final.pth" ]; then
+    echo "Running round 1"
+
+    ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 2 "$TYPE" "$N_OF_ROUNDS" $NEG
 fi
