@@ -14,6 +14,7 @@ def _wanted_hash(hash_str, m, r):
 
 def _copy_all_tokens(source, dest, m=1, r=0):
     for fn in sorted(os.listdir(source)):
+        print(fn)
         if not fn.endswith("npz"):
             continue
         hash_str = fn.split("_")[-1].split(".")[0]

@@ -17,8 +17,13 @@ from utils.multifile_dataset import MultiFileDataset
 _logger = logging.getLogger("utils.embeddings")
 
 
-def _create_attention_mask(toks, padding_value=0):
-    return (toks != padding_value).long()
+def create_attention_mask(toks, padding_value=0):
+    if isinstance(toks, torch.Tensor):
+        return (toks != padding_value).long()
+    elif isinstance(toks, np.ndarray):
+        return (toks != padding_value).astype(np.int64)
+    else:
+        raise TypeError("Input must be a PyTorch tensor or NumPy array")
 
 
 class _Processer:
@@ -85,7 +90,7 @@ def embed(
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
-            attention_mask = _create_attention_mask(batch_toks)
+            attention_mask = create_attention_mask(batch_toks)
             if torch.cuda.is_available():
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()

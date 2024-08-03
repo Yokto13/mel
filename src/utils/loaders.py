@@ -1,4 +1,5 @@
 import json
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -136,3 +137,37 @@ def get_emb_state_dict(model_state_dict_path):
     if "softmax_multiplier" in d:
         return {k.replace("model.", ""): v for k, v in d.items() if "model." in k}
     return d
+
+
+def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    """Loads embeddings and qids from the directory.
+
+    This should be the preferable than directly loading them to ensure that the logic of loading is just in one place.
+
+    Args:
+        dir_path (str | Path)
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: embs, qids
+    """
+    if type(dir_path) == str:
+        dir_path = Path(dir_path)
+    d = np.load(dir_path / "embs_qids.npz")
+    return d["embs"], d["qids"]
+
+
+def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    """Loads embeddings, qids, and tokens from the directory.
+
+    This should be the preferable than directly loading them to ensure that the logic of loading is just in one place.
+
+    Args:
+        dir_path (str | Path)
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: embs, qids, tokens
+    """
+    if type(dir_path) == str:
+        dir_path = Path(dir_path)
+    d = np.load(dir_path / "embs_qids_tokens.npz")
+    return d["embs"], d["qids"], d["tokens"]

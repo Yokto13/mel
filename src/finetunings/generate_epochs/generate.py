@@ -3,6 +3,8 @@ import pickle
 import sys
 from time import time
 
+from utils.multifile_dataset import MultiFileDataset
+
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import blosc
@@ -13,11 +15,12 @@ from torch.utils.data import DataLoader
 from transformers import BertModel, BertTokenizerFast
 from tqdm import tqdm
 
-from data_processors.index.token_index import TokenIndex
-from utils.loaders import get_emb_state_dict
+# from data_processors.index.token_index import TokenIndex
+from models.batch_sampler import BatchSampler
+from models.searcher import ScaNNSearcher
+from utils.loaders import get_emb_state_dict, load_embs_and_qids
 from finetunings.generate_epochs.datasets import (
     TokensIterableDataset,
-    TokensEmbsIterableDataset,
     StatefulIterableDataset,
     DamuelNeighborsIterableDataset,
 )
@@ -37,8 +40,9 @@ torch.manual_seed(SEED)
 
 
 def generate(
-    TOKENS_DIR: Path,
-    TOKENS_INDEX_DIR: Path,
+    LINKS_EMBS_DIR: Path,
+    INDEX_TOKENS_DIR: Path,
+    INDEX_EMBS_QIDS_DIR: str,
     OUTPUT_DIR: Path,
     MODEL_PATH: str,
     BATCH_SIZE: int,
@@ -50,8 +54,8 @@ def generate(
     TYPE: str = "entity_names",
     STATE_DICT_PATH: str = None,
 ):
-    TOKENS_DIR = Path(TOKENS_DIR)
-    TOKENS_INDEX_DIR = Path(TOKENS_INDEX_DIR)
+    LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
+    INDEX_TOKENS_DIR = Path(INDEX_TOKENS_DIR)
     OUTPUT_DIR = Path(OUTPUT_DIR)
     STATE_DICT_PATH = Path(STATE_DICT_PATH) if STATE_DICT_PATH else None
 
@@ -59,8 +63,8 @@ def generate(
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # print all params
-    print("TOKENS_DIR:", TOKENS_DIR)
-    print("TOKENS_INDEX_DIR:", TOKENS_INDEX_DIR)
+    print("LINKS_EMBS_DIR:", LINKS_EMBS_DIR)
+    print("INDEX_TOKENS_DIR:", INDEX_TOKENS_DIR)
     print("OUTPUT_DIR:", OUTPUT_DIR)
     print("MODEL_NAME:", MODEL_PATH)
     print("BATCH_SIZE:", BATCH_SIZE)
@@ -73,11 +77,7 @@ def generate(
     print("STATE_DICT_PATH:", STATE_DICT_PATH)
 
     model = BertModel.from_pretrained(MODEL_PATH)
-    if "mentions" in TYPE:
-        tokenizer = BertTokenizerFast.from_pretrained(MODEL_PATH)
-        tokenizer.add_special_tokens({"cls_token": "[M]"})
-        model.resize_token_embeddings(len(tokenizer))
-        TYPE = "mentions"
+    TYPE = "mentions"
 
     if STATE_DICT_PATH:
         state_dict = get_emb_state_dict(STATE_DICT_PATH)
@@ -85,13 +85,25 @@ def generate(
 
     model.to(device)
 
-    token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
+    # token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
+    index_embs, index_qids = load_embs_and_qids(INDEX_EMBS_QIDS_DIR)
+    batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
 
-    tokens_dataset = TokensIterableDataset(TOKENS_DIR, TYPE)
-    embs_dataset = TokensEmbsIterableDataset(tokens_dataset, model, device)
+    multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
+    tokens = np.array([x[0] for x in multifile_dataset])
+
+    embs_dataset = TokensIterableDataset(LINKS_EMBS_DIR)
     stateful_dataset = StatefulIterableDataset(embs_dataset)
     damuel_neighbors_iterable_dataset = DamuelNeighborsIterableDataset(
-        token_index, stateful_dataset, BATCH_SIZE, CONTEXT_SIZE, POS, NEG, model, device
+        batch_sampler,
+        stateful_dataset,
+        BATCH_SIZE,
+        CONTEXT_SIZE,
+        POS,
+        NEG,
+        model,
+        device,
+        tokens,
     )
 
     data_loader = DataLoader(

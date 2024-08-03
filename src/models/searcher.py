@@ -30,7 +30,7 @@ class ScaNNSearcher(Searcher):
         super().__init__(embs, results)
 
     def find(self, batch, num_neighbors) -> np.ndarray:
-        neighbors, _ = self.scann_index.search_batched(
+        neighbors, _ = self.searcher.search_batched(
             batch, final_num_neighbors=num_neighbors
         )
         return self.results[neighbors]

@@ -61,15 +61,19 @@ if [ ! "$(ls -A $DAMUEL_FOR_INDEX_DIR)" ]; then
     python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 16384 "$DAMUEL_FOR_INDEX_DIR" "$STATE_DICT"
 fi
 
-# ====================DAMUEL DESC TOKEN INDEX====================
+# ====================DAMUEL LINKS EMBEDDING====================
 
-INDEX_DIR="$WORKDIR/index_$ROUND_ID"
+# for searcher we need to embed links so we can construct batches
 
-mkdir -p "$INDEX_DIR"
-if [ ! "$(ls -A $INDEX_DIR)" ]; then
-    echo "Running token index generating for damuel"
-    python $ACTION_SCRIPT "token_index" "$DAMUEL_FOR_INDEX_DIR" "$DAMUEL_DESC_TOKENS" "$INDEX_DIR"
-fi
+# INDEX_DIR="$WORKDIR/index_$ROUND_ID"
+
+DAMUEL_LINKS_DIR="$WORKDIR/links_embs_$ROUND_ID"
+
+mkdir -p "$DAMUEL_LINKS_DIR"
+
+if [ ! "$(ls -A $DAMUEL_LINKS_DIR)" ]; then
+    echo "Running embs generating for damuel links"
+    python $ACTION_SCRIPT "embed_links_for_generation" "$DAMUEL_LINKS_TOKENS" "$MODEL_PATH" 16384 "$DAMUEL_LINKS_DIR" "$STATE_DICT"
 
 # ====================GENERATING BATCHES====================
 
@@ -78,8 +82,8 @@ BATCH_DIR="$WORKDIR/batches_$ROUND_ID"
 mkdir -p "$BATCH_DIR"
 if [ ! "$(ls -A $BATCH_DIR)" ]; then
     echo "Running batches generating for damuel"
-    echo $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_TOKENS" "$INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$POS" "$NEG" "$CONTEXT_SIZE" "$TYPE" "$STATE_DICT"
-    python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_TOKENS" "$INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$POS" "$NEG" "$CONTEXT_SIZE" "$TYPE" "$STATE_DICT"
+    echo $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_TOKENS" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$POS" "$NEG" "$CONTEXT_SIZE" "$TYPE" "$STATE_DICT"
+    python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$POS" "$NEG" "$CONTEXT_SIZE" "$TYPE" "$STATE_DICT"
 fi
 
 # ====================TRAINING MODEL====================
