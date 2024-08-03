@@ -3,6 +3,8 @@ from hashlib import sha1
 from pathlib import Path
 import sys
 
+from utils.loaders import load_embs_and_qids
+
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import fire
@@ -100,22 +102,8 @@ def load_embs(dir_path):
     return embs_all, qids_all
 
 
-def load_damuel(damuel_entities, damuel_links):
-    if damuel_links is not None:
-        print("Loading DAMUEL links...")
-        damuel_embs, damuel_qids = load_embs(damuel_links)
-
-        print("Loading DAMUEL entities...")
-        damuel_embs_entities, damuel_qids_entities = load_embs(damuel_entities)
-
-        damuel_qids = np.concatenate([damuel_qids, damuel_qids_entities])
-        del damuel_qids_entities
-        damuel_embs = np.concatenate([damuel_embs, damuel_embs_entities])
-        del damuel_embs_entities
-
-    else:
-        print("Loading DAMUEL entities...")
-        damuel_embs, damuel_qids = load_embs(damuel_entities)
+def load_damuel(damuel):
+    damuel_embs, damuel_qids = load_embs_and_qids(damuel)
 
     damuel_embs = damuel_embs / np.linalg.norm(damuel_embs, axis=1, keepdims=True)
     return damuel_embs, damuel_qids
@@ -123,8 +111,7 @@ def load_damuel(damuel_entities, damuel_links):
 
 def load_mewsli(mewsli):
     print("Loading MEWSLI entities...")
-    mewsli_embs, mewsli_qids = load_embs(mewsli)
-    mewsli_embs = np.array(mewsli_embs)
+    mewsli_embs, mewsli_qids = load_embs_and_qids(mewsli)
 
     mewsli_embs = mewsli_embs / np.linalg.norm(mewsli_embs, axis=1, keepdims=True)
 
@@ -148,9 +135,8 @@ def find_recall(
     damuel_entities: str,
     mewsli: str,
     R,
-    damuel_links: str = None,
 ):
-    damuel_embs, damuel_qids = load_damuel(damuel_entities, damuel_links)
+    damuel_embs, damuel_qids = load_damuel(damuel_entities)
     R = min(R, len(damuel_qids))
 
     mewsli_embs, mewsli_qids = load_mewsli(mewsli)
