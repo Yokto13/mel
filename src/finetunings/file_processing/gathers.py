@@ -1,9 +1,11 @@
+from cmath import inf
 import os
 import shutil
 import pickle
 from pathlib import Path
 
-from finetunings.file_processing.compressions import decompress_files_in_directory
+import numpy as np
+
 from utils.argument_wrappers import ensure_datatypes
 
 
@@ -12,20 +14,30 @@ def _wanted_hash(hash_str, m, r):
     return hash_int % m == r
 
 
-def _copy_all_tokens(source, dest, m=1, r=0):
+def _count_tokens(fp: Path):
+    return len(np.load(fp)["tokens"])
+
+
+def _get_hash_from_fn(fn):
+    return fn.split("_")[-1].split(".")[0]
+
+
+def _wanted_fn(fn: str, m: int, r: int):
+    return fn.endswith("npz") and _wanted_hash(_get_hash_from_fn(fn), m, r)
+
+
+@ensure_datatypes([Path, Path, int, int], {})
+def move_tokens(source, dest, m=1, r=0, max_to_copy: int = inf):
+    already_copied = 0
     for fn in sorted(os.listdir(source)):
-        print(fn)
-        if not fn.endswith("npz"):
+        if not _wanted_fn(fn, m, r):
             continue
-        hash_str = fn.split("_")[-1].split(".")[0]
-        if not _wanted_hash(hash_str, m, r):
-            continue
+        is_enough_copied = already_copied >= max_to_copy
+        if is_enough_copied:
+            break
+        tokens_cnt = _count_tokens(source / fn)
+        already_copied += tokens_cnt
         shutil.copy(os.path.join(source, fn), dest)
-
-
-@ensure_datatypes([Path, Path, int, int, bool], {})
-def move_tokens(source, dest, m=1, r=0):
-    _copy_all_tokens(source, dest, m, r)
 
 
 @ensure_datatypes([Path, str, str], {})
