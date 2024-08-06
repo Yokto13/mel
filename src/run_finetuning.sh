@@ -26,19 +26,19 @@ set -ueo pipefail
 # ...
 
 LANG="es"
-DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/descs_small"
-DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/links_small"
+DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/descs"
+DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning/$LANG"
 MODEL_PATH="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
-WORKDIR="$OUTPUTS/workdirs/test_finetuning"
-BATCH_SIZE=8
+WORKDIR="$OUTPUTS/workdirs/es"
+BATCH_SIZE=64
 EPOCHS=10
 LOGIT_MULTIPLIER=10
 # LR=0.00001
 LR=0.00001
 # TYPE="mentions_gillick_loss"
 TYPE="mentions"
-N_OF_ROUNDS=2
+N_OF_ROUNDS=3
 NEG=7
 
 # copy params
