@@ -17,7 +17,7 @@ def embed_links_for_generation(
     batch_size: int,
     dest_dir: str,
     state_dict_path: str,
-):
+) -> None:
     model = BertModel.from_pretrained(model_path)
     dataset = MultiFileDataset(links_tokens_dir)
 

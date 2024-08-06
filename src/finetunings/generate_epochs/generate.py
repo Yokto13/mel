@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import sys
 
@@ -5,7 +6,6 @@ from utils.multifile_dataset import MultiFileDataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
-from fire import Fire
 import numpy as np
 import torch
 from transformers import BertModel
@@ -20,14 +20,16 @@ from finetunings.generate_epochs.datasets import (
     DamuelNeighborsIterator,
 )
 
+_logger = logging.getLogger("finetunings.generate_epochs.generate")
+
 # Settings ===========================================
 
 
 if torch.cuda.is_available():
-    print("CUDA is available!")
+    _logger.debug("CUDA is available!")
     device = torch.device("cuda")
 else:
-    print("CUDA is not available.")
+    _logger.debug("CUDA is not available.")
     device = torch.device("cpu")
 
 SEED = 0
@@ -46,7 +48,7 @@ def generate(
     NEG: int,
     CONTEXT_SIZE: int,
     STATE_DICT_PATH: str = None,
-):
+) -> None:
     LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
     INDEX_TOKENS_DIR = Path(INDEX_TOKENS_DIR)
     OUTPUT_DIR = Path(OUTPUT_DIR)
@@ -56,16 +58,16 @@ def generate(
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # print all params
-    print("LINKS_EMBS_DIR:", LINKS_EMBS_DIR)
-    print("INDEX_TOKENS_DIR:", INDEX_TOKENS_DIR)
-    print("OUTPUT_DIR:", OUTPUT_DIR)
-    print("MODEL_NAME:", MODEL_PATH)
-    print("BATCH_SIZE:", BATCH_SIZE)
-    print("EPOCHS:", EPOCHS)
-    print("STEPS_PER_EPOCH:", STEPS_PER_EPOCH)
-    print("NEG:", NEG)
-    print("CONTEXT_SIZE:", CONTEXT_SIZE)
-    print("STATE_DICT_PATH:", STATE_DICT_PATH)
+
+    _logger.debug("INDEX_TOKENS_DIR: %s", INDEX_TOKENS_DIR)
+    _logger.debug("OUTPUT_DIR: %s", OUTPUT_DIR)
+    _logger.debug("MODEL_NAME: %s", MODEL_PATH)
+    _logger.debug("BATCH_SIZE: %s", BATCH_SIZE)
+    _logger.debug("EPOCHS: %s", EPOCHS)
+    _logger.debug("STEPS_PER_EPOCH: %s", STEPS_PER_EPOCH)
+    _logger.debug("NEG: %s", NEG)
+    _logger.debug("CONTEXT_SIZE: %s", CONTEXT_SIZE)
+    _logger.debug("STATE_DICT_PATH: %s", STATE_DICT_PATH)
 
     model = BertModel.from_pretrained(MODEL_PATH)
 
@@ -111,8 +113,8 @@ def generate(
             if epoch_steps_counter == STEPS_PER_EPOCH:
                 epoch_steps_counter = 0
                 break
-        print(f"Epoch {epoch} created")
-        print("Saving")
+        _logger.debug(f"Epoch {epoch} created")
+        _logger.debug("Saving")
 
         # save compressed with lzma and pickle
         np.savez_compressed(
@@ -122,8 +124,4 @@ def generate(
             Y=np.array(Y),
         )
 
-        print("Saved")
-
-
-if __name__ == "__main__":
-    Fire(generate)
+        _logger.debug("Saved")
