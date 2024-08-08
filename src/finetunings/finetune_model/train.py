@@ -153,8 +153,14 @@ def train(
     LR: float,
     TYPE: str = "entity_names",
     MODEL_SAVE_DIR: str = "models",
+    STATE_DICT_PATH: str | None = None,
 ):
     model = BertModel.from_pretrained(FOUNDATION_MODEL_PATH)
+
+    if STATE_DICT_PATH is not None:
+        _logger.debug("Loading model state dict")
+        d = torch.load(STATE_DICT_PATH)
+        model.load_state_dict(d)
     model = nn.DataParallel(model)
     model.to(device)
 
