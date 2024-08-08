@@ -171,13 +171,13 @@ def train(
     criterion = nn.CrossEntropyLoss()
 
     _logger.debug("Starting training")
-    model.to(device)
-    model.train()
     for epoch in range(EPOCHS):
+        model.to(device)
+        model.train()
 
         train_loss = 0
 
-        _logger.debug("EPOCH:", epoch)
+        _logger.debug(f"EPOCH: {epoch}")
         split_two_dataset = _SplitToTwoDataset(DATASET_DIR, epoch)
         dataloader = DataLoader(
             split_two_dataset, batch_size=None, num_workers=4, pin_memory=True
