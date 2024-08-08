@@ -229,9 +229,9 @@ def train(
 
     foundation_model = BertModel.from_pretrained(FOUNDATION_MODEL_PATH)
 
-    model = create_default_model(foundation_model, MODEL_PATH)
+    foundation_model = nn.DataParallel(foundation_model)
 
-    model = nn.DataParallel(model)
+    model = create_default_model(foundation_model, MODEL_PATH)
 
     model.to(device)
 
@@ -249,7 +249,7 @@ def train(
         train_loss = 0
 
         batches = load_epoch_npz(DATASET_DIR, epoch)
-        print(f"Loaded {len(batches)} batches")
+        print(f"Loaded {len(batches[0])} batches")
         epoch_steps = len(batches[0])
 
         print("EPOCH:", epoch)

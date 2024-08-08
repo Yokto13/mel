@@ -25,7 +25,6 @@ from utils.embeddings import (
 
 from data_processors.tokens.duplicates_filter_script import run_duplicates_filter_script
 
-from finetunings.embs_generating.build_together_embs import generate_embs
 from finetunings.token_index.save_token_index import build_and_save_token_index
 from finetunings.generate_epochs.generate import generate
 from finetunings.generate_epochs.embed_links_for_generation import (
@@ -63,8 +62,6 @@ print("Imports finished")
 
 def choose_action(action):
     match action:
-        case "embs":  # This one should be replaced by the new one from utils
-            return generate_embs
         case "token_index":
             return build_and_save_token_index
         case "generate":
