@@ -66,7 +66,6 @@ class DamuelNeighborsIterator:
             positive, negative = self.batch_sampler.sample(
                 embs, qids, self.negative_cnt
             )
-            print(len(positive), len(negative), len(embs), len(qids), self.negative_cnt)
 
             for i in range(len(embs)):
                 pos_idx, neg_ids = positive[i], negative[i]

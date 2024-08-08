@@ -18,8 +18,10 @@ class FinetuningWrapper(nn.Module):
 
     def forward(self, mentions, frenemies):
         embeddings = self.forward_only_embeddings(mentions)
+        print("embs done")
 
         frenemies = self.forward_only_embeddings(frenemies)
+        print("frenemies done")
 
         dot_product = torch.mm(embeddings, frenemies.t())
 

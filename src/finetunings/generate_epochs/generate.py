@@ -57,8 +57,6 @@ def generate(
     # make sure the output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # print all params
-
     _logger.debug("INDEX_TOKENS_DIR: %s", INDEX_TOKENS_DIR)
     _logger.debug("OUTPUT_DIR: %s", OUTPUT_DIR)
     _logger.debug("MODEL_NAME: %s", MODEL_PATH)
