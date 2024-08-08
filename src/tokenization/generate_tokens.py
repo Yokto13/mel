@@ -5,6 +5,7 @@ TODO:
     Are they still needed?
     - get_iterators is hard to read. Maybe refactor?
 """
+
 from functools import partial
 import os
 import fire
@@ -17,7 +18,7 @@ import numpy as np
 
 from data_processors.tokens.damuel.descriptions.both import (
     DamuelDescriptionsTokensIteratorBoth,
-    DamuelDescriptionsPagesTokensIteratorBoth
+    DamuelDescriptionsPagesTokensIteratorBoth,
 )
 from data_processors.tokens.damuel.links.both import DamuelLinksTokensIteratorBoth
 from data_processors.tokens.damuel.descriptions.for_finetuning import (
@@ -55,11 +56,13 @@ def save_token_qid_pairs(pairs, output_path):
     Previously used lzma + pickle which was extremely slow.
     """
     if os.path.exists(output_path):
-        print(f"Warning: The file '{output_path}' already exists and will be overwritten.")
-    
+        print(
+            f"Warning: The file '{output_path}' already exists and will be overwritten."
+        )
+
     tokens = np.empty((len(pairs), len(pairs[0][0])), dtype=np.uint32)
     qids = np.empty(len(pairs), dtype=np.uint32)
-    
+
     for i, (token, qid) in enumerate(pairs):
         tokens[i] = token
         qids[i] = qid
@@ -183,7 +186,6 @@ def main(
     workers=1,
 ):
     tokenizer = BertTokenizerFast.from_pretrained(model_name)
-    tokenizer.add_tokens("[M]")
 
     iterator_class = get_iterator_class(generation_type)
 
@@ -223,9 +225,11 @@ def main(
     with multiprocessing.Pool(workers) as p:
         p.map(solve_with_output, iterators)
 
+
 ###########################################################################################
 #### Methods below serve as facades making generating different types of tokens easier ####
 ###########################################################################################
+
 
 def tokens_for_finetuning_mewsli(
     model_name, data_path, context_size, output_dir, workers
@@ -270,6 +274,7 @@ def tokens_for_at_descriptions_pages(
 ):
     run_type = GenerationType.MENTIONS_DESCRIPTIONS_PAGES
     main(model_name, data_path, context_size, run_type, output_dir, workers)
+
 
 if __name__ == "__main__":
     fire.Fire(main)
