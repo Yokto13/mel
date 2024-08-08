@@ -1,13 +1,9 @@
 from dataclasses import dataclass
+import logging
 from pathlib import Path
-import sys
 from typing import Any
+
 import numpy as np
-
-from utils.embeddings import create_attention_mask
-
-sys.stdout.reconfigure(line_buffering=True, write_through=True)
-
 from fire import Fire
 import torch
 import torch.optim as optim
@@ -21,18 +17,21 @@ import wandb
 
 from utils.argument_wrappers import ensure_datatypes
 from utils.running_averages import RunningAverages
+from utils.embeddings import create_attention_mask
 
 # Settings ===========================================
 
 _RUNNING_AVERAGE_SMALL = 100
 _RUNNING_AVERAGE_BIG = 1000
 
+_logger = logging.getLogger("finetuning.finetune_model.train")
+
 
 if torch.cuda.is_available():
-    print("CUDA is available!")
+    _logger.debug("Running on CUDA.")
     device = torch.device("cuda")
 else:
-    print("CUDA is not available.")
+    _logger.debug("CUDA is not available.")
     device = torch.device("cpu")
 
 SEED = 0
@@ -48,19 +47,21 @@ class _SaveInformation:
     recall: int = None
 
 
-def load_epoch_npz(path, epoch):
+def _load_epoch_npz(path, epoch):
     d = np.load(path / f"epoch_{epoch}.npz")
     return d["X"], d["lines"], d["Y"]
 
 
-def batch_recall(outputs, target, k=1):
+def _batch_recall(outputs, target, k: int = 1) -> float:
+    if len(outputs[0]) < k:  # batch is too small.
+        return 0.0
     _, top_indices = outputs.topk(k, dim=-1)
     top_values = target.gather(-1, top_indices)
     recall_per_row = top_values.any(dim=-1).float()
-    return recall_per_row.mean()
+    return recall_per_row.mean().item()
 
 
-def save_non_final_model(model, save_information: _SaveInformation):
+def _save_non_final_model(model, save_information: _SaveInformation):
     def construct_non_final_name():
         return f"{save_information.output_path}/{wandb.run.name}_{save_information.epoch}_{save_information.recall}.pth"
 
@@ -68,27 +69,43 @@ def save_non_final_model(model, save_information: _SaveInformation):
     torch.save(model.state_dict(), name)
 
 
-def save_final_model(model, save_information: _SaveInformation):
+def _save_final_model(model, save_information: _SaveInformation):
     torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
 
 
-def save_model(wrapper, save_information: _SaveInformation):
+def _save_model(wrapper, save_information: _SaveInformation):
     if save_information.is_final:
-        save_final_model(wrapper, save_information)
+        _save_final_model(wrapper, save_information)
     else:
-        save_non_final_model(wrapper, save_information)
+        _save_non_final_model(wrapper, save_information)
 
 
-def forward_to_embeddings(toks, model):
+def _forward_to_embeddings(toks, model):
     att = create_attention_mask(toks)
     embeddings = model(toks, att).pooler_output
     return torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
 
+def _get_wandb_logs(
+    loss_item: float, r_at_1: float, r_at_10: float, running_averages: RunningAverages
+) -> dict:
+    return {
+        "loss": loss_item,
+        "r_at_1": r_at_1,
+        "r_at_10": r_at_10,
+        "running_loss": running_averages.loss,
+        "running_r_at_1": running_averages.recall_1,
+        "running_r_at_10": running_averages.recall_10,
+        "running_loss_big": running_averages.loss_big,
+        "running_r_at_1_big": running_averages.recall_1_big,
+        "running_r_at_10_big": running_averages.recall_10_big,
+    }
+
+
 class _SplitToTwoDataset(Dataset):
     def __init__(self, dataset_dir: Path, epoch: int) -> None:
         super().__init__()
-        self._links, self._descriptions, self._Y = load_epoch_npz(dataset_dir, epoch)
+        self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
 
     def __len__(self):
         return self._links.shape[0]
@@ -125,7 +142,6 @@ class _SplitToTwoDataset(Dataset):
         float,
         str,
         str,
-        # Path,
     ],
     {},
 )
@@ -138,18 +154,8 @@ def train(
     TYPE: str = "entity_names",
     MODEL_SAVE_DIR: str = "models",
 ):
-    # print all params
-    print("BATCH_DIR:", DATASET_DIR)
-    print("MODEL_NAME:", FOUNDATION_MODEL_PATH)
-    print("EPOCHS:", EPOCHS)
-    print("LOGIT_MULTIPLIER:", LOGIT_MULTIPLIER)
-    print("TYPE:", TYPE)
-    print("LR:", LR)
-
     model = BertModel.from_pretrained(FOUNDATION_MODEL_PATH)
-
     model = nn.DataParallel(model)
-
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
@@ -158,14 +164,14 @@ def train(
 
     criterion = nn.CrossEntropyLoss()
 
-    print("Starting training")
+    _logger.debug("Starting training")
     model.to(device)
     model.train()
     for epoch in range(EPOCHS):
 
         train_loss = 0
 
-        print("EPOCH:", epoch)
+        _logger.debug("EPOCH:", epoch)
         split_two_dataset = _SplitToTwoDataset(DATASET_DIR, epoch)
         dataloader = DataLoader(
             split_two_dataset, batch_size=None, num_workers=4, pin_memory=True
@@ -178,10 +184,10 @@ def train(
             first_half = first_half.to(device)
 
             # let's keep first_half on the GPU because the memore overhead seems to be mostly in the optimizer.
-            first_half = forward_to_embeddings(first_half, model)
+            first_half = _forward_to_embeddings(first_half, model)
 
             second_half = second_half.to(device)
-            second_half = forward_to_embeddings(second_half, model)
+            second_half = _forward_to_embeddings(second_half, model)
 
             links_embedded = first_half[: split_two_dataset.links_cnt]
             descs_embedded = torch.cat(
@@ -202,29 +208,17 @@ def train(
             loss_item = loss.item()
             train_loss += loss_item
 
-            r_at_1 = batch_recall(outputs, labels, k=1)
-            r_at_10 = torch.tensor(0)
-            if len(outputs[0]) >= 10:  # if batch is too small, we can't calculate r@10
-                r_at_10 = batch_recall(outputs, labels, k=10)
+            r_at_1 = _batch_recall(outputs, labels, k=1)
+            r_at_10 = _batch_recall(outputs, labels, k=10)
 
             running_averages.update_loss(loss_item)
-            running_averages.update_recall(r_at_1.item(), r_at_10.item())
+            running_averages.update_recall(r_at_1, r_at_10)
 
-            wand_dict = {
-                "loss": loss_item,
-                "r_at_1": r_at_1.item(),
-                "r_at_10": r_at_10.item(),
-                "running_loss": running_averages.loss,
-                "running_r_at_1": running_averages.recall_1,
-                "running_r_at_10": running_averages.recall_10,
-                "running_loss_big": running_averages.loss_big,
-                "running_r_at_1_big": running_averages.recall_1_big,
-                "running_r_at_10_big": running_averages.recall_10_big,
-            }
+            wand_dict = _get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
             wandb.log(
                 wand_dict,
             )
-        print(f"Train loss: {train_loss / len(split_two_dataset)}")
+        _logger.debug(f"Train loss: {train_loss / len(split_two_dataset)}")
 
         model.to("cpu")
         if epoch % 50 == 0:
@@ -235,10 +229,10 @@ def train(
                 epoch,
                 wand_dict["running_r_at_1_big"],
             )
-            save_model(model, save_information)
+            _save_model(model, save_information)
 
     save_information = _SaveInformation(TYPE, MODEL_SAVE_DIR, True)
-    save_model(model, save_information)
+    _save_model(model, save_information)
 
 
 if __name__ == "__main__":
