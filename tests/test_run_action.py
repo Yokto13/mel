@@ -7,7 +7,6 @@ def test_imports():
             run_duplicates_filter_script,
         )
 
-        from finetunings.embs_generating.build_together_embs import generate_embs
         from finetunings.token_index.save_token_index import build_and_save_token_index
         from finetunings.generate_epochs.generate import generate
         from finetunings.finetune_model.train import train
