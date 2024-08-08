@@ -1,6 +1,5 @@
 from functools import partial
 import logging
-import os
 
 logging.basicConfig(level=logging.DEBUG)
 
