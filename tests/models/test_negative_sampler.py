@@ -47,12 +47,12 @@ def test_sample_basic(negative_sampler):
     batch_qids = np.array([1, 2])
     negative_cnts = 2
 
-    negative_sampler.searcher.find.return_value = np.array([[1, 2, 3], [1, 4, 0]])
+    negative_sampler.searcher.find.return_value = np.array([[1, 2, 3, 4], [1, 4, 0, 3]])
 
     result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
 
     assert result.shape == (2, 2)
-    assert np.array_equal(result, np.array([[1, 2], [4, 0]]))
+    assert np.array_equal(result, np.array([[2, 3], [4, 3]]))
 
 
 def test_sample_with_all_different_qids(negative_sampler):
@@ -60,24 +60,25 @@ def test_sample_with_all_different_qids(negative_sampler):
     batch_qids = np.array([4, 5])  # Different QIDs from those in Searcher
     negative_cnts = 2
 
-    negative_sampler.searcher.find.return_value = np.array([[0, 1, 2], [3, 1, 2]])
+    negative_sampler.searcher.find.return_value = np.array([[0, 1, 2, 3], [3, 1, 2, 4]])
 
     result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
 
     assert result.shape == (2, 2)
-    assert np.array_equal(result, np.array([[0, 1], [3, 1]]))
+    assert np.array_equal(result, np.array([[0, 1], [1, 2]]))
 
 
 def test_sample_with_large_batch():
-
     negative_sampler = NegativeSampler(
-        np.random.rand(10000, 128), np.random.randint(1, 1000, size=10000), MockSearcher
+        np.random.rand(10000, 128),
+        np.random.default_rng().choice(20000, size=10000),
+        MockSearcher,
     )
     batch_embs = np.random.rand(1024, 128)
     batch_qids = np.random.randint(1, 1000, size=1024)
     negative_cnts = 7
 
-    mock_neighbors = np.random.randint(0, 1000, size=(1024, 8))
+    mock_neighbors = np.random.randint(0, 10000, size=(1024, 8 + 1024))
     negative_sampler.searcher.find.return_value = mock_neighbors
 
     result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
@@ -91,7 +92,7 @@ def test_sample_edge_case_all_same_qid(negative_sampler):
     negative_cnts = 2
 
     negative_sampler.searcher.find.return_value = np.array(
-        [[0, 1, 2], [1, 0, 3], [2, 3, 4]]
+        [[0, 1, 2, 3, 4], [1, 0, 3, 4, 2], [2, 0, 3, 4, 1]]
     )
 
     result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
