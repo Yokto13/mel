@@ -29,10 +29,10 @@ LANG="es"
 DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/descs"
 DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning/$LANG"
-MODEL_PATH="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
+MODEL_PATH="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-small"
 WORKDIR="$OUTPUTS/workdirs/es"
-BATCH_SIZE=64
-EPOCHS=10
+BATCH_SIZE=832
+EPOCHS=50
 LOGIT_MULTIPLIER=10
 # LR=0.00001
 LR=0.00001
@@ -120,7 +120,7 @@ if [ ! -e "$WORKDIR/models_1/finaal.pth" ]; then
 fi
 
 if [ ! -e "$WORKDIR/models_2/final.pth" ]; then
-    echo "Running round 1"
+    echo "Running round 2"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 2 "$TYPE" "$N_OF_ROUNDS" $NEG

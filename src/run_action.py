@@ -24,7 +24,6 @@ from utils.embeddings import (
 
 from data_processors.tokens.duplicates_filter_script import run_duplicates_filter_script
 
-from finetunings.token_index.save_token_index import build_and_save_token_index
 from finetunings.generate_epochs.generate import generate
 from finetunings.generate_epochs.embed_links_for_generation import (
     embed_links_for_generation,
@@ -61,8 +60,6 @@ print("Imports finished")
 
 def choose_action(action):
     match action:
-        case "token_index":
-            return build_and_save_token_index
         case "generate":
             return generate
         case "train":
