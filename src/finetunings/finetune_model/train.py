@@ -47,12 +47,25 @@ class _SaveInformation:
     recall: int = None
 
 
-def _load_epoch_npz(path, epoch):
+def _load_epoch_npz(path: Path, epoch: int | str) -> tuple:
     d = np.load(path / f"epoch_{epoch}.npz")
     return d["X"], d["lines"], d["Y"]
 
 
-def _batch_recall(outputs, target, k: int = 1) -> float:
+def _batch_recall(outputs: torch.tensor, target: torch.tensor, k: int = 1) -> float:
+    """Calculates recall inside the batch.
+
+    The calculation is done per each row. The exact values of outputs and target are not importand only orderings matter.
+    Consequently this works both with logits and softmax. If k is greater than the number of classes **returns 0**.
+
+    Args:
+        outputs (torch.tensor): Matrix where each row corresponds to one multiclass classification.
+        target (torch.tensor): Matrix where each row corresponds to one multiclass classification, same shape as outputs.
+        k (int, optional): Recall at K. Defaults to 1.
+
+    Returns:
+        float: Recall at K for this batch.
+    """
     if len(outputs[0]) < k:  # batch is too small.
         return 0.0
     _, top_indices = outputs.topk(k, dim=-1)
@@ -61,7 +74,7 @@ def _batch_recall(outputs, target, k: int = 1) -> float:
     return recall_per_row.mean().item()
 
 
-def _save_non_final_model(model, save_information: _SaveInformation):
+def _save_non_final_model(model: nn.Module, save_information: _SaveInformation) -> None:
     def construct_non_final_name():
         return f"{save_information.output_path}/{wandb.run.name}_{save_information.epoch}_{save_information.recall}.pth"
 
@@ -69,18 +82,27 @@ def _save_non_final_model(model, save_information: _SaveInformation):
     torch.save(model.state_dict(), name)
 
 
-def _save_final_model(model, save_information: _SaveInformation):
+def _save_final_model(model: nn.Module, save_information: _SaveInformation) -> None:
     torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
 
 
-def _save_model(wrapper, save_information: _SaveInformation):
+def _save_model(model: nn.Module, save_information: _SaveInformation) -> None:
     if save_information.is_final:
-        _save_final_model(wrapper, save_information)
+        _save_final_model(model, save_information)
     else:
-        _save_non_final_model(wrapper, save_information)
+        _save_non_final_model(model, save_information)
 
 
-def _forward_to_embeddings(toks, model):
+def _forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.tensor:
+    """Calculates normalized embeddings. Attentions are created automatically. Assumes 0 is the padding token.
+
+    Args:
+        toks (torch.tensor): tokens
+        model (nn.ModuleDict): model
+
+    Returns:
+        torch.tensor: normalized embs.
+    """
     att = create_attention_mask(toks)
     embeddings = model(toks, att).pooler_output
     return torch.nn.functional.normalize(embeddings, p=2, dim=1)
@@ -110,7 +132,7 @@ class _SplitToTwoDataset(Dataset):
     def __len__(self):
         return self._links.shape[0]
 
-    def __getitem__(self, index) -> Any:
+    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
         links = self._links[index]
         descriptions = self._descriptions[index]
         y = self._Y[index]
@@ -124,11 +146,11 @@ class _SplitToTwoDataset(Dataset):
         return first_half, second_half, y
 
     @property
-    def links_cnt(self):
+    def links_cnt(self) -> int:
         return self._links.shape[1]
 
     @property
-    def descriptions_cnt(self):
+    def descriptions_cnt(self) -> int:
         return self._descriptions.shape[1]
 
 
