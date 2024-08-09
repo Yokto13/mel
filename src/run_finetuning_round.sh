@@ -101,6 +101,7 @@ mkdir -p $MODELS_DIR
 
 if [ ! "$(ls -A $MODELS_DIR)" ]; then
     echo "Running training for damuel"
+    echo $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
     sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
 fi
 
@@ -114,12 +115,12 @@ mkdir -p "$DAMUEL_FOR_INDEX_NEW_DIR"
 
 if [ ! "$(ls -A $MEWSLI_EMBS_DIR)" ]; then
     echo "Running embs generating for mewsli"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 1 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH" 16384 "$MEWSLI_EMBS_DIR" "$STATE_DICT"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G 1 -C "gpuram16G" --mem=50G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH" 16384 "$MEWSLI_EMBS_DIR" "$MODELS_DIR/final.pth"
 fi
 
 if [ ! "$(ls -A $DAMUEL_FOR_INDEX_NEW_DIR)" ]; then
     echo "Running embs generating for damuel"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_FOR_INDEX_NEW_DIR" "$STATE_DICT"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_FOR_INDEX_NEW_DIR" "$MODELS_DIR/final.pth"
 fi
 
 
