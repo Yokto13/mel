@@ -138,6 +138,10 @@ def _embeddig_gen(parts: list, model):
 
 
 def _get_links_and_descriptions_from_halves(first_half, second_half, links_cnt):
+    if links_cnt > len(first_half):
+        raise ValueError(
+            "Having more links that descriptions is currently not supported."
+        )
     links_embedded = first_half[:links_cnt]
     descs_embedded = torch.cat((first_half[links_cnt:], second_half))
     return links_embedded, descs_embedded
