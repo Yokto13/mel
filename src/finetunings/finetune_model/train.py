@@ -132,6 +132,17 @@ class _SplitToTwoDataset(Dataset):
         return self._descriptions.shape[1]
 
 
+def _embeddig_gen(parts: list, model):
+    for part in parts:
+        yield _forward_to_embeddings(part, model)
+
+
+def _get_links_and_descriptions_from_halves(first_half, second_half, links_cnt):
+    links_embedded = first_half[:links_cnt]
+    descs_embedded = torch.cat((first_half[links_cnt:], second_half))
+    return links_embedded, descs_embedded
+
+
 # Training ===========================================
 @ensure_datatypes(
     [
@@ -183,21 +194,21 @@ def train(
             split_two_dataset, batch_size=None, num_workers=4, pin_memory=True
         )
 
-        for first_half, second_half, labels in tqdm(
-            dataloader, total=len(split_two_dataset)
+        for i, (first_half, second_half, labels) in enumerate(
+            tqdm(dataloader, total=len(split_two_dataset))
         ):
+            # assert i <= 100
 
             first_half = first_half.to(device)
+            second_half = second_half.to(device)
 
             # let's keep first_half on the GPU because the memore overhead seems to be mostly in the optimizer.
-            first_half = _forward_to_embeddings(first_half, model)
+            first_half, second_half = list(
+                _embeddig_gen([first_half, second_half], model)
+            )
 
-            second_half = second_half.to(device)
-            second_half = _forward_to_embeddings(second_half, model)
-
-            links_embedded = first_half[: split_two_dataset.links_cnt]
-            descs_embedded = torch.cat(
-                (first_half[split_two_dataset.links_cnt :], second_half)
+            links_embedded, descs_embedded = _get_links_and_descriptions_from_halves(
+                first_half, second_half, split_two_dataset.links_cnt
             )
 
             outputs = torch.mm(links_embedded, descs_embedded.t())
@@ -235,10 +246,10 @@ def train(
                 epoch,
                 wand_dict["running_r_at_1_big"],
             )
-            _save_model(model, save_information)
+            _save_model(model.module, save_information)
 
     save_information = _SaveInformation(TYPE, MODEL_SAVE_DIR, True)
-    _save_model(model, save_information)
+    _save_model(model.module, save_information)
 
 
 if __name__ == "__main__":
