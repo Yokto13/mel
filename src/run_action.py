@@ -1,7 +1,7 @@
 from functools import partial
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 

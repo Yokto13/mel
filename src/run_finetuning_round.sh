@@ -34,6 +34,7 @@ fi
 
 POS=1
 NEG=${14:-7}
+CARDS=${15:-8}
 CONTEXT_SIZE=64
 STEPS_PER_EPOCH=1000
 
@@ -62,7 +63,7 @@ mkdir -p "$DAMUEL_FOR_INDEX_DIR"
 
 if [ ! "$(ls -A $DAMUEL_FOR_INDEX_DIR)" ]; then
     echo "Running embs generating for damuel"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_FOR_INDEX_DIR" "$STATE_DICT"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram24G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_FOR_INDEX_DIR" "$STATE_DICT"
 fi
 
 # ====================DAMUEL LINKS EMBEDDING====================
@@ -77,7 +78,7 @@ mkdir -p "$DAMUEL_LINKS_DIR"
 
 if [ ! "$(ls -A $DAMUEL_LINKS_DIR)" ]; then
     echo "Running embs generating for damuel links"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embed_links_for_generation" "$DAMUEL_LINKS_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_LINKS_DIR" "$STATE_DICT"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram24G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embed_links_for_generation" "$DAMUEL_LINKS_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_LINKS_DIR" "$STATE_DICT"
 fi
 
 # ====================GENERATING BATCHES====================
@@ -87,8 +88,8 @@ BATCH_DIR="$WORKDIR/batches_$ROUND_ID"
 mkdir -p "$BATCH_DIR"
 if [ ! "$(ls -A $BATCH_DIR)" ]; then
     echo "Running batches generating for damuel"
-    echo $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_TOKENS" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" "$STATE_DICT"
-    sbatch --wait -p "cpu-ms,cpu-troja" -c10 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" "$STATE_DICT"
+    echo $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" "$STATE_DICT"
+    sbatch --wait -p "cpu-ms,cpu-troja" -c30 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" "$STATE_DICT"
     # python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" "$STATE_DICT"
 fi
 
@@ -102,7 +103,7 @@ mkdir -p $MODELS_DIR
 if [ ! "$(ls -A $MODELS_DIR)" ]; then
     echo "Running training for damuel"
     echo $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G $CARDS -C "gpuram24G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
 fi
 
 # ====================EVALUATION====================
@@ -115,16 +116,17 @@ mkdir -p "$DAMUEL_FOR_INDEX_NEW_DIR"
 
 if [ ! "$(ls -A $MEWSLI_EMBS_DIR)" ]; then
     echo "Running embs generating for mewsli"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 1 -C "gpuram16G" --mem=50G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH" 16384 "$MEWSLI_EMBS_DIR" "$MODELS_DIR/final.pth"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G 1 -C "gpuram24G" --mem=50G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH" 16384 "$MEWSLI_EMBS_DIR" "$MODELS_DIR/final.pth"
 fi
 
 if [ ! "$(ls -A $DAMUEL_FOR_INDEX_NEW_DIR)" ]; then
     echo "Running embs generating for damuel"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram16G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_FOR_INDEX_NEW_DIR" "$MODELS_DIR/final.pth"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram24G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embs_from_tokens_model_name_and_state_dict" "$DAMUEL_DESC_TOKENS" "$MODEL_PATH" 131072 "$DAMUEL_FOR_INDEX_NEW_DIR" "$MODELS_DIR/final.pth"
 fi
 
 
-sbatch --wait -p "cpu-ms,cpu-troja" -c10 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "recalls" "$DAMUEL_FOR_INDEX_NEW_DIR" "$MEWSLI_EMBS_DIR"
+# sbatch --wait -p "cpu-ms,cpu-troja" -c10 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "recalls" "$DAMUEL_FOR_INDEX_NEW_DIR" "$MEWSLI_EMBS_DIR"
+sbatch -p "cpu-ms,cpu-troja" -c10 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "recalls" "$DAMUEL_FOR_INDEX_NEW_DIR" "$MEWSLI_EMBS_DIR"
 
 # ====================CLEAN UP====================
 
