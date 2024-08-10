@@ -148,11 +148,6 @@ class _LinksAndDescriptionsTogetherDataset(Dataset):
         return self._descriptions.shape[1]
 
 
-def _embeddig_gen(parts: list, model):
-    for part in parts:
-        yield _forward_to_embeddings(part, model)
-
-
 def _load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
     if state_dict_path is None:
         return ModelFactory.load_bert_from_file(model_path)
@@ -213,7 +208,7 @@ def train(
 
             together = together.to(device)
 
-            together = list(_embeddig_gen([together], model))[0]
+            together = _forward_to_embeddings(together, model)
 
             links_embedded, descs_embedded = (
                 together[: dataset.links_cnt],
