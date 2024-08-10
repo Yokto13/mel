@@ -16,6 +16,7 @@ from models.batch_sampler import BatchSampler
 from models.searcher import ScaNNSearcher
 from utils.loaders import get_emb_state_dict, load_embs_and_qids
 from finetunings.generate_epochs.datasets import (
+    TokensBatcher,
     TokensIterableDataset,
     DamuelNeighborsIterator,
 )
@@ -82,7 +83,8 @@ def generate(
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
     tokens = np.array([x[0] for x in multifile_dataset])
 
-    dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
+    # dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
+    dataset = TokensBatcher(LINKS_EMBS_DIR, batch_sampler.qids, BATCH_SIZE)
     damuel_neighbors_iterator = DamuelNeighborsIterator(
         dataset,
         BATCH_SIZE,
