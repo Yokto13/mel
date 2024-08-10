@@ -1,162 +1,144 @@
 from pathlib import Path
-import pickle
 import sys
+
+from models.batch_sampler import BatchSampler
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
+import numba as nb
 import numpy as np
-import torch
-from torch.utils.data import DataLoader, IterableDataset
+import numpy.typing as npt
+from torch.utils.data import DataLoader, IterableDataset, Dataset
 
-from data_processors.index.token_index import TokenIndex
+from utils.loaders import load_embs_qids_tokens
 
 
+# Might be usefull when we get to the point where Batcher cannot fit to memory.
 class TokensIterableDataset(IterableDataset):
-    def __init__(self, dir_path: Path, input_type="entity_names"):
+    def __init__(self, dir_path: Path, known_qids: set):
         self.dir_path = dir_path
-        self.worker_info = torch.utils.data.get_worker_info()
-        self.type = input_type
+        self.embs, self.qids, self.tokens = load_embs_qids_tokens(dir_path)
+        self.known_qids = known_qids
 
     def __iter__(self):
-        for fn in sorted(self.dir_path.iterdir()):
-            if not fn.name.startswith(self.type):
+        for embs, qid, tok in zip(self.embs, self.qids, self.tokens):
+            if qid not in self.known_qids:
                 continue
-            with open(self.dir_path / fn.name, "rb") as f:
-                entity_names = pickle.load(f)
-            for pair in entity_names:
-                toks = pair.tokenization_output["input_ids"]
-                att = pair.tokenization_output["attention_mask"]
-                yield toks[0], att[0], pair.qid
+            yield embs, qid, tok
 
 
-class TokensEmbsIterableDataset(IterableDataset):
-    def __init__(
-        self,
-        tokens_dataset: TokensIterableDataset,
-        model,
-        device,
-        batch_size_embs: int = 4096,
-    ):
-        self.device = device
-        self.tokens_dataset = tokens_dataset
-        self.model = model
-        self.model.to(device)
-        self.data_loader = DataLoader(tokens_dataset, batch_size=batch_size_embs)
+_rng = np.random.default_rng(42)
+
+
+# If we can load all the data in RAM it might be better to side step Dataloader and implement the sampling ourselves.
+class Batcher:
+    def __init__(self, dir_path: Path, known_qids: npt.ArrayLike, batch_size: int):
+        self.dir_path = dir_path
+        embs, qids, tokens = load_embs_qids_tokens(dir_path)
+        self._embs, self._qids, self._tokens = self._remove_when_qid_missing(
+            (embs, qids, tokens), known_qids
+        )
+
+        self._data_index = np.arange(len(self._embs))
+        self._batch_size = batch_size
+        self._max_idx = len(self._embs) // self._batch_size
+        self._batch_idx = 0
+
+    def shuffler(self):
+        _rng.shuffle(self._data_index)
+
+    def get_batch(self):
+        if self._batch_idx == self._max_idx - 1:
+            self._batch_idx = 0
+            self.shuffler()
+        indices = self._data_index[
+            self._batch_idx * self._batch_size : self._batch_idx * self._batch_size
+            + self._batch_size
+        ]
+        self._batch_idx += 1
+        batch = (self._embs[indices], self._qids[indices], self._tokens[indices])
+        return batch
 
     def __iter__(self):
-        for toks, atts, qids in self.data_loader:
-            toks = toks.to(self.device)
-            atts = atts.to(self.device)
-            with torch.no_grad():
-                embs = self.model(toks, atts).pooler_output.detach().cpu().numpy()
-            toks = toks.detach().cpu().numpy()
-            atts = atts.detach().cpu().numpy()
-            for i in range(len(qids)):
-                yield toks[i], atts[i], qids[i], embs[i]
+        while True:
+            yield self.get_batch()
+
+    def _remove_when_qid_missing(self, data, known_qids):
+        embs, qids, tokens = data
+        mask = np.isin(qids, known_qids)
+        return embs[mask], qids[mask], tokens[mask]
 
 
-class DamuelNeighborsIterableDataset(IterableDataset):
+def _numpy_collate(batch):
+    if isinstance(batch[0], np.ndarray):
+        return np.stack(batch)
+    elif isinstance(batch[0], (tuple, list)):
+        transposed = zip(*batch)
+        return [_numpy_collate(samples) for samples in transposed]
+    else:
+        return np.array(batch)
+
+
+@nb.njit
+def _prepare_batch(
+    batch_size, line_size, per_mention, toks_size, sampler_tokens, positive, negative
+):
+    together_line = np.zeros((line_size, toks_size), dtype=np.int32)
+    batch_Y = np.zeros((batch_size, line_size))
+
+    together_line_idx = 0
+
+    # If index error check that we are not at the end of data
+    # if so then len(embs) < batch_size is likely to happen.
+    for i in range(batch_size):
+        pos_idx, neg_ids = positive[i], negative[i]
+
+        batch_Y[i, i * per_mention] = 1
+
+        together_line[together_line_idx] = sampler_tokens[pos_idx]
+        together_line_idx += 1
+
+        together_line[together_line_idx : together_line_idx + len(neg_ids)] = (
+            sampler_tokens[neg_ids]
+        )
+        together_line_idx += len(neg_ids)
+
+    return together_line, batch_Y
+
+
+class DamuelNeighborsIterator:
     def __init__(
         self,
-        index: TokenIndex,
-        tokenizer_embs_dataset: IterableDataset,
+        batcher: Batcher,
         batch_size: int,
+        neg_cnt: int,
+        sampler: BatchSampler,
+        sampler_tokens: npt.NDArray[np.int_],
         toks_size: int,
-        positive_cnt: int,
-        negative_cnt: int,
-        model,
-        device,
-    ):
-        self.index = index
-        self.tokenizer_embs_dataset = tokenizer_embs_dataset
+    ) -> None:
+        self.batcher = batcher
         self.batch_size = batch_size
+        self.negative_cnt = neg_cnt
+        self.batch_sampler = sampler
+        self.sampler_tokens = sampler_tokens
         self.toks_size = toks_size
-        self.positive_cnt = positive_cnt
-        self.negative_cnt = negative_cnt
-        self.model = model
-        self.device = device
 
     def __iter__(self):
-        per_mention = self.positive_cnt + self.negative_cnt
-        self.model.to(self.device)
-        for toks, atts, qids, embs in self._batch_sampler():
-            batch = np.zeros((self.batch_size, 2, self.toks_size), dtype=np.int64)
-            together_line = np.zeros(
-                (self.batch_size * per_mention, 2, self.toks_size), dtype=np.int64
+        per_mention = 1 + self.negative_cnt
+        line_size = per_mention * self.batch_size
+        for embs, qids, toks in self.batcher:
+            batch = toks
+
+            positive, negative = self.batch_sampler.sample(
+                embs, qids, self.negative_cnt
             )
-            batch_Y = np.zeros((self.batch_size, self.batch_size * per_mention))
-
-            together_line_idx = 0
-
-            neighbors_batched = self.index.query_batched(
-                embs, qids, positive_cnt=self.positive_cnt, neg_cnt=self.negative_cnt
+            together_line, batch_Y = _prepare_batch(
+                self.batch_size,
+                line_size,
+                per_mention,
+                self.toks_size,
+                self.sampler_tokens,
+                positive,
+                negative,
             )
-
-            batch[:, 0] = toks
-            batch[:, 1] = atts
-
-            for i in range(len(neighbors_batched)):
-                pos_toks_atts, neg_toks_atts = neighbors_batched[i]
-
-                if (
-                    len(pos_toks_atts[0]) == 0
-                ):  # prevents case when there is no positive, which messes up training
-                    # will not happen in DaMuEL
-                    pos_toks_atts = ([toks[i]], [atts[i]])
-
-                    # drop last negative to preserve the per_mention_count
-                    neg_toks_atts[0] = neg_toks_atts[0][:-1]
-                    neg_toks_atts[1] = neg_toks_atts[1][:-1]
-
-                batch_Y[
-                    i, i * per_mention : i * per_mention + len(pos_toks_atts[0])
-                ] = 1 / len(pos_toks_atts[0])
-
-                old_together_line_idx = together_line_idx
-
-                for pos in zip(*pos_toks_atts):
-                    for k in range(2):
-                        together_line[together_line_idx][k] = pos[k]
-                    together_line_idx += 1
-                for neg in zip(*neg_toks_atts):
-                    for k in range(2):
-                        together_line[together_line_idx][k] = neg[k]
-                    together_line_idx += 1
-
-                # Checks that the number of entities per mention is correct
-                assert together_line_idx - old_together_line_idx == per_mention
-
-            yield (
-                torch.tensor(batch, dtype=torch.long),
-                torch.tensor(together_line, dtype=torch.long),
-                torch.tensor(batch_Y, dtype=torch.float32),
-            )
-
-    def _batch_sampler(self):
-        toks, atts, qids, embs = [], [], [], []
-        for tok, att, qid, emb in self.tokenizer_embs_dataset:
-            # This is not needed due to DaMuEL's structure
-            # if qid not in self.index:
-            # continue
-            toks.append(tok)
-            atts.append(att)
-            qids.append(qid)
-            embs.append(emb)
-            if len(toks) == self.batch_size:
-                toks = np.stack(toks, axis=0)
-                atts = np.stack(atts, axis=0)
-                embs = np.array(embs)
-                qids = np.array(qids)
-                yield toks, atts, qids, embs
-                toks, atts, qids, embs = [], [], [], []
-
-
-class StatefulIterableDataset(IterableDataset):
-    def __init__(self, dataset: IterableDataset):
-        self.dataset = dataset
-        self._iterator = iter(dataset)
-
-    def __iter__(self):
-        for batch in self._iterator:
-            yield batch
-        self._iterator = iter(self.dataset)
+            yield batch, together_line, batch_Y

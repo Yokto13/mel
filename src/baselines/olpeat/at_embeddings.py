@@ -23,8 +23,6 @@ import torch.nn as nn
 from transformers import BertModel
 
 from models.data.only_once_dataset import OnlyOnceDataset
-from models.data.tokens_multiplicity_counter import TokensMultiplicityCounter
-from models.data.tokens_searcher import TokensSearcher
 from utils.embeddings import embed
 from utils.multifile_dataset import MultiFileDataset
 

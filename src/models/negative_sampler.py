@@ -5,11 +5,11 @@ from models.searcher import Searcher
 
 
 @numba.njit
-def _sample_numba(batch_qids, negative_cnts, neighbors_qids, neighbors):
+def _sample_numba(batch_qids, negative_cnts, neighbors_mask, neighbors):
     res = np.empty((len(batch_qids), negative_cnts), dtype=np.int32)
 
     for i in range(len(batch_qids)):
-        res[i] = neighbors[i][(neighbors_qids[i] != batch_qids[i])][:negative_cnts]
+        res[i] = neighbors[i][neighbors_mask[i]][:negative_cnts]
 
     return res
 
@@ -27,5 +27,6 @@ class NegativeSampler:
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
     ) -> np.ndarray:
-        neighbors = self.searcher.find(batch_embs, negative_cnts + 1)
-        return _sample_numba(batch_qids, negative_cnts, self.qids[neighbors], neighbors)
+        neighbors = self.searcher.find(batch_embs, negative_cnts + len(batch_embs))
+        neighbors_mask = np.isin(self.qids[neighbors], batch_qids, invert=True)
+        return _sample_numba(batch_qids, negative_cnts, neighbors_mask, neighbors)

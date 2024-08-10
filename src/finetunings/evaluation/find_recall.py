@@ -3,6 +3,8 @@ from hashlib import sha1
 from pathlib import Path
 import sys
 
+from utils.loaders import load_embs_and_qids
+
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import fire
@@ -56,66 +58,8 @@ class RecallCalculator:
         return qid_was_present
 
 
-def _get_items_count_and_dim(dir_path):
-    cnt = 0
-    dim = 0
-    print("Counting items...")
-    print(sorted(dir_path.iterdir()))
-    for fname in sorted(dir_path.iterdir()):
-        if not fname.name.startswith("embs"):
-            continue
-        print("Reading", fname)
-        if dim == 0:
-            embs = np.load(fname)
-            dim = embs.shape[1]
-        qids = np.load(dir_path / f"qids_{fname.stem.split('_')[1]}.npy")
-
-        for _ in qids:
-            cnt += 1
-    return cnt, dim
-
-
-def load_embs(dir_path):
-    if isinstance(dir_path, str):
-        dir_path = Path(dir_path)
-
-    cnt, dim = _get_items_count_and_dim(dir_path)
-    print("Total items:", cnt, "Dimension:", dim)
-    embs_all = np.empty((cnt, dim), dtype=np.float32)
-    qids_all = np.empty(cnt, dtype=np.int64)
-
-    idx = 0
-
-    for fname in sorted(dir_path.iterdir()):
-        if not fname.name.startswith("embs"):
-            continue
-        print("Loading", fname)
-        embs = np.load(fname)
-        qids = np.load(dir_path / f"qids_{fname.stem.split('_')[1]}.npy")
-
-        for emb, qid in zip(embs, qids):
-            embs_all[idx] = emb
-            qids_all[idx] = qid
-            idx += 1
-    return embs_all, qids_all
-
-
-def load_damuel(damuel_entities, damuel_links):
-    if damuel_links is not None:
-        print("Loading DAMUEL links...")
-        damuel_embs, damuel_qids = load_embs(damuel_links)
-
-        print("Loading DAMUEL entities...")
-        damuel_embs_entities, damuel_qids_entities = load_embs(damuel_entities)
-
-        damuel_qids = np.concatenate([damuel_qids, damuel_qids_entities])
-        del damuel_qids_entities
-        damuel_embs = np.concatenate([damuel_embs, damuel_embs_entities])
-        del damuel_embs_entities
-
-    else:
-        print("Loading DAMUEL entities...")
-        damuel_embs, damuel_qids = load_embs(damuel_entities)
+def load_damuel(damuel):
+    damuel_embs, damuel_qids = load_embs_and_qids(damuel)
 
     damuel_embs = damuel_embs / np.linalg.norm(damuel_embs, axis=1, keepdims=True)
     return damuel_embs, damuel_qids
@@ -123,8 +67,7 @@ def load_damuel(damuel_entities, damuel_links):
 
 def load_mewsli(mewsli):
     print("Loading MEWSLI entities...")
-    mewsli_embs, mewsli_qids = load_embs(mewsli)
-    mewsli_embs = np.array(mewsli_embs)
+    mewsli_embs, mewsli_qids = load_embs_and_qids(mewsli)
 
     mewsli_embs = mewsli_embs / np.linalg.norm(mewsli_embs, axis=1, keepdims=True)
 
@@ -148,9 +91,8 @@ def find_recall(
     damuel_entities: str,
     mewsli: str,
     R,
-    damuel_links: str = None,
 ):
-    damuel_embs, damuel_qids = load_damuel(damuel_entities, damuel_links)
+    damuel_embs, damuel_qids = load_damuel(damuel_entities)
     R = min(R, len(damuel_qids))
 
     mewsli_embs, mewsli_qids = load_mewsli(mewsli)

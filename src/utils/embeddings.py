@@ -13,12 +13,18 @@ from torch.utils.data import DataLoader
 from transformers import BertModel
 
 from utils.multifile_dataset import MultiFileDataset
+from utils.model_factory import ModelFactory
 
 _logger = logging.getLogger("utils.embeddings")
 
 
-def _create_attention_mask(toks, padding_value=0):
-    return (toks != padding_value).long()
+def create_attention_mask(toks, padding_value=0):
+    if isinstance(toks, torch.Tensor):
+        return (toks != padding_value).long()
+    elif isinstance(toks, np.ndarray):
+        return (toks != padding_value).astype(np.int64)
+    else:
+        raise TypeError("Input must be a PyTorch tensor or NumPy array")
 
 
 class _Processer:
@@ -85,7 +91,7 @@ def embed(
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
-            attention_mask = _create_attention_mask(batch_toks)
+            attention_mask = create_attention_mask(batch_toks)
             if torch.cuda.is_available():
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
@@ -119,7 +125,7 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
 
 
 def embs_from_tokens_and_model_name(source, model_name, batch_size, dest):
-    model = BertModel.from_pretrained(model_name)
+    model = ModelFactory.load_bert_from_file(model_name)
     embs_from_tokens_and_model(source, model, batch_size, dest)
 
 
@@ -130,11 +136,13 @@ def embs_from_tokens_model_name_and_state_dict(
     dest_path: str,
     state_dict_path: str | None,
 ):
-    model = BertModel.from_pretrained(model_name)
-    if state_dict_path is not None:
+    if state_dict_path is None:
+        model = ModelFactory.load_bert_from_file(model_name)
+    else:
         _logger.debug("Loading model state dict")
-        d = torch.load(state_dict_path)
-        model.load_state_dict(d)
+        model = ModelFactory.load_bert_from_file_and_state_dict(
+            model_name, state_dict_path
+        )
     embs_from_tokens_and_model(source_path, model, batch_size, dest_path)
 
 

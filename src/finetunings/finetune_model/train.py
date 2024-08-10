@@ -1,41 +1,36 @@
-from collections import deque
 from dataclasses import dataclass
-from copy import deepcopy
-import lzma
+import logging
 from pathlib import Path
-import pickle
-import sys
-import blosc
+from typing import Any
 
-sys.stdout.reconfigure(line_buffering=True, write_through=True)
-
+import numpy as np
 from fire import Fire
 import torch
 import torch.optim as optim
 import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-
-from transformers import BertModel, BertTokenizerFast
 
 import wandb
 
-from models.finetuning.wrapper import FinetuningWrapper
-from models.finetuning.wrapper_with_multiplier import FinetuningWrapperWithMultiplier
-from models.finetuning.wrapper_gillick_like import FinetuningWrapperGillick
 from utils.argument_wrappers import ensure_datatypes
 from utils.running_averages import RunningAverages
+from utils.embeddings import create_attention_mask
+from utils.model_factory import ModelFactory
 
 # Settings ===========================================
 
 _RUNNING_AVERAGE_SMALL = 100
 _RUNNING_AVERAGE_BIG = 1000
 
+_logger = logging.getLogger("finetuning.finetune_model.train")
+
 
 if torch.cuda.is_available():
-    print("CUDA is available!")
+    _logger.debug("Running on CUDA.")
     device = torch.device("cuda")
 else:
-    print("CUDA is not available.")
+    _logger.debug("CUDA is not available.")
     device = torch.device("cpu")
 
 SEED = 0
@@ -43,7 +38,7 @@ torch.manual_seed(SEED)
 
 
 @dataclass
-class SaveInformation:
+class _SaveInformation:
     type: str
     output_path: Path
     is_final: bool
@@ -51,141 +46,115 @@ class SaveInformation:
     recall: int = None
 
 
-def load_epoch_xz(path, epoch):
-    with lzma.open(path / f"epoch_{epoch}.pkl.xz", "rb") as f:
-        return pickle.load(f)
+def _load_epoch_npz(path: Path, epoch: int | str) -> tuple:
+    d = np.load(path / f"epoch_{epoch}.npz")
+    return d["X"], d["lines"], d["Y"]
 
 
-def load_epoch_blosc(path, epoch):
-    with open(path / f"epoch_{epoch}.dat", "rb") as f:
-        compressed = f.read()
-    decompressed = blosc.decompress(compressed)
-    return pickle.loads(decompressed)
+def _batch_recall(outputs: torch.tensor, target: torch.tensor, k: int = 1) -> float:
+    """Calculates recall inside the batch.
 
+    The calculation is done per each row. The exact values of outputs and target are not importand only orderings matter.
+    Consequently this works both with logits and softmax. If k is greater than the number of classes **returns 0**.
 
-def batch_recall(outputs, target, k=1):
+    Args:
+        outputs (torch.tensor): Matrix where each row corresponds to one multiclass classification.
+        target (torch.tensor): Matrix where each row corresponds to one multiclass classification, same shape as outputs.
+        k (int, optional): Recall at K. Defaults to 1.
+
+    Returns:
+        float: Recall at K for this batch.
+    """
+    if len(outputs[0]) < k:  # batch is too small.
+        return 0.0
     _, top_indices = outputs.topk(k, dim=-1)
     top_values = target.gather(-1, top_indices)
     recall_per_row = top_values.any(dim=-1).float()
-    return recall_per_row.mean()
+    return recall_per_row.mean().item()
 
 
-def gillick_loss(similarities, targets, model: FinetuningWrapperGillick):
-    logits_for_cross_entropy = similarities * model.softmax_multiplier
-    cross_entropy_component = nn.CrossEntropyLoss()(logits_for_cross_entropy, targets)
-    logits_for_binary = model.sigmoid_multiplier * similarities + model.sigmoid_offset
-    binary_component = nn.BCEWithLogitsLoss()(logits_for_binary, targets)
-    return cross_entropy_component + binary_component
-
-
-def linear_warmup(current_step, warmup_steps, lr):
-    if current_step >= warmup_steps:
-        return lr
-    else:
-        return current_step / warmup_steps * lr
-
-
-def init_averages():
-    loss_running = deque(maxlen=_RUNNING_AVERAGE_SMALL)
-    recall_running_1 = deque(maxlen=_RUNNING_AVERAGE_SMALL)
-    recall_running_10 = deque(maxlen=_RUNNING_AVERAGE_SMALL)
-    loss_running_big = deque(maxlen=_RUNNING_AVERAGE_BIG)
-    recall_running_1_big = deque(maxlen=_RUNNING_AVERAGE_BIG)
-    recall_running_10_big = deque(maxlen=_RUNNING_AVERAGE_BIG)
-    return (
-        loss_running,
-        recall_running_1,
-        recall_running_10,
-        loss_running_big,
-        recall_running_1_big,
-        recall_running_10_big,
-    )
-
-
-def wrapper_contains_additional_variables(TYPE):
-    return "multiplier" in TYPE or "gillick_loss" in TYPE
-
-
-def should_multiply_logits_outside(TYPE):
-    return not ("multiplier" in TYPE or "gillick_loss" in TYPE)
-
-
-def save_non_final_model(wrapper, save_information: SaveInformation):
+def _save_non_final_model(model: nn.Module, save_information: _SaveInformation) -> None:
     def construct_non_final_name():
         return f"{save_information.output_path}/{wandb.run.name}_{save_information.epoch}_{save_information.recall}.pth"
 
     name = construct_non_final_name()
-
-    if wrapper_contains_additional_variables(save_information.type):
-        torch.save(wrapper.state_dict(), name)
-    else:
-        torch.save(wrapper.model.state_dict(), name)
+    torch.save(model.state_dict(), name)
 
 
-def save_final_model(wrapper, save_information: SaveInformation):
-    if wrapper_contains_additional_variables(save_information.type):
-        torch.save(wrapper.state_dict(), f"{save_information.output_path}/final.pth")
-    else:
-        torch.save(
-            wrapper.model.state_dict(), f"{save_information.output_path}/final.pth"
-        )
+def _save_final_model(model: nn.Module, save_information: _SaveInformation) -> None:
+    torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
 
 
-def save_model(wrapper, save_information: SaveInformation):
+def _save_model(model: nn.Module, save_information: _SaveInformation) -> None:
     if save_information.is_final:
-        save_final_model(wrapper, save_information)
+        _save_final_model(model, save_information)
     else:
-        save_non_final_model(wrapper, save_information)
+        _save_non_final_model(model, save_information)
 
 
-def get_wrapper(model, TYPE, LOGIT_MULTIPLIER):
-    if "multiplier" in TYPE or "gillick_loss" in TYPE:
-        if "gillick_loss" in TYPE:
-            return FinetuningWrapperGillick(model, LOGIT_MULTIPLIER, 1, 0)
-        return FinetuningWrapperWithMultiplier(model, LOGIT_MULTIPLIER)
-    return FinetuningWrapper(model)
+def _forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.tensor:
+    """Calculates normalized embeddings. Attentions are created automatically. Assumes 0 is the padding token.
+
+    Args:
+        toks (torch.tensor): tokens
+        model (nn.ModuleDict): model
+
+    Returns:
+        torch.tensor: normalized embs.
+    """
+    att = create_attention_mask(toks)
+    embeddings = model(toks, att).pooler_output
+    return torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
 
-def create_model(TYPE, foundation_model, LOGIT_MULTIPLIER=1, MODEL_PATH=None):
-    if wrapper_contains_additional_variables(TYPE):
-        model = create_additional_variables_model(
-            TYPE, foundation_model, LOGIT_MULTIPLIER, MODEL_PATH
-        )
+def _get_wandb_logs(
+    loss_item: float, r_at_1: float, r_at_10: float, running_averages: RunningAverages
+) -> dict:
+    return {
+        "loss": loss_item,
+        "r_at_1": r_at_1,
+        "r_at_10": r_at_10,
+        "running_loss": running_averages.loss,
+        "running_r_at_1": running_averages.recall_1,
+        "running_r_at_10": running_averages.recall_10,
+        "running_loss_big": running_averages.loss_big,
+        "running_r_at_1_big": running_averages.recall_1_big,
+        "running_r_at_10_big": running_averages.recall_10_big,
+    }
+
+
+class _LinksAndDescriptionsTogetherDataset(Dataset):
+    def __init__(self, dataset_dir: Path, epoch: int) -> None:
+        super().__init__()
+        self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
+
+    def __len__(self):
+        return self._links.shape[0]
+
+    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
+        links = self._links[index]
+        descriptions = self._descriptions[index]
+        y = self._Y[index]
+        together = np.concatenate((links, descriptions))
+
+        return together, y
+
+    @property
+    def links_cnt(self) -> int:
+        return self._links.shape[1]
+
+    @property
+    def descriptions_cnt(self) -> int:
+        return self._descriptions.shape[1]
+
+
+def _load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
+    if state_dict_path is None:
+        return ModelFactory.load_bert_from_file(model_path)
     else:
-        model = create_default_model(foundation_model, MODEL_PATH)
-
-    return model
-
-
-def create_additional_variables_model(
-    TYPE, foundation_model, LOGIT_MULTIPLIER=1, MODEL_PATH=None
-):
-    if "gillick_loss" in TYPE:
-        # good defaults
-        sigmoid_multiplier = 1
-        sigmoid_offset = 0
-        model = FinetuningWrapperGillick(
-            deepcopy(foundation_model),
-            LOGIT_MULTIPLIER,
-            sigmoid_multiplier,
-            sigmoid_offset,
+        return ModelFactory.load_bert_from_file_and_state_dict(
+            model_path, state_dict_path
         )
-    else:
-        model = FinetuningWrapperWithMultiplier(
-            deepcopy(foundation_model), LOGIT_MULTIPLIER
-        )
-
-    if MODEL_PATH:
-        model.load_state_dict(torch.load(MODEL_PATH))
-
-    return model
-
-
-def create_default_model(foundation_model, MODEL_PATH=None):
-    if MODEL_PATH:
-        foundation_model.load_state_dict(torch.load(MODEL_PATH))
-
-    return FinetuningWrapper(deepcopy(foundation_model))
 
 
 # Training ===========================================
@@ -198,7 +167,6 @@ def create_default_model(foundation_model, MODEL_PATH=None):
         float,
         str,
         str,
-        # Path,
     ],
     {},
 )
@@ -210,127 +178,82 @@ def train(
     LR: float,
     TYPE: str = "entity_names",
     MODEL_SAVE_DIR: str = "models",
-    MODEL_PATH: Path = None,
-    decay: float = 0.998,
+    STATE_DICT_PATH: str | None = None,
 ):
-    # print all params
-    print("BATCH_DIR:", DATASET_DIR)
-    print("MODEL_NAME:", FOUNDATION_MODEL_PATH)
-    print("EPOCHS:", EPOCHS)
-    print("LOGIT_MULTIPLIER:", LOGIT_MULTIPLIER)
-    print("TYPE:", TYPE)
-    print("LR:", LR)
-    print("STATE_DICT_PATH:", MODEL_PATH)
-
-    foundation_model = BertModel.from_pretrained(FOUNDATION_MODEL_PATH)
-    if "mentions" in TYPE:
-        tokenizer = BertTokenizerFast.from_pretrained(FOUNDATION_MODEL_PATH)
-        tokenizer.add_special_tokens({"cls_token": "[M]"})
-        foundation_model.resize_token_embeddings(len(tokenizer))
-
-    criterion = nn.CrossEntropyLoss()
-    if "gillick_loss" in TYPE:
-        print("USING GILLICK LOSS")
-        criterion = gillick_loss
-
-    print("Number of tokens in tokenizer:", len(tokenizer))
-
-    model = create_model(TYPE, foundation_model, LOGIT_MULTIPLIER, MODEL_PATH)
-
+    model = _load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH)
+    model = nn.DataParallel(model)
     model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    if "decay" in TYPE:
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, decay)
-
     running_averages = RunningAverages(_RUNNING_AVERAGE_SMALL, _RUNNING_AVERAGE_BIG)
 
-    print("Starting training")
+    criterion = nn.CrossEntropyLoss()
+
+    _logger.debug("Starting training")
     for epoch in range(EPOCHS):
         model.to(device)
         model.train()
 
         train_loss = 0
 
-        batches = load_epoch_blosc(DATASET_DIR, epoch)
-        print(f"Loaded {len(batches)} batches")
-        epoch_steps = len(batches)
+        _logger.debug(f"EPOCH: {epoch}")
+        dataset = _LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
+        dataloader = DataLoader(
+            dataset, batch_size=None, num_workers=4, pin_memory=True
+        )
 
-        print("EPOCH:", epoch)
+        for i, (together, labels) in enumerate(tqdm(dataloader, total=len(dataset))):
+            # assert i <= 100
 
-        for batch in tqdm(batches):
+            together = together.to(device)
 
-            batch_embs, batch_frenemies, labels = batch
+            together = _forward_to_embeddings(together, model)
 
-            batch_embs = torch.tensor(batch_embs, dtype=torch.int32)
-            batch_frenemies = torch.tensor(batch_frenemies, dtype=torch.int32)
+            links_embedded, descs_embedded = (
+                together[: dataset.links_cnt],
+                together[dataset.links_cnt :],
+            )
 
-            batch_embs = batch_embs.to(device)
-            batch_frenemies = batch_frenemies.to(device)
+            outputs = torch.mm(links_embedded, descs_embedded.t())
 
-            outputs = model(batch_embs, batch_frenemies)
-
-            if should_multiply_logits_outside(TYPE):
-                outputs = outputs * LOGIT_MULTIPLIER
+            outputs = outputs * LOGIT_MULTIPLIER
 
             labels = labels.to(device)
-            if "gillick_loss" in TYPE:
-                loss = criterion(outputs, labels, model)
-            else:
-                loss = criterion(outputs, labels)
+            loss = criterion(outputs, labels)
 
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
-            train_loss += loss.item()
+            loss_item = loss.item()
+            train_loss += loss_item
 
-            r_at_1 = batch_recall(outputs, labels, k=1)
-            r_at_10 = torch.tensor(0)
-            if len(outputs[0]) >= 10:  # if batch is too small, we can't calculate r@10
-                r_at_10 = batch_recall(outputs, labels, k=10)
+            r_at_1 = _batch_recall(outputs, labels, k=1)
+            r_at_10 = _batch_recall(outputs, labels, k=10)
 
-            running_averages.update_loss(loss.item())
-            running_averages.update_recall(r_at_1.item(), r_at_10.item())
+            running_averages.update_loss(loss_item)
+            running_averages.update_recall(r_at_1, r_at_10)
 
-            wand_dict = {
-                "loss": loss.item(),
-                "r_at_1": r_at_1.item(),
-                "r_at_10": r_at_10.item(),
-                "running_loss": running_averages.loss,
-                "running_r_at_1": running_averages.recall_1,
-                "running_r_at_10": running_averages.recall_10,
-                "running_loss_big": running_averages.loss_big,
-                "running_r_at_1_big": running_averages.recall_1_big,
-                "running_r_at_10_big": running_averages.recall_10_big,
-            }
-            if "gillick_loss" in TYPE:
-                wand_dict["softmax_multiplier"] = model.softmax_multiplier.item()
-                wand_dict["sigmoid_multiplier"] = model.sigmoid_multiplier.item()
-                wand_dict["sigmoid_offset"] = model.sigmoid_offset.item()
-
+            wand_dict = _get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
             wandb.log(
                 wand_dict,
             )
-        print(f"Train loss: {train_loss / epoch_steps}")
-
-        if "decay" in TYPE:
-            scheduler.step()
+        _logger.debug(f"Train loss: {train_loss / len(dataset)}")
 
         model.to("cpu")
         if epoch % 50 == 0:
-            save_information = SaveInformation(
+            save_information = _SaveInformation(
                 TYPE,
                 MODEL_SAVE_DIR,
                 False,
                 epoch,
                 wand_dict["running_r_at_1_big"],
             )
-            save_model(model, save_information)
+            _save_model(model.module, save_information)
 
-    save_information = SaveInformation(TYPE, MODEL_SAVE_DIR, True)
-    save_model(model, save_information)
+    save_information = _SaveInformation(TYPE, MODEL_SAVE_DIR, True)
+    _save_model(model.module, save_information)
 
 
 if __name__ == "__main__":

@@ -30,7 +30,7 @@ class ScaNNSearcher(Searcher):
         super().__init__(embs, results)
 
     def find(self, batch, num_neighbors) -> np.ndarray:
-        neighbors, _ = self.scann_index.search_batched(
+        neighbors, _ = self.searcher.search_batched(
             batch, final_num_neighbors=num_neighbors
         )
         return self.results[neighbors]
@@ -57,6 +57,8 @@ class ScaNNSearcher(Searcher):
             num_leaves=num_leaves,
             num_leaves_to_search=num_leaves_to_search,
             training_sample_size=training_sample_size,
+            # soar_lambda=1.5,
+            # overretrieve_factor=2.0,
         )
         if use_assymetric_hashing:
             builder = builder.score_ah(2, anisotropic_quantization_threshold=0.2)

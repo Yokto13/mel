@@ -1,35 +1,36 @@
+import logging
 from pathlib import Path
-import pickle
 import sys
-from time import time
+
+from utils.multifile_dataset import MultiFileDataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
-import blosc
-from fire import Fire
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
-from transformers import BertModel, BertTokenizerFast
+from transformers import BertModel
 from tqdm import tqdm
 
-from data_processors.index.token_index import TokenIndex
-from utils.loaders import get_emb_state_dict
+# from data_processors.index.token_index import TokenIndex
+from models.batch_sampler import BatchSampler
+from models.searcher import ScaNNSearcher
+from utils.loaders import get_emb_state_dict, load_embs_and_qids
 from finetunings.generate_epochs.datasets import (
+    Batcher,
     TokensIterableDataset,
-    TokensEmbsIterableDataset,
-    StatefulIterableDataset,
-    DamuelNeighborsIterableDataset,
+    DamuelNeighborsIterator,
 )
+
+_logger = logging.getLogger("finetunings.generate_epochs.generate")
 
 # Settings ===========================================
 
 
 if torch.cuda.is_available():
-    print("CUDA is available!")
+    _logger.debug("CUDA is available!")
     device = torch.device("cuda")
 else:
-    print("CUDA is not available.")
+    _logger.debug("CUDA is not available.")
     device = torch.device("cpu")
 
 SEED = 0
@@ -37,47 +38,37 @@ torch.manual_seed(SEED)
 
 
 def generate(
-    TOKENS_DIR: Path,
-    TOKENS_INDEX_DIR: Path,
+    LINKS_EMBS_DIR: Path,
+    INDEX_TOKENS_DIR: Path,
+    INDEX_EMBS_QIDS_DIR: str,
     OUTPUT_DIR: Path,
     MODEL_PATH: str,
     BATCH_SIZE: int,
     EPOCHS: int,
     STEPS_PER_EPOCH: int,
-    POS: int,
     NEG: int,
     CONTEXT_SIZE: int,
-    TYPE: str = "entity_names",
     STATE_DICT_PATH: str = None,
-):
-    TOKENS_DIR = Path(TOKENS_DIR)
-    TOKENS_INDEX_DIR = Path(TOKENS_INDEX_DIR)
+) -> None:
+    LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
+    INDEX_TOKENS_DIR = Path(INDEX_TOKENS_DIR)
     OUTPUT_DIR = Path(OUTPUT_DIR)
     STATE_DICT_PATH = Path(STATE_DICT_PATH) if STATE_DICT_PATH else None
 
     # make sure the output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # print all params
-    print("TOKENS_DIR:", TOKENS_DIR)
-    print("TOKENS_INDEX_DIR:", TOKENS_INDEX_DIR)
-    print("OUTPUT_DIR:", OUTPUT_DIR)
-    print("MODEL_NAME:", MODEL_PATH)
-    print("BATCH_SIZE:", BATCH_SIZE)
-    print("EPOCHS:", EPOCHS)
-    print("STEPS_PER_EPOCH:", STEPS_PER_EPOCH)
-    print("POS:", POS)
-    print("NEG:", NEG)
-    print("CONTEXT_SIZE:", CONTEXT_SIZE)
-    print("TYPE:", TYPE)
-    print("STATE_DICT_PATH:", STATE_DICT_PATH)
+    _logger.debug("INDEX_TOKENS_DIR: %s", INDEX_TOKENS_DIR)
+    _logger.debug("OUTPUT_DIR: %s", OUTPUT_DIR)
+    _logger.debug("MODEL_NAME: %s", MODEL_PATH)
+    _logger.debug("BATCH_SIZE: %s", BATCH_SIZE)
+    _logger.debug("EPOCHS: %s", EPOCHS)
+    _logger.debug("STEPS_PER_EPOCH: %s", STEPS_PER_EPOCH)
+    _logger.debug("NEG: %s", NEG)
+    _logger.debug("CONTEXT_SIZE: %s", CONTEXT_SIZE)
+    _logger.debug("STATE_DICT_PATH: %s", STATE_DICT_PATH)
 
     model = BertModel.from_pretrained(MODEL_PATH)
-    if "mentions" in TYPE:
-        tokenizer = BertTokenizerFast.from_pretrained(MODEL_PATH)
-        tokenizer.add_special_tokens({"cls_token": "[M]"})
-        model.resize_token_embeddings(len(tokenizer))
-        TYPE = "mentions"
 
     if STATE_DICT_PATH:
         state_dict = get_emb_state_dict(STATE_DICT_PATH)
@@ -85,45 +76,52 @@ def generate(
 
     model.to(device)
 
-    token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
+    # token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
+    index_embs, index_qids = load_embs_and_qids(INDEX_EMBS_QIDS_DIR)
+    batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
 
-    tokens_dataset = TokensIterableDataset(TOKENS_DIR, TYPE)
-    embs_dataset = TokensEmbsIterableDataset(tokens_dataset, model, device)
-    stateful_dataset = StatefulIterableDataset(embs_dataset)
-    damuel_neighbors_iterable_dataset = DamuelNeighborsIterableDataset(
-        token_index, stateful_dataset, BATCH_SIZE, CONTEXT_SIZE, POS, NEG, model, device
+    multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
+    tokens = np.array([x[0] for x in multifile_dataset])
+
+    # dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
+    batcher = Batcher(LINKS_EMBS_DIR, batch_sampler.qids, BATCH_SIZE)
+    damuel_neighbors_iterator = DamuelNeighborsIterator(
+        batcher,
+        BATCH_SIZE,
+        NEG,
+        batch_sampler,
+        tokens,
+        CONTEXT_SIZE,
     )
 
-    data_loader = DataLoader(
-        damuel_neighbors_iterable_dataset,
-        batch_size=1,
-    )
+    gen = iter(damuel_neighbors_iterator)
 
     for epoch in range(EPOCHS):
         epoch_steps_counter = 0
 
-        batches = []
+        X, lines, Y = None, None, None
 
-        for batch in tqdm(data_loader, total=STEPS_PER_EPOCH):
-            batch = [x[0] for x in batch]
-
-            batches.append(batch)
-
+        for i, (x, line, y) in tqdm(enumerate(gen), total=STEPS_PER_EPOCH):
+            if i == 0:
+                X = np.empty((STEPS_PER_EPOCH, *x.shape), dtype=np.int32)
+                lines = np.empty((STEPS_PER_EPOCH, *line.shape), dtype=np.int32)
+                Y = np.empty((STEPS_PER_EPOCH, *y.shape), dtype=np.float32)
+            X[i] = x
+            lines[i] = line
+            Y[i] = y
             epoch_steps_counter += 1
             if epoch_steps_counter == STEPS_PER_EPOCH:
                 epoch_steps_counter = 0
                 break
-        print(f"Epoch {epoch} created")
-        print("Saving")
+        _logger.debug(f"Epoch {epoch} created")
+        _logger.debug("Saving")
 
         # save compressed with lzma and pickle
-        with open(OUTPUT_DIR / f"epoch_{epoch}.dat", "wb") as f:
-            data = pickle.dumps(batches)
-            data = blosc.compress(data)
-            f.write(data)
+        np.savez_compressed(
+            OUTPUT_DIR / f"epoch_{epoch}.npz",
+            X=np.array(X),
+            lines=np.array(lines),
+            Y=np.array(Y),
+        )
 
-        print("Saved")
-
-
-if __name__ == "__main__":
-    Fire(generate)
+        _logger.debug("Saved")
