@@ -57,6 +57,8 @@ class ScaNNSearcher(Searcher):
             num_leaves=num_leaves,
             num_leaves_to_search=num_leaves_to_search,
             training_sample_size=training_sample_size,
+            # soar_lambda=1.5,
+            # overretrieve_factor=2.0,
         )
         if use_assymetric_hashing:
             builder = builder.score_ah(2, anisotropic_quantization_threshold=0.2)
