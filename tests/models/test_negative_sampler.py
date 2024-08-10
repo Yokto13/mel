@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from unittest.mock import Mock
-from models.searcher import ScaNNSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
 from models.negative_sampler import NegativeSampler
 
 

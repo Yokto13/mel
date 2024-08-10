@@ -1,6 +1,6 @@
 import numpy as np
 from models.negative_sampler import NegativeSampler
-from models.searcher import Searcher
+from models.searchers.searcher import Searcher
 
 
 class BatchSampler:

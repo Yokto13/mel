@@ -6,7 +6,8 @@ sys.path.append("../")
 
 import numpy as np
 
-from models.searcher import ScaNNSearcher, Searcher
+from models.searchers.searcher import Searcher
+from models.searchers.scann_searcher import ScaNNSearcher
 
 
 class Profiler:

@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 # from data_processors.index.token_index import TokenIndex
 from models.batch_sampler import BatchSampler
-from models.searcher import ScaNNSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
 from utils.loaders import get_emb_state_dict, load_embs_and_qids
 from finetunings.generate_epochs.datasets import (
     Batcher,

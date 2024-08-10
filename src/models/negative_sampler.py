@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-from models.searcher import Searcher
+from models.searchers.searcher import Searcher
 
 
 @numba.njit

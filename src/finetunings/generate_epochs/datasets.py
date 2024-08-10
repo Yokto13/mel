@@ -8,7 +8,7 @@ sys.stdout.reconfigure(line_buffering=True, write_through=True)
 import numba as nb
 import numpy as np
 import numpy.typing as npt
-from torch.utils.data import DataLoader, IterableDataset, Dataset
+from torch.utils.data import IterableDataset
 
 from utils.loaders import load_embs_qids_tokens
 

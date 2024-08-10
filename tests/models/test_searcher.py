@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from models.searcher import ScaNNSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
 
 
 @pytest.fixture
