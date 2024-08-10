@@ -154,6 +154,31 @@ class _SplitToTwoDataset(Dataset):
         return self._descriptions.shape[1]
 
 
+class _NormalDataset(Dataset):
+    def __init__(self, dataset_dir: Path, epoch: int) -> None:
+        super().__init__()
+        self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
+
+    def __len__(self):
+        return self._links.shape[0]
+
+    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
+        links = self._links[index]
+        descriptions = self._descriptions[index]
+        y = self._Y[index]
+        together = np.concatenate((links, descriptions))
+
+        return together, y
+
+    @property
+    def links_cnt(self) -> int:
+        return self._links.shape[1]
+
+    @property
+    def descriptions_cnt(self) -> int:
+        return self._descriptions.shape[1]
+
+
 def _embeddig_gen(parts: list, model):
     for part in parts:
         yield _forward_to_embeddings(part, model)
@@ -215,27 +240,32 @@ def train(
         train_loss = 0
 
         _logger.debug(f"EPOCH: {epoch}")
-        split_two_dataset = _SplitToTwoDataset(DATASET_DIR, epoch)
+        # split_two_dataset = _SplitToTwoDataset(DATASET_DIR, epoch)
+        dataset = _NormalDataset(DATASET_DIR, epoch)
         dataloader = DataLoader(
-            split_two_dataset, batch_size=None, num_workers=4, pin_memory=True
+            dataset, batch_size=None, num_workers=4, pin_memory=True
         )
 
-        for i, (first_half, second_half, labels) in enumerate(
-            tqdm(dataloader, total=len(split_two_dataset))
-        ):
+        for i, (together, labels) in enumerate(tqdm(dataloader, total=len(dataset))):
             # assert i <= 100
 
-            first_half = first_half.to(device)
-            second_half = second_half.to(device)
+            # first_half = first_half.to(device)
+            # second_half = second_half.to(device)
+            together = together.to(device)
 
             # let's keep first_half on the GPU because the memore overhead seems to be mostly in the optimizer.
-            first_half, second_half = list(
-                _embeddig_gen([first_half, second_half], model)
+            together = list(_embeddig_gen([together], model))[0]
+
+            # links_embedded, descs_embedded = _get_links_and_descriptions_from_halves(
+            # first_half, second_half, dataset.links_cnt
+            # )
+            links_embedded, descs_embedded = (
+                together[: dataset.links_cnt],
+                together[dataset.links_cnt :],
             )
 
-            links_embedded, descs_embedded = _get_links_and_descriptions_from_halves(
-                first_half, second_half, split_two_dataset.links_cnt
-            )
+            # links_embedded = torch.tensor(links_embedded, device=device)
+            # descs_embedded = torch.tensor(descs_embedded, device=device)
 
             outputs = torch.mm(links_embedded, descs_embedded.t())
 
@@ -261,7 +291,7 @@ def train(
             wandb.log(
                 wand_dict,
             )
-        _logger.debug(f"Train loss: {train_loss / len(split_two_dataset)}")
+        _logger.debug(f"Train loss: {train_loss / len(dataset)}")
 
         model.to("cpu")
         if epoch % 50 == 0:
