@@ -52,3 +52,19 @@ def test_load_real_bert_from_hub():
 
     output_dim = model.pooler.dense.out_features
     assert output_dim == 128
+
+
+def test_load_real_bert_from_hub_and_statedict(tmp_path):
+    # Act
+    model1 = ModelFactory.load_bert_from_file("setu4993/LEALLA-small")
+    state_dict_path = f"{tmp_path}/final.pth"
+    torch.save(model1.state_dict(), state_dict_path)
+
+    model2 = ModelFactory.load_bert_from_file_and_state_dict(
+        "setu4993/LEALLA-small", state_dict_path
+    )
+
+    for p1, p2 in zip(model1.parameters(), model2.parameters()):
+        if p1.data.ne(p2.data).sum() > 0:
+            assert False
+    assert True

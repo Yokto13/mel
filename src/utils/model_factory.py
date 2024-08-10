@@ -18,7 +18,7 @@ class ModelFactory:
 
     @classmethod
     def _add_state_dict_to_model(
-        state_dict_path: str, model: torch.nn.Module
+        cls, state_dict_path: str, model: torch.nn.Module
     ) -> torch.nn.Module:
         d = torch.load(state_dict_path)
         model.load_state_dict(d)
