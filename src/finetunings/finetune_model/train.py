@@ -123,7 +123,7 @@ def _get_wandb_logs(
     }
 
 
-class _NormalDataset(Dataset):
+class _LinksAndDescriptionsTogetherDataset(Dataset):
     def __init__(self, dataset_dir: Path, epoch: int) -> None:
         super().__init__()
         self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
@@ -203,8 +203,7 @@ def train(
         train_loss = 0
 
         _logger.debug(f"EPOCH: {epoch}")
-        # split_two_dataset = _SplitToTwoDataset(DATASET_DIR, epoch)
-        dataset = _NormalDataset(DATASET_DIR, epoch)
+        dataset = _LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
         dataloader = DataLoader(
             dataset, batch_size=None, num_workers=4, pin_memory=True
         )
@@ -212,23 +211,14 @@ def train(
         for i, (together, labels) in enumerate(tqdm(dataloader, total=len(dataset))):
             # assert i <= 100
 
-            # first_half = first_half.to(device)
-            # second_half = second_half.to(device)
             together = together.to(device)
 
-            # let's keep first_half on the GPU because the memore overhead seems to be mostly in the optimizer.
             together = list(_embeddig_gen([together], model))[0]
 
-            # links_embedded, descs_embedded = _get_links_and_descriptions_from_halves(
-            # first_half, second_half, dataset.links_cnt
-            # )
             links_embedded, descs_embedded = (
                 together[: dataset.links_cnt],
                 together[dataset.links_cnt :],
             )
-
-            # links_embedded = torch.tensor(links_embedded, device=device)
-            # descs_embedded = torch.tensor(descs_embedded, device=device)
 
             outputs = torch.mm(links_embedded, descs_embedded.t())
 
