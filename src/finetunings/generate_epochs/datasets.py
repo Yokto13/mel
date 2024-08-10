@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, IterableDataset, Dataset
 from utils.loaders import load_embs_qids_tokens
 
 
+# Might be usefull when we get to the point where Batcher cannot fit to memory.
 class TokensIterableDataset(IterableDataset):
     def __init__(self, dir_path: Path, known_qids: set):
         self.dir_path = dir_path
@@ -26,40 +27,43 @@ class TokensIterableDataset(IterableDataset):
             yield embs, qid, tok
 
 
-rng = np.random.default_rng(42)
+_rng = np.random.default_rng(42)
 
 
 # If we can load all the data in RAM it might be better to side step Dataloader and implement the sampling ourselves.
-class TokensBatcher:
+class Batcher:
     def __init__(self, dir_path: Path, known_qids: npt.ArrayLike, batch_size: int):
         self.dir_path = dir_path
         embs, qids, tokens = load_embs_qids_tokens(dir_path)
-        self.embs, self.qids, self.tokens = self._remove_when_qid_missing(
+        self._embs, self._qids, self._tokens = self._remove_when_qid_missing(
             (embs, qids, tokens), known_qids
         )
 
-        self.data_index = np.arange(len(self.embs))
-        self.batch_size = batch_size
-        self.max_idx = len(self.embs) // self.batch_size
-        self.batch_idx = 0
+        self._data_index = np.arange(len(self._embs))
+        self._batch_size = batch_size
+        self._max_idx = len(self._embs) // self._batch_size
+        self._batch_idx = 0
 
     def shuffler(self):
-        rng.shuffle(self.data_index)
+        _rng.shuffle(self._data_index)
 
     def get_batch(self):
-        if self.batch_idx == self.max_idx - 1:
-            self.batch_idx = 0
+        if self._batch_idx == self._max_idx - 1:
+            self._batch_idx = 0
             self.shuffler()
-        indices = self.data_index[
-            self.batch_idx * self.batch_size : self.batch_idx * self.batch_size
-            + self.batch_size
+        indices = self._data_index[
+            self._batch_idx * self._batch_size : self._batch_idx * self._batch_size
+            + self._batch_size
         ]
-        self.batch_idx += 1
-        batch = (self.embs[indices], self.qids[indices], self.tokens[indices])
+        self._batch_idx += 1
+        batch = (self._embs[indices], self._qids[indices], self._tokens[indices])
         return batch
 
-    def _remove_when_qid_missing(self, data, known_qids):
+    def __iter__(self):
+        while True:
+            yield self.get_batch()
 
+    def _remove_when_qid_missing(self, data, known_qids):
         embs, qids, tokens = data
         mask = np.isin(qids, known_qids)
         return embs[mask], qids[mask], tokens[mask]
@@ -105,21 +109,14 @@ def _prepare_batch(
 class DamuelNeighborsIterator:
     def __init__(
         self,
-        dataset: Dataset | IterableDataset,
+        batcher: Batcher,
         batch_size: int,
         neg_cnt: int,
         sampler: BatchSampler,
         sampler_tokens: npt.NDArray[np.int_],
         toks_size: int,
     ) -> None:
-        self.dataloader = DataLoader(
-            dataset,
-            batch_size,
-            collate_fn=_numpy_collate,
-            num_workers=2,
-            prefetch_factor=2,
-        )
-        self.dataset = dataset
+        self.batcher = batcher
         self.batch_size = batch_size
         self.negative_cnt = neg_cnt
         self.batch_sampler = sampler
@@ -129,8 +126,7 @@ class DamuelNeighborsIterator:
     def __iter__(self):
         per_mention = 1 + self.negative_cnt
         line_size = per_mention * self.batch_size
-        while True:
-            embs, qids, toks = self.dataset.get_batch()
+        for embs, qids, toks in self.batcher:
             batch = toks
 
             positive, negative = self.batch_sampler.sample(
