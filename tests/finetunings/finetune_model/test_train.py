@@ -7,9 +7,7 @@ import torch
 from finetunings.finetune_model.train import (
     _load_epoch_npz,
     _batch_recall,
-    _embeddig_gen,
     _get_wandb_logs,
-    _load_model,
 )
 from utils.running_averages import RunningAverages
 
@@ -86,26 +84,6 @@ def test_batch_recall_large_k():
     recall = _batch_recall(outputs, target, k=100)
 
     assert recall == 0.0
-
-
-def check_embedding_gen_calls_embedding(cnt):
-    with patch(
-        "finetunings.finetune_model.train._forward_to_embeddings"
-    ) as mocked_method:
-        data = [None for i in range(cnt)]
-        model = None
-        g = _embeddig_gen(data, model)
-        assert mocked_method.call_count == 0
-        list(g)
-        assert mocked_method.call_count == cnt
-
-
-def test_embedding_gen_calls_embedding_once():
-    check_embedding_gen_calls_embedding(1)
-
-
-def test_embedding_gen_calls_embedding_a_lot():
-    check_embedding_gen_calls_embedding(100)
 
 
 def mock_load_epoch_npz(dataset_dir, epoch):
