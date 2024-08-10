@@ -11,13 +11,12 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
-from transformers import BertModel
-
 import wandb
 
 from utils.argument_wrappers import ensure_datatypes
 from utils.running_averages import RunningAverages
 from utils.embeddings import create_attention_mask
+from utils.model_factory import ModelFactory
 
 # Settings ===========================================
 
@@ -124,36 +123,6 @@ def _get_wandb_logs(
     }
 
 
-class _SplitToTwoDataset(Dataset):
-    def __init__(self, dataset_dir: Path, epoch: int) -> None:
-        super().__init__()
-        self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
-
-    def __len__(self):
-        return self._links.shape[0]
-
-    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
-        links = self._links[index]
-        descriptions = self._descriptions[index]
-        y = self._Y[index]
-        mid_point_in_descriptions = (
-            self.descriptions_cnt + self.links_cnt
-        ) // 2 - self.links_cnt
-
-        first_half = np.concatenate((links, descriptions[:mid_point_in_descriptions]))
-        second_half = descriptions[mid_point_in_descriptions:]
-
-        return first_half, second_half, y
-
-    @property
-    def links_cnt(self) -> int:
-        return self._links.shape[1]
-
-    @property
-    def descriptions_cnt(self) -> int:
-        return self._descriptions.shape[1]
-
-
 class _NormalDataset(Dataset):
     def __init__(self, dataset_dir: Path, epoch: int) -> None:
         super().__init__()
@@ -184,14 +153,13 @@ def _embeddig_gen(parts: list, model):
         yield _forward_to_embeddings(part, model)
 
 
-def _get_links_and_descriptions_from_halves(first_half, second_half, links_cnt):
-    if links_cnt > len(first_half):
-        raise ValueError(
-            "Having more links that descriptions is currently not supported."
+def _load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
+    if state_dict_path is None:
+        return ModelFactory.load_bert_from_file(model_path)
+    else:
+        return ModelFactory.load_bert_from_file_and_state_dict(
+            model_path, state_dict_path
         )
-    links_embedded = first_half[:links_cnt]
-    descs_embedded = torch.cat((first_half[links_cnt:], second_half))
-    return links_embedded, descs_embedded
 
 
 # Training ===========================================
@@ -217,12 +185,7 @@ def train(
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
 ):
-    model = BertModel.from_pretrained(FOUNDATION_MODEL_PATH)
-
-    if STATE_DICT_PATH is not None:
-        _logger.debug("Loading model state dict")
-        d = torch.load(STATE_DICT_PATH)
-        model.load_state_dict(d)
+    model = _load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH)
     model = nn.DataParallel(model)
     model.to(device)
 

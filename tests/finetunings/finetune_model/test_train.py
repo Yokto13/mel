@@ -1,5 +1,5 @@
 from pathlib import Path, PosixPath
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import torch
@@ -8,9 +8,10 @@ from finetunings.finetune_model.train import (
     _load_epoch_npz,
     _batch_recall,
     _embeddig_gen,
-    _get_links_and_descriptions_from_halves,
-    _SplitToTwoDataset,
+    _get_wandb_logs,
+    _load_model,
 )
+from utils.running_averages import RunningAverages
 
 
 @pytest.fixture
@@ -107,41 +108,6 @@ def test_embedding_gen_calls_embedding_a_lot():
     check_embedding_gen_calls_embedding(100)
 
 
-def test_get_links_and_descriptions_from_halves_correct_behavior():
-    first_half = torch.tensor([1, 2, 3, 4])
-    second_half = torch.tensor([5, 6, 7, 8])
-    links_cnt = 2
-
-    links_embedded, descs_embedded = _get_links_and_descriptions_from_halves(
-        first_half, second_half, links_cnt
-    )
-
-    assert torch.equal(links_embedded, torch.tensor([1, 2]))
-    assert torch.equal(descs_embedded, torch.tensor([3, 4, 5, 6, 7, 8]))
-
-
-def test_get_links_and_descriptions_from_halves_all_links():
-    first_half = torch.tensor([1, 2, 3, 4])
-    second_half = torch.tensor([5, 6, 7])
-    links_cnt = 4
-
-    links_embedded, descs_embedded = _get_links_and_descriptions_from_halves(
-        first_half, second_half, links_cnt
-    )
-
-    assert torch.equal(links_embedded, torch.tensor([1, 2, 3, 4]))
-    assert torch.equal(descs_embedded, torch.tensor([5, 6, 7]))
-
-
-def test_get_links_and_descriptions_from_halves_links_count_too_high():
-    first_half = torch.tensor([1, 2, 3, 4])
-    second_half = torch.tensor([5, 6, 7, 8])
-    links_cnt = 5  # more than the length of first_half
-
-    with pytest.raises(ValueError):
-        _get_links_and_descriptions_from_halves(first_half, second_half, links_cnt)
-
-
 def mock_load_epoch_npz(dataset_dir, epoch):
     links = np.array([[101, 102], [201, 202]])  # Example link tokens
     descriptions = np.array(
@@ -151,69 +117,35 @@ def mock_load_epoch_npz(dataset_dir, epoch):
     return links, descriptions, Y
 
 
-# Test cases
-@patch(
-    "finetunings.finetune_model.train._load_epoch_npz", side_effect=mock_load_epoch_npz
-)
-def test_split_to_two_dataset(mock_load_npz):
-    dataset_dir = Path("/fake/dir")  # This is irrelevant due to mocking
-    epoch = 1
-    dataset = _SplitToTwoDataset(dataset_dir, epoch)
+def test_get_wandb_logs():
+    # Arrange
+    loss_item = 0.5
+    r_at_1 = 0.7
+    r_at_10 = 0.9
 
-    # Test dataset length
-    assert len(dataset) == 2
+    # Create a mock RunningAverages object with expected properties
+    mock_running_averages = MagicMock(spec=RunningAverages)
+    mock_running_averages.loss = 0.4
+    mock_running_averages.recall_1 = 0.6
+    mock_running_averages.recall_10 = 0.8
+    mock_running_averages.loss_big = 0.3
+    mock_running_averages.recall_1_big = 0.5
+    mock_running_averages.recall_10_big = 0.7
 
-    # Test first sample
-    first_half, second_half, y = dataset[0]
-    assert np.array_equal(first_half, np.array([101, 102, 301]))
-    assert np.array_equal(second_half, np.array([302, 303, 304]))
-    assert y == 1
+    # Act
+    logs = _get_wandb_logs(loss_item, r_at_1, r_at_10, mock_running_averages)
 
-    # Test second sample
-    first_half, second_half, y = dataset[1]
-    assert np.array_equal(first_half, np.array([201, 202, 401]))
-    assert np.array_equal(second_half, np.array([402, 403, 404]))
-    assert y == 0
+    # Assert
+    expected_logs = {
+        "loss": loss_item,
+        "r_at_1": r_at_1,
+        "r_at_10": r_at_10,
+        "running_loss": mock_running_averages.loss,
+        "running_r_at_1": mock_running_averages.recall_1,
+        "running_r_at_10": mock_running_averages.recall_10,
+        "running_loss_big": mock_running_averages.loss_big,
+        "running_r_at_1_big": mock_running_averages.recall_1_big,
+        "running_r_at_10_big": mock_running_averages.recall_10_big,
+    }
 
-
-@patch(
-    "finetunings.finetune_model.train._load_epoch_npz", side_effect=mock_load_epoch_npz
-)
-def test_split_to_two_dataset_no_mid_split(mock_load_npz):
-    # This case tests when the mid-point exactly divides the descriptions
-    links = np.array([[101, 102]])
-    descriptions = np.array([[301, 302]])
-    Y = np.array([1])
-
-    mock_load_npz.side_effect = lambda dataset_dir, epoch: (links, descriptions, Y)
-
-    dataset_dir = Path("/fake/dir")
-    epoch = 1
-    dataset = _SplitToTwoDataset(dataset_dir, epoch)
-
-    first_half, second_half, y = dataset[0]
-    assert np.array_equal(first_half, np.array([101, 102]))
-    assert np.array_equal(second_half, np.array([301, 302]))
-    assert y == 1
-
-
-@patch(
-    "finetunings.finetune_model.train._load_epoch_npz", side_effect=mock_load_epoch_npz
-)
-def test_split_to_two_dataset_links_count(mock_load_npz):
-    dataset_dir = Path("/fake/dir")
-    epoch = 1
-    dataset = _SplitToTwoDataset(dataset_dir, epoch)
-
-    assert dataset.links_cnt == 2
-
-
-@patch(
-    "finetunings.finetune_model.train._load_epoch_npz", side_effect=mock_load_epoch_npz
-)
-def test_split_to_two_dataset_descriptions_count(mock_load_npz):
-    dataset_dir = Path("/fake/dir")
-    epoch = 1
-    dataset = _SplitToTwoDataset(dataset_dir, epoch)
-
-    assert dataset.descriptions_cnt == 4
+    assert logs == expected_logs
