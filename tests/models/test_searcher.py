@@ -46,6 +46,10 @@ def test_scann_search_no_build(large_random_data):
 
     assert not hasattr(searcher, "searcher")
 
+    searcher.build()
+
+    assert hasattr(searcher, "searcher")
+
 
 def test_scann_search_yes_build(large_random_data):
     embs, results = large_random_data
