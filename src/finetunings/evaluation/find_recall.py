@@ -1,11 +1,5 @@
-from collections import Counter, defaultdict
-from hashlib import sha1
 from pathlib import Path
-import sys
-
 from utils.loaders import load_embs_and_qids
-
-sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import fire
 import numpy as np
@@ -13,65 +7,16 @@ import wandb
 
 from data_processors.index.index import Index
 from utils.argument_wrappers import paths_exist
+from models.recall_calculator import RecallCalculator
+from models.searchers.scann_searcher import ScaNNSearcher
 
 
-def get_unique_n(iterable, n):
-    seen = set()
-    for i in iterable:
-        if i not in seen:
-            seen.add(i)
-            yield i
-        if len(seen) == n:
-            break
-
-
-class RecallCalculator:
-    def __init__(self, scann_index, qids_in_index) -> None:
-        self.scann_index = scann_index
-        self.qids_in_index = qids_in_index
-
-    def recall(self, mewsli_embs, mewsli_qids, k: int):
-        qid_was_present = self._process_for_recall(mewsli_embs, mewsli_qids, k)
-        return self._calculate_recall(qid_was_present)
-
-    def _calculate_recall(self, qid_was_present):
-        return sum(qid_was_present) / len(qid_was_present)
-
-    def _get_neighboring_qids(self, queries_embs, k):
-        qids_per_query = []
-        neighbors, dists = self.scann_index.search_batched(
-            queries_embs, final_num_neighbors=max(100000, k)
-        )
-        for ns in neighbors:
-            ns_qids = self.qids_in_index[ns]
-            unique_ns_qids = list(get_unique_n(ns_qids, k))
-            qids_per_query.append(unique_ns_qids)
-        return qids_per_query
-
-    def _process_for_recall(self, mewsli_embs, mewsli_qids, k):
-        qid_was_present = []
-
-        for emb, qid in zip(mewsli_embs, mewsli_qids):
-            negihboring_qids = self._get_neighboring_qids([emb], k)
-            qid_was_present.append(qid in negihboring_qids[0])
-
-        return qid_was_present
-
-
-def load_damuel(damuel):
-    damuel_embs, damuel_qids = load_embs_and_qids(damuel)
-
-    damuel_embs = damuel_embs / np.linalg.norm(damuel_embs, axis=1, keepdims=True)
-    return damuel_embs, damuel_qids
-
-
-def load_mewsli(mewsli):
-    print("Loading MEWSLI entities...")
-    mewsli_embs, mewsli_qids = load_embs_and_qids(mewsli)
-
-    mewsli_embs = mewsli_embs / np.linalg.norm(mewsli_embs, axis=1, keepdims=True)
-
-    return mewsli_embs, mewsli_qids
+def load_embs_and_qids_with_normalization(
+    path: str | Path,
+) -> tuple[np.ndarray, np.ndarray]:
+    embs, qids = load_embs_and_qids(path)
+    embs = embs / np.linalg.norm(embs, axis=1, keepdims=True)
+    return embs, qids
 
 
 def get_scann_index(embs, qids):
@@ -86,25 +31,36 @@ def get_scann_index(embs, qids):
     return index.scann_index
 
 
+def get_scann_searcher(embs, qids) -> ScaNNSearcher:
+    searcher = ScaNNSearcher(embs, qids, run_build_from_init=False)
+    searcher.build_index(
+        num_leaves=5 * int(np.sqrt(len(qids))),
+        num_leaves_to_search=800,
+        training_sample_size=len(qids),
+        reordering_size=1000,
+    )
+    return searcher
+
+
 @paths_exist(path_arg_ids=[0, 1])
 def find_recall(
     damuel_entities: str,
     mewsli: str,
-    R,
-):
-    damuel_embs, damuel_qids = load_damuel(damuel_entities)
-    R = min(R, len(damuel_qids))
+    recalls: list[int],
+) -> None:
+    damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_entities)
 
-    mewsli_embs, mewsli_qids = load_mewsli(mewsli)
+    mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
 
     print(damuel_embs.shape, damuel_qids.shape)
-    scann_index = get_scann_index(damuel_embs, damuel_qids)
-    rc = RecallCalculator(scann_index, damuel_qids)
+    searcher = get_scann_searcher(damuel_embs, damuel_qids)
+    rc = RecallCalculator(searcher)
 
-    print("Calculating recall...")
-    recall = rc.recall(mewsli_embs, mewsli_qids, R)
-    wandb.log({f"recall_at_{R}": recall})
-    print(f"Recall at {R}:", recall)
+    for R in recalls:
+        print("Calculating recall...")
+        recall = rc.recall(mewsli_embs, mewsli_qids, R)
+        wandb.log({f"recall_at_{R}": recall})
+        print(f"Recall at {R}:", recall)
 
 
 if __name__ == "__main__":
