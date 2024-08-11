@@ -38,3 +38,24 @@ def test_scann_searcher_find_large(large_random_data):
     # Basic checks on the search results
     assert search_results.shape == (n_queries, num_neighbors)
     assert np.all(search_results >= 0) and np.all(search_results < len(results))
+
+
+def test_scann_search_no_build(large_random_data):
+    embs, results = large_random_data
+    searcher = ScaNNSearcher(embs, results, run_build_from_init=False)
+
+    assert not hasattr(searcher, "searcher")
+
+
+def test_scann_search_yes_build(large_random_data):
+    embs, results = large_random_data
+    searcher = ScaNNSearcher(embs, results, run_build_from_init=True)
+
+    assert hasattr(searcher, "searcher")
+
+
+def test_scann_search_auto_build(large_random_data):
+    embs, results = large_random_data
+    searcher = ScaNNSearcher(embs, results)
+
+    assert hasattr(searcher, "searcher")

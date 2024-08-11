@@ -8,6 +8,7 @@ import numpy as np
 
 from models.searchers.searcher import Searcher
 from models.searchers.scann_searcher import ScaNNSearcher
+from models.searchers.faiss_searcher import FaissSearcher
 
 
 class Profiler:
@@ -32,5 +33,9 @@ class Profiler:
 
 
 if __name__ == "__main__":
+    print("ScaNN:")
     profiler = Profiler(ScaNNSearcher, int(10**7), 128)
+    profiler.profile_known(100, 768, 801)
+    print("FAISS:")
+    profiler = Profiler(FaissSearcher, int(10**7), 128)
     profiler.profile_known(100, 768, 801)
