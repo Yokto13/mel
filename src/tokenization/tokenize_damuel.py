@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 from tokenization.generate_tokens import (
     tokens_for_finetuning_damuel_descriptions,
+    tokens_for_finetuning_damuel_descriptions_pages,
     tokens_for_finetuning_damuel_links,
     tokens_for_at_descriptions,
     tokens_for_at_descriptions_pages,
@@ -12,16 +13,24 @@ from tokenization.generate_tokens import (
 
 
 def _get_lang_from_name(name):
-    return name.split('_')[-1]
+    return name.split("_")[-1]
 
 
 class _DamuelGenerationType(Enum):
-    IGNORE_CONTEXT=auto()
-    IGNORE_CONTEXT_PAGES=auto()
-    FINETUNING=auto()
+    IGNORE_CONTEXT = auto()
+    IGNORE_CONTEXT_PAGES = auto()
+    FINETUNING = auto()
+    FINETUNING_PAGES = auto()
 
 
-def _process(p: Path, out, workers, context_size, model_name, generation_type: _DamuelGenerationType):
+def _process(
+    p: Path,
+    out,
+    workers,
+    context_size,
+    model_name,
+    generation_type: _DamuelGenerationType,
+):
     # print("Procesing", p)
     out_lang_path = out / _get_lang_from_name(p.name)
     out_lang_path.mkdir(parents=True, exist_ok=False)
@@ -29,6 +38,8 @@ def _process(p: Path, out, workers, context_size, model_name, generation_type: _
     d.mkdir(parents=True, exist_ok=True)
     l = out_lang_path / "links"
     l.mkdir(parents=True, exist_ok=True)
+    dp = out_lang_path / "descs_pages"
+    dp.mkdir(parents=True, exist_ok=True)
     match generation_type:
         case _DamuelGenerationType.IGNORE_CONTEXT:
             tokens_for_at_descriptions(model_name, p, context_size, d, workers)
@@ -42,10 +53,21 @@ def _process(p: Path, out, workers, context_size, model_name, generation_type: _
             # TODO: there should be more freedom over choosing the generation types.
             # Currently the Iterators sometimes disregard SRP which makes any custom tokenization very hard.
             tokens_for_at_descriptions_pages(model_name, p, context_size, d, workers)
+        case _DamuelGenerationType.FINETUNING_PAGES:
+            print("Finetuning pages!!")
+            tokens_for_finetuning_damuel_descriptions_pages(
+                model_name, p, context_size, dp, workers
+            )
 
 
 def _choose_generation_type(ignore_context, only_pages):
-    generation_type = _DamuelGenerationType.IGNORE_CONTEXT if ignore_context else _DamuelGenerationType.FINETUNING
+    generation_type = (
+        _DamuelGenerationType.IGNORE_CONTEXT
+        if ignore_context
+        else _DamuelGenerationType.FINETUNING
+    )
+    if generation_type == _DamuelGenerationType.FINETUNING and only_pages:
+        return _DamuelGenerationType.FINETUNING_PAGES
     if generation_type == _DamuelGenerationType.IGNORE_CONTEXT and only_pages:
         generation_type = _DamuelGenerationType.IGNORE_CONTEXT_PAGES
     return generation_type
@@ -53,7 +75,7 @@ def _choose_generation_type(ignore_context, only_pages):
 
 def tokens_for_all_damuel(
     damuel, out, workers, context_size, model_name, ignore_context, only_pages=False
-):  
+):
     """Tokenizes the whole DaMuEL. Parameters constrain the tokenization.
 
     Args:
@@ -63,7 +85,7 @@ def tokens_for_all_damuel(
         context_size (int): Then number of tokens that the result will have.
         model_name (str): Path to the model.
         ignore_context (bool): If True, tokenizes only the label/title.
-        only_pages (bool, optional): When a language specic entry lacks a page it is skipped. 
+        only_pages (bool, optional): When a language specic entry lacks a page it is skipped.
             This currently generates only description tokens and requires ignore_context=True.
             Defaults to False.
     """

@@ -36,3 +36,23 @@ class DamuelDescriptionsTokensIteratorFinetuning(DamuelIterator):
             result = self.entry_processor.process_to_one(damuel_entry, self.name_token)
             if result is not None:
                 yield result
+
+
+class DamuelDescriptionsPagesTokensIteratorFinetuning(
+    DamuelDescriptionsTokensIteratorFinetuning
+):
+    def __init__(
+        self,
+        damuel_path,
+        tokenizer,
+        name_token="[M]",
+        expected_size=64,
+        filename_is_ok: Callable[[str], bool] = None,
+    ):
+        super().__init__(
+            damuel_path, tokenizer, name_token, expected_size, filename_is_ok
+        )
+
+        self.entry_processor = EntryProcessor(
+            TokenizerWrapper(self.tokenizer, expected_size), only_pages=True
+        )
