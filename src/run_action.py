@@ -57,7 +57,7 @@ tokens_for_all_damuel_finetuning_pages = partial(
 )
 
 from utils.extractors.orchestrator import damuel_description_tokens
-from utils.arg_names import get_args
+from utils.arg_names import get_args_names
 
 print("Imports finished")
 
@@ -136,7 +136,7 @@ def main(*args):
     print("hello")
     action_descriptor = args[0]
     action = choose_action(action_descriptor)
-    arg_names = get_args(action)
+    arg_names = get_args_names(action)
     wandb.init(
         project=f"EL-{args[0]}",
         config={"action": args[0]}
