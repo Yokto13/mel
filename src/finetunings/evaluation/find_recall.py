@@ -9,6 +9,7 @@ from data_processors.index.index import Index
 from utils.argument_wrappers import paths_exist
 from models.recall_calculator import RecallCalculator
 from models.searchers.scann_searcher import ScaNNSearcher
+from models.searchers.faiss_searcher import FaissSearcher
 
 
 def load_embs_and_qids_with_normalization(
@@ -42,6 +43,11 @@ def get_scann_searcher(embs, qids) -> ScaNNSearcher:
     return searcher
 
 
+def get_faiss_searcher(embs, qids) -> ScaNNSearcher:
+    searcher = FaissSearcher(embs, qids)
+    return searcher
+
+
 @paths_exist(path_arg_ids=[0, 1])
 def find_recall(
     damuel_entities: str,
@@ -54,6 +60,7 @@ def find_recall(
 
     print(damuel_embs.shape, damuel_qids.shape)
     searcher = get_scann_searcher(damuel_embs, damuel_qids)
+    # searcher = get_faiss_searcher(damuel_embs, damuel_qids)
     rc = RecallCalculator(searcher)
 
     for R in recalls:

@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
+from models.searchers.faiss_searcher import FaissSearcher
 from models.searchers.scann_searcher import ScaNNSearcher
 
 
 @pytest.fixture
 def large_random_data():
     np.random.seed(42)
-    n_samples = 2000
+    n_samples = 50000
     n_features = 128
     embs = np.random.rand(n_samples, n_features).astype(np.float32)
     results = np.arange(n_samples)
@@ -38,6 +39,22 @@ def test_scann_searcher_find_large(large_random_data):
     # Basic checks on the search results
     assert search_results.shape == (n_queries, num_neighbors)
     assert np.all(search_results >= 0) and np.all(search_results < len(results))
+
+
+# def test_faiss_searcher_find_large(large_random_data):
+#     embs, results = large_random_data
+#     searcher = FaissSearcher(embs, results)
+
+#     # Generate a small batch of random query vectors
+#     n_queries = 10
+#     query_batch = np.random.rand(n_queries, embs.shape[1]).astype(np.float32)
+
+#     num_neighbors = 5
+#     search_results = searcher.find(query_batch, num_neighbors)
+
+#     # Basic checks on the search results
+#     assert search_results.shape == (n_queries, num_neighbors)
+#     assert np.all(search_results >= 0) and np.all(search_results < len(results))
 
 
 def test_scann_search_no_build(large_random_data):

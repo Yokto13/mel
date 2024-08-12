@@ -10,7 +10,7 @@ _logger = logging.getLogger("models.negative_index")
 
 class Searcher(ABC):
     def __init__(
-        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
+        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool
     ):
         assert len(embs) == len(results)
         self.embs = embs
