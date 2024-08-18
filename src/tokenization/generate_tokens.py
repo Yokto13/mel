@@ -211,6 +211,7 @@ def main(
             GenerationType.FINETUNING_DESCRIPTIONS
             | GenerationType.FINETUNING_LINKS
             | GenerationType.FINETUNING_MEWSLI
+            | GenerationType.FINETUNING_DESCRIPTIONS_PAGES
         ):
             solve_f = solve_only_contexts
         case (
@@ -261,6 +262,7 @@ def tokens_for_finetuning_damuel_links(
     model_name, data_path, context_size, output_dir, workers
 ):
     run_type = GenerationType.FINETUNING_LINKS
+    print(model_name, data_path, context_size, run_type, output_dir, workers)
     main(model_name, data_path, context_size, run_type, output_dir, workers)
 
 
