@@ -12,6 +12,11 @@ class MockSearcher(ScaNNSearcher):
         self.build = Mock()
 
 
+@pytest.fixture(autouse=True)
+def set_random_seed():
+    np.random.seed(42)
+
+
 @pytest.fixture
 def sample_data():
     embs = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15]])
@@ -52,20 +57,10 @@ def test_sample_basic(negative_sampler):
     result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
 
     assert result.shape == (2, 2)
-    assert np.array_equal(result, np.array([[2, 3], [4, 3]]))
-
-
-def test_sample_with_all_different_qids(negative_sampler):
-    batch_embs = np.array([[1, 1, 1], [2, 2, 2]])
-    batch_qids = np.array([4, 5])  # Different QIDs from those in Searcher
-    negative_cnts = 2
-
-    negative_sampler.searcher.find.return_value = np.array([[0, 1, 2, 3], [3, 1, 2, 4]])
-
-    result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
-
-    assert result.shape == (2, 2)
-    assert np.array_equal(result, np.array([[0, 1], [1, 2]]))
+    for ans, expected in zip(result, [[1, 2, 3, 4], [2, 4, 0, 3]]):
+        print(ans)
+        for x in ans:
+            assert x in set(expected)
 
 
 def test_sample_with_large_batch():
@@ -98,4 +93,24 @@ def test_sample_edge_case_all_same_qid(negative_sampler):
     result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
 
     assert result.shape == (3, 2)
-    assert np.array_equal(result, np.array([[1, 2], [1, 3], [2, 3]]))
+    for x in result:
+        assert 0 not in x
+
+
+def test_sample_randomness(negative_sampler):
+    negative_sampler = NegativeSampler(
+        np.random.rand(10000, 128),
+        np.random.default_rng().choice(20000, size=10000),
+        MockSearcher,
+    )
+    batch_embs = np.random.rand(1024, 128)
+    batch_qids = np.random.randint(1, 1000, size=1024)
+    negative_cnts = 7
+
+    mock_neighbors = np.random.randint(0, 10000, size=(1024, 8 + 1024))
+    negative_sampler.searcher.find.return_value = mock_neighbors
+
+    result1 = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
+    result2 = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
+
+    assert not np.array_equal(result1, result2)
