@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,13 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+
+import torch.distributed as dist
+import torch.nn as nn
+import torch.optim as optim
+import torch.multiprocessing as mp
+
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 import wandb
 
@@ -32,6 +40,19 @@ if torch.cuda.is_available():
 else:
     _logger.debug("CUDA is not available.")
     device = torch.device("cpu")
+
+
+def setup(rank, world_size):
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "12355"
+
+    # initialize the process group
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+
+
+def cleanup():
+    dist.destroy_process_group()
+
 
 SEED = 0
 torch.manual_seed(SEED)
@@ -221,7 +242,6 @@ def train(
 
             labels = labels.to(device)
             loss = criterion(outputs, labels)
-            # loss = criterion(outputs, labels) + criterion(outputs.t(), labels.t())
 
             loss.backward()
             optimizer.step()
