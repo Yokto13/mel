@@ -24,7 +24,7 @@ class ScaNNSearcher(Searcher):
         num_leaves=5000,
         num_leaves_to_search=100,
         training_sample_size=10**6,
-        reordering_size=250,
+        reordering_size=2000,
         use_assymetric_hashing=True,
     ):
         training_sample_size = int(min(0.5 * len(self.embs), training_sample_size))
