@@ -8,13 +8,23 @@ from models.searchers.searcher import Searcher
 def _sample_numba(batch_qids, negative_cnts, neighbors, neighbors_mask):
     res = np.empty((len(batch_qids), negative_cnts), dtype=np.int32)
 
+    # print(neighbors)
+    # print(batch_qids)
     for i in range(len(batch_qids)):
-        negative_neighbors = neighbors[i][neighbors_mask[i]]
-        min_to_sample = min(negative_neighbors.shape[0], 12 * negative_cnts)
-        p = np.random.permutation(min_to_sample)
-        most_similar = negative_neighbors[:min_to_sample]
-        most_similar_permuted = most_similar[p]
-        res[i] = most_similar_permuted[:negative_cnts]
+        res[i] = neighbors[i][neighbors_mask[i]][:negative_cnts]
+        # print("i", i)
+        # print("mask", neighbors_mask[i])
+        # negative_neighbors = neighbors[i][neighbors_mask[i]]
+        # print("negative_neighbors", negative_neighbors)
+        # min_to_sample = min(negative_neighbors.shape[0], 12 * negative_cnts)
+        # print("min_to_sample", min_to_sample)
+        # p = np.random.permutation(min_to_sample)
+        # most_similar = negative_neighbors[:min_to_sample]
+        # print("most_similar", most_similar)
+        # most_similar_permuted = most_similar[p]
+        # print("most_similar_permuted", most_similar_permuted)
+        # res[i] = most_similar_permuted[:negative_cnts]
+        # print("=================")
 
     return res
 
