@@ -30,7 +30,6 @@ class RecallCalculator:
     def _get_neighboring_qids(self, queries_embs, k):
         qids_per_query = []
         neighbors_qids = self.searcher.find(queries_embs, max(100000, k))
-        print(neighbors_qids)
         for ns_qids in neighbors_qids:
             unique_ns_qids = list(_get_unique_n(ns_qids, k))
             qids_per_query.append(unique_ns_qids)
