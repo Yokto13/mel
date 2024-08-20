@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 import sys
 
+from models.searchers.brute_force_searcher import BruteForceSearcher
 from utils.multifile_dataset import MultiFileDataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
@@ -42,43 +43,31 @@ def generate(
     INDEX_TOKENS_DIR: Path,
     INDEX_EMBS_QIDS_DIR: str,
     OUTPUT_DIR: Path,
-    MODEL_PATH: str,
     BATCH_SIZE: int,
     EPOCHS: int,
     STEPS_PER_EPOCH: int,
     NEG: int,
     CONTEXT_SIZE: int,
-    STATE_DICT_PATH: str = None,
 ) -> None:
     LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
     INDEX_TOKENS_DIR = Path(INDEX_TOKENS_DIR)
     OUTPUT_DIR = Path(OUTPUT_DIR)
-    STATE_DICT_PATH = Path(STATE_DICT_PATH) if STATE_DICT_PATH else None
 
     # make sure the output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     _logger.debug("INDEX_TOKENS_DIR: %s", INDEX_TOKENS_DIR)
     _logger.debug("OUTPUT_DIR: %s", OUTPUT_DIR)
-    _logger.debug("MODEL_NAME: %s", MODEL_PATH)
     _logger.debug("BATCH_SIZE: %s", BATCH_SIZE)
     _logger.debug("EPOCHS: %s", EPOCHS)
     _logger.debug("STEPS_PER_EPOCH: %s", STEPS_PER_EPOCH)
     _logger.debug("NEG: %s", NEG)
     _logger.debug("CONTEXT_SIZE: %s", CONTEXT_SIZE)
-    _logger.debug("STATE_DICT_PATH: %s", STATE_DICT_PATH)
-
-    model = BertModel.from_pretrained(MODEL_PATH)
-
-    if STATE_DICT_PATH:
-        state_dict = get_emb_state_dict(STATE_DICT_PATH)
-        model.load_state_dict(state_dict)
-
-    model.to(device)
 
     # token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
     index_embs, index_qids = load_embs_and_qids(INDEX_EMBS_QIDS_DIR)
-    batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
+    # batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
+    batch_sampler = BatchSampler(index_embs, index_qids, BruteForceSearcher)
 
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
     tokens = np.array([x[0] for x in multifile_dataset])
