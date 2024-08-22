@@ -70,3 +70,34 @@ def test_load_real_bert_from_hub_and_statedict(tmp_path):
         if p1.data.ne(p2.data).sum() > 0:
             assert False
     assert True
+
+
+@pytest.fixture(scope="module")
+def original_model():
+    return ModelFactory.load_bert_from_file("setu4993/LEALLA-base")
+
+
+def test_model_state_dict_modification(tmp_path, original_model):
+    original_state_dict = original_model.state_dict()
+    original_state_dict_path = tmp_path / "original_state_dict.pth"
+    torch.save(original_state_dict, original_state_dict_path)
+
+    with torch.no_grad():
+        for param in original_model.parameters():
+            param.add_(1.0)  # Add 1.0 to all parameters to modify them
+
+    modified_state_dict_path = tmp_path / "modified_state_dict.pth"
+    torch.save(original_model.state_dict(), modified_state_dict_path)
+
+    reloaded_model = ModelFactory.load_bert_from_file_and_state_dict(
+        "setu4993/LEALLA-base", str(modified_state_dict_path)
+    )
+
+    original_state_dict_reloaded = torch.load(original_state_dict_path)
+
+    for original_param, reloaded_param in zip(
+        original_state_dict_reloaded.values(), reloaded_model.state_dict().values()
+    ):
+        assert not torch.equal(
+            original_param, reloaded_param
+        ), "Parameters should differ after modification"
