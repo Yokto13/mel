@@ -1,7 +1,9 @@
+import logging
 from unittest.mock import patch, MagicMock
 
 import pytest
 import torch
+from transformers import BertModel
 
 from utils.model_factory import ModelFactory
 
