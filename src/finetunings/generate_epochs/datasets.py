@@ -69,16 +69,6 @@ class Batcher:
         return embs[mask], qids[mask], tokens[mask]
 
 
-def _numpy_collate(batch):
-    if isinstance(batch[0], np.ndarray):
-        return np.stack(batch)
-    elif isinstance(batch[0], (tuple, list)):
-        transposed = zip(*batch)
-        return [_numpy_collate(samples) for samples in transposed]
-    else:
-        return np.array(batch)
-
-
 @nb.njit
 def _prepare_batch(
     batch_size, line_size, per_mention, toks_size, sampler_tokens, positive, negative
