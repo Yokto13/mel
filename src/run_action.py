@@ -52,8 +52,12 @@ tokens_for_all_damuel_at_pages = partial(
 )
 tokens_for_all_mewsli_finetuning = partial(tokens_for_all_mewsli, ignore_context=False)
 tokens_for_all_damuel_finetuning = partial(tokens_for_all_damuel, ignore_context=False)
+tokens_for_all_damuel_finetuning_pages = partial(
+    tokens_for_all_damuel, ignore_context=False, only_pages=True
+)
 
 from utils.extractors.orchestrator import damuel_description_tokens
+from utils.arg_names import get_args_names
 
 print("Imports finished")
 
@@ -110,6 +114,8 @@ def choose_action(action):
             return tokens_for_all_mewsli_finetuning
         case "tokens_for_all_damuel_finetuning":
             return tokens_for_all_damuel_finetuning
+        case "tokens_for_all_damuel_finetuning_pages":
+            return tokens_for_all_damuel_finetuning_pages
         case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
         case "meludr_olpeat":
@@ -128,9 +134,15 @@ def choose_action(action):
 
 def main(*args):
     print("hello")
-    wandb.init(project=f"EL-{args[0]}", config={"action": args[0], "args": args[1:]})
     action_descriptor = args[0]
     action = choose_action(action_descriptor)
+    arg_names = get_args_names(action)
+    print(arg_names)
+    wandb.init(
+        project=f"EL-{args[0]}",
+        config={"action": args[0]}
+        | {arg_name: arg_value for arg_name, arg_value in zip(arg_names, args[1:])},
+    )
     print(f"Running {action_descriptor} with args {args[1:]}")
     action(*args[1:])
 

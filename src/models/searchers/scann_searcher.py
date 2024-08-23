@@ -1,33 +1,14 @@
-""" Wrapper around any searcher we might use. """
-
-from abc import ABC, abstractmethod
-import logging
-
 import numpy as np
 import scann
 
-_logger = logging.getLogger("models.negative_index")
-
-
-class Searcher(ABC):
-    def __init__(self, embs: np.ndarray, results: np.ndarray):
-        assert len(embs) == len(results)
-        self.embs = embs
-        self.results = results
-        self.build()
-
-    @abstractmethod
-    def find(self, batch, num_neighbors) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def build(self):
-        pass
+from models.searchers.searcher import Searcher
 
 
 class ScaNNSearcher(Searcher):
-    def __init__(self, embs: np.ndarray, results: np.ndarray):
-        super().__init__(embs, results)
+    def __init__(
+        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
+    ):
+        super().__init__(embs, results, run_build_from_init)
 
     def find(self, batch, num_neighbors) -> np.ndarray:
         neighbors, _ = self.searcher.search_batched(
@@ -43,7 +24,7 @@ class ScaNNSearcher(Searcher):
         num_leaves=5000,
         num_leaves_to_search=100,
         training_sample_size=10**6,
-        reordering_size=250,
+        reordering_size=2000,
         use_assymetric_hashing=True,
     ):
         training_sample_size = int(min(0.5 * len(self.embs), training_sample_size))

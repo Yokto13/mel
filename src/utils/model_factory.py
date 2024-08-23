@@ -1,7 +1,12 @@
+import logging
+
 import torch
 from typing import Any
 
+import pytest
 from transformers import BertModel
+
+_logger = logging.getLogger("utils.model_factory")
 
 
 class ModelFactory:
@@ -21,5 +26,9 @@ class ModelFactory:
         cls, state_dict_path: str, model: torch.nn.Module
     ) -> torch.nn.Module:
         d = torch.load(state_dict_path)
-        model.load_state_dict(d)
+        problematic_keys = model.load_state_dict(d)
+        if len(problematic_keys.missing_keys) or len(problematic_keys.unexpected_keys):
+            _logger.warning(
+                f"The following keys are missing in the model {problematic_keys}"
+            )
         return model

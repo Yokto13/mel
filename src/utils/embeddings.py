@@ -100,6 +100,9 @@ def embed(
             # )
             batch_embeddings = model(batch_toks, attention_mask).pooler_output
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
+            batch_embeddings = batch_embeddings / np.linalg.norm(
+                batch_embeddings, ord=2, axis=1, keepdims=True
+            )
             embeddings.extend(batch_embeddings)
             if return_tokens:
                 tokens.extend(batch_toks.cpu().numpy())
