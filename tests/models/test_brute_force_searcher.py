@@ -6,9 +6,9 @@ from models.searchers.brute_force_searcher import BruteForceSearcher
 def test_search_present():
     embs = np.array(
         [
-            [1.0, 1.0, 1.0],
+            [0.9, 0.9, 0.9],
             [1.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
             [0.0, 0.0, 1.0],
         ]
     )
