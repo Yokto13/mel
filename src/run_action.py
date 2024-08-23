@@ -1,7 +1,7 @@
 from functools import partial
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
@@ -137,6 +137,7 @@ def main(*args):
     action_descriptor = args[0]
     action = choose_action(action_descriptor)
     arg_names = get_args_names(action)
+    print(arg_names)
     wandb.init(
         project=f"EL-{args[0]}",
         config={"action": args[0]}

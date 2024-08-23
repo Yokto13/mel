@@ -180,6 +180,7 @@ def train(
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
 ):
+    print("STATEDICTPATH", STATE_DICT_PATH)
     model = _load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH)
     model = nn.DataParallel(model)
     model.to(device)
@@ -200,7 +201,7 @@ def train(
         _logger.debug(f"EPOCH: {epoch}")
         dataset = _LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
         dataloader = DataLoader(
-            dataset, batch_size=None, num_workers=4, pin_memory=True
+            dataset, batch_size=None, num_workers=2, pin_memory=True
         )
 
         for i, (together, labels) in enumerate(tqdm(dataloader, total=len(dataset))):
@@ -215,6 +216,9 @@ def train(
                 together[dataset.links_cnt :],
             )
 
+            # links_embed (bs, dim)
+            # descs_embed (bs * (1 + neg), dim)
+            # outputs (bs, bs * (1 + neg))
             outputs = torch.mm(links_embedded, descs_embedded.t())
 
             outputs = outputs * LOGIT_MULTIPLIER
@@ -240,7 +244,7 @@ def train(
             wandb.log(
                 wand_dict,
             )
-        _logger.debug(f"Train loss: {train_loss / len(dataset)}")
+        _logger.info(f"Train loss: {train_loss / len(dataset)}")
 
         model.to("cpu")
         if epoch % 50 == 0:

@@ -32,7 +32,7 @@ DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/descs_pages"
 DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning/$LANG"
 MODEL_PATH="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
-WORKDIR="$OUTPUTS/workdirs/bc_pages_es_base2"
+WORKDIR="$OUTPUTS/workdirs/shuffle"
 BATCH_SIZE=32
 EPOCHS=100
 LOGIT_MULTIPLIER=50
@@ -42,6 +42,7 @@ LR=0.00001
 TYPE="mentions"
 N_OF_ROUNDS=8
 NEG=7
+NEG_SAMPLING_TYPE="shuffle"
 
 # copy params
 echo "Copying params"
@@ -108,7 +109,7 @@ if [ ! -e "$WORKDIR/models_0/final.pth" ]; then
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW"\
      "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" $(($EPOCHS / 5)) "$LOGIT_MULTIPLIER" "$LR" "None" 0 "$TYPE" "$N_OF_ROUNDS"\
-     $NEG 1
+     $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_0/final.pth"
@@ -118,7 +119,7 @@ if [ ! -e "$WORKDIR/models_1/final.pth" ]; then
     echo "Running round 1"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 1 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 1 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_1/final.pth"
@@ -127,7 +128,7 @@ if [ ! -e "$WORKDIR/models_2/final.pth" ]; then
     echo "Running round 2"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 2 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 2 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_2/final.pth"
@@ -136,7 +137,7 @@ if [ ! -e "$WORKDIR/models_3/final.pth" ]; then
     echo "Running round 3"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 3 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 3 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_3/final.pth"
@@ -145,7 +146,7 @@ if [ ! -e "$WORKDIR/models_4/final.pth" ]; then
     echo "Running round 4"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 4 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 4 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_4/final.pth"
@@ -154,7 +155,7 @@ if [ ! -e "$WORKDIR/models_5/final.pth" ]; then
     echo "Running round 5"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 5 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 5 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_5/final.pth"
@@ -163,7 +164,7 @@ if [ ! -e "$WORKDIR/models_6/final.pth" ]; then
     echo "Running round 6"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 6 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 6 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_6/final.pth"
@@ -172,5 +173,5 @@ if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
     echo "Running round 7"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 7 "$TYPE" "$N_OF_ROUNDS" $NEG 1
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 7 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
 fi
