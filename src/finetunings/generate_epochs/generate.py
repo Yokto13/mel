@@ -48,6 +48,7 @@ def generate(
     STEPS_PER_EPOCH: int,
     NEG: int,
     CONTEXT_SIZE: int,
+    NEGATIVE_SAMPLING_TYPE: str,
 ) -> None:
     LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
     INDEX_TOKENS_DIR = Path(INDEX_TOKENS_DIR)
@@ -67,7 +68,9 @@ def generate(
     # token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
     index_embs, index_qids = load_embs_and_qids(INDEX_EMBS_QIDS_DIR)
     # batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
-    batch_sampler = BatchSampler(index_embs, index_qids, BruteForceSearcher)
+    batch_sampler = BatchSampler(
+        index_embs, index_qids, BruteForceSearcher, NEGATIVE_SAMPLING_TYPE
+    )
 
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
     tokens = np.array([x[0] for x in multifile_dataset])

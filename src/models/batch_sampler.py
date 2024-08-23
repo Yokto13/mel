@@ -5,11 +5,17 @@ from models.searchers.searcher import Searcher
 
 class BatchSampler:
     def __init__(
-        self, embs: np.ndarray, qids: np.ndarray, searcher_constructor: type[Searcher]
+        self,
+        embs: np.ndarray,
+        qids: np.ndarray,
+        searcher_constructor: type[Searcher],
+        negative_sampling_type: str,
     ) -> None:
         self.embs = embs
         self.qids = qids
-        self.negative_sampler = NegativeSampler(embs, qids, searcher_constructor)
+        self.negative_sampler = NegativeSampler(
+            embs, qids, searcher_constructor, negative_sampling_type
+        )
         self.qids_to_idx = {qid: i for i, qid in enumerate(qids)}
 
     def sample(
