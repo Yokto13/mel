@@ -1,5 +1,5 @@
 import numpy as np
-from models.negative_sampler import NegativeSampler
+from models.negative_sampler import NegativeSampler, NegativeSamplingType
 from models.searchers.searcher import Searcher
 
 
@@ -9,7 +9,7 @@ class BatchSampler:
         embs: np.ndarray,
         qids: np.ndarray,
         searcher_constructor: type[Searcher],
-        negative_sampling_type: str,
+        negative_sampling_type: NegativeSamplingType,
     ) -> None:
         self.embs = embs
         self.qids = qids

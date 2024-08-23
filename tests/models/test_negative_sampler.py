@@ -1,8 +1,15 @@
+from enum import Enum
 import pytest
 import numpy as np
 from unittest.mock import Mock
 from models.searchers.scann_searcher import ScaNNSearcher
-from models.negative_sampler import NegativeSampler
+from models.negative_sampler import (
+    NegativeSampler,
+    NegativeSamplingType,
+    _get_sampler,
+    _sample_shuffling_numba,
+    _sample_top_numba,
+)
 
 
 class MockSearcher(ScaNNSearcher):
@@ -27,12 +34,12 @@ def sample_data():
 @pytest.fixture
 def negative_sampler(sample_data):
     embs, qids = sample_data
-    return NegativeSampler(embs, qids, MockSearcher)
+    return NegativeSampler(embs, qids, MockSearcher, NegativeSamplingType("top"))
 
 
 def test_initialization(sample_data):
     embs, qids = sample_data
-    sampler = NegativeSampler(embs, qids, MockSearcher)
+    sampler = NegativeSampler(embs, qids, MockSearcher, NegativeSamplingType("top"))
 
     assert np.array_equal(sampler.embs, embs)
     assert np.array_equal(sampler.qids, qids)
@@ -44,7 +51,7 @@ def test_initialization_with_mismatched_lengths():
     qids = np.array([1, 2, 3])
 
     with pytest.raises(AssertionError):
-        NegativeSampler(embs, qids, MockSearcher)
+        NegativeSampler(embs, qids, MockSearcher, NegativeSamplingType("top"))
 
 
 def test_sample_basic(negative_sampler):
@@ -68,6 +75,7 @@ def test_sample_with_large_batch():
         np.random.rand(10000, 128),
         np.random.default_rng().choice(20000, size=10000),
         MockSearcher,
+        NegativeSamplingType("top"),
     )
     batch_embs = np.random.rand(1024, 128)
     batch_qids = np.random.randint(1, 1000, size=1024)
@@ -102,6 +110,7 @@ def test_sample_randomness(negative_sampler):
         np.random.rand(10000, 128),
         np.random.default_rng().choice(20000, size=10000),
         MockSearcher,
+        NegativeSamplingType("shuffle"),
     )
     batch_embs = np.random.rand(1024, 128)
     batch_qids = np.random.randint(1, 1000, size=1024)
@@ -114,3 +123,25 @@ def test_sample_randomness(negative_sampler):
     result2 = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
 
     assert not np.array_equal(result1, result2)
+
+
+def test_negative_sampling_type():
+    assert isinstance(NegativeSamplingType.Shuffling, Enum)
+    assert isinstance(NegativeSamplingType.MostSimilar, Enum)
+    assert NegativeSamplingType.Shuffling.value == "shuffle"
+    assert NegativeSamplingType.MostSimilar.value == "top"
+
+
+def test_get_sampler_shuffling():
+    sampler = _get_sampler(NegativeSamplingType.Shuffling)
+    assert sampler == _sample_shuffling_numba
+
+
+def test_get_sampler_most_similar():
+    sampler = _get_sampler(NegativeSamplingType.MostSimilar)
+    assert sampler == _sample_top_numba
+
+
+def test_get_sampler_invalid_type():
+    with pytest.raises(AttributeError):
+        _get_sampler("invalid_type")

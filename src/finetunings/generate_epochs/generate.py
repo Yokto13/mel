@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 import sys
 
+from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import BruteForceSearcher
 from utils.multifile_dataset import MultiFileDataset
 
@@ -69,7 +70,10 @@ def generate(
     index_embs, index_qids = load_embs_and_qids(INDEX_EMBS_QIDS_DIR)
     # batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
     batch_sampler = BatchSampler(
-        index_embs, index_qids, BruteForceSearcher, NEGATIVE_SAMPLING_TYPE
+        index_embs,
+        index_qids,
+        BruteForceSearcher,
+        NegativeSamplingType(NEGATIVE_SAMPLING_TYPE),
     )
 
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)

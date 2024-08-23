@@ -1,8 +1,14 @@
-from random import shuffle
+from enum import Enum
+
 import numba
 import numpy as np
 
 from models.searchers.searcher import Searcher
+
+
+class NegativeSamplingType(Enum):
+    Shuffling = "shuffle"
+    MostSimilar = "top"
 
 
 def _sample_shuffling_numba(batch_qids, negative_cnts, neighbors, neighbors_mask):
@@ -23,11 +29,12 @@ def _sample_top_numba(batch_qids, negative_cnts, neighbors, neighbors_mask):
     return res
 
 
-def _get_sampler(sampler_type: str) -> callable:
-    if sampler_type == "shuffle":
+def _get_sampler(sampler_type: NegativeSamplingType) -> callable:
+    if sampler_type == NegativeSamplingType.Shuffling:
         return _sample_shuffling_numba
-    if sampler_type == "top":
+    if sampler_type == NegativeSamplingType.MostSimilar:
         return _sample_top_numba
+    raise AttributeError(f"No samplig method for {sampler_type}")
 
 
 class NegativeSampler:
@@ -36,7 +43,7 @@ class NegativeSampler:
         embs: np.ndarray,
         qids: np.ndarray,
         searcher_constructor: type[Searcher],
-        sampling_type: str,
+        sampling_type: NegativeSamplingType,
     ) -> None:
         assert len(embs) == len(qids)
         self.embs = embs

@@ -1,6 +1,7 @@
 import numpy as np
 from pytest import fixture
 
+from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import BruteForceSearcher
 from models.batch_sampler import BatchSampler
 
@@ -24,7 +25,9 @@ def qids(data_size):
 
 @fixture
 def random_batch_sampler(random_embs, qids):
-    return BatchSampler(random_embs, qids, BruteForceSearcher)
+    return BatchSampler(
+        random_embs, qids, BruteForceSearcher, NegativeSamplingType("top")
+    )
 
 
 def test_positive_and_negatives_differ(random_batch_sampler, data_size):
