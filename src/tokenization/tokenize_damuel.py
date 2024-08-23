@@ -33,7 +33,7 @@ def _process(
 ):
     # print("Procesing", p)
     out_lang_path = out / _get_lang_from_name(p.name)
-    out_lang_path.mkdir(parents=True, exist_ok=False)
+    out_lang_path.mkdir(parents=True, exist_ok=True)
     d = out_lang_path / "descs"
     d.mkdir(parents=True, exist_ok=True)
     l = out_lang_path / "links"
@@ -100,5 +100,6 @@ def tokens_for_all_damuel(
             continue
         try:
             _process(p, out, workers, context_size, model_name, generation_type)
-        except FileExistsError:
+        except FileExistsError as e:
             print(p, "exists... Skipping!")
+            print(e)
