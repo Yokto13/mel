@@ -171,3 +171,10 @@ def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]
         dir_path = Path(dir_path)
     d = np.load(dir_path / "embs_qids_tokens.npz")
     return d["embs"], d["qids"], d["tokens"]
+
+
+def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    if type(file_path) == str:
+        file_path = Path(file_path)
+    d = np.load(file_path)
+    return d["tokens"], d["qids"]
