@@ -17,7 +17,7 @@ class Mixer:
     def __init__(self, buffer_size: int = 10) -> None:
         self.buffer_size = buffer_size
 
-    def mix(self, file_paths: list[Path], n_of_mixings: int) -> None:
+    def mix(self, file_paths: list[Path], n_of_mixings: int = 10) -> None:
         file_paths = deepcopy(file_paths)
         for _ in range(n_of_mixings):
             self._mix(file_paths)

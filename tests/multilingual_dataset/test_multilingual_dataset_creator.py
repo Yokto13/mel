@@ -16,37 +16,38 @@ def sample_langs():
     return ["en", "fr", "de"]
 
 
-def setup_teardown(tmp_path):
-    for lang in ["en", "es", "de"]:
-        tmp_path.mkdir(lang)
-        tmp_path.mkdir(f"{lang}/links")
-        tmp_path.mkdir(f"{lang}/descs_pages")
+@pytest.fixture
+def setup_teardown(tmpdir, sample_langs):
+    for lang in sample_langs:
+        tmpdir.mkdir(lang)
+        tmpdir.mkdir(f"{lang}/links")
+        tmpdir.mkdir(f"{lang}/descs_pages")
 
     # create links which are npz files. Each file contains multiple tokens and the same number of qids.
-    for j, lang in enumerate(["en", "es", "de"]):
-        for i in range(int(10**5)):
+    for j, lang in enumerate(sample_langs):
+        for i in range(int(10**3)):
             example_tokens = np.array([[i, 2], [i, 3], [i, 0]])
             example_qids = np.array([j, j, j])
 
             np.savez(
-                tmp_path / f"{lang}/links/mentions_{i}.npz",
+                tmpdir / f"{lang}/links/mentions_{i}.npz",
                 tokens=example_tokens,
                 qids=example_qids,
             )
 
     # create descriptions which are npz files. Each file contains multiple lines and the same number of qids.
-    for j, lang in enumerate(["en", "es", "de"]):
+    for j, lang in enumerate(sample_langs):
         for i in range(10000):
             example_lines = np.array([1, 1, 1, 1])
             example_qids = np.array([j, j, j, j])
 
             np.savez(
-                tmp_path / f"{lang}/descs_pages/mentions_{i}.npz",
+                tmpdir / f"{lang}/descs_pages/mentions_{i}.npz",
                 toknes=example_lines,
                 qids=example_qids,
             )
 
-    yield tmp_path
+    yield tmpdir
 
 
 @pytest.fixture
@@ -55,18 +56,18 @@ def damuel_paths(setup_teardown):
 
 
 @pytest.fixture
-def output_path(tmp_path):
-    tmp_path.mkdir("output")
+def output_dir(tmpdir):
+    tmpdir.mkdir("output")
 
-    yield tmp_path
+    yield tmpdir / "output"
 
 
 class Test_LinksCreator:
     @pytest.fixture
-    def links_creator(self, damuel_paths, sample_langs, output_path):
-        return _LinksCreator(damuel_paths, sample_langs, output_path)
+    def links_creator(self, damuel_paths, sample_langs, output_dir):
+        return _LinksCreator(damuel_paths, sample_langs, Path(output_dir))
 
-    def test_run(self, links_creator, output_path):
+    def test_run(self, links_creator, output_dir):
         # test should
         # check that output path is empty
         # run
@@ -74,16 +75,19 @@ class Test_LinksCreator:
         # validate that output path contains expected files
         # validate number, keys and content of each file, and the language of each file (which can be inferred from the qid)
 
-        assert not any(output_path.iterdir())
+        output_dir = Path(output_dir) / "links"
+
+        assert not any(output_dir.iterdir())
 
         links_creator.run()
 
-        assert any(output_path.iterdir())
+        assert any(output_dir.iterdir())
 
         prev_qids = None
         all_qids = []
 
-        for file in output_path.iterdir():
+        for file in output_dir.iterdir():
+            print(output_dir, file)
             data = np.load(file)
             tokens = data["tokens"]
             qids = data["qids"]
@@ -102,10 +106,10 @@ class Test_LinksCreator:
 
 class Test_KBCreator:
     @pytest.fixture
-    def kb_creator(self, damuel_paths, sample_langs, output_path):
-        return _KBCreator(damuel_paths, sample_langs, output_path)
+    def kb_creator(self, damuel_paths, sample_langs, output_dir):
+        return _KBCreator(damuel_paths, sample_langs, output_dir)
 
-    def test_run(self, kb_creator, output_path):
+    def test_run(self, kb_creator, output_dir):
         # Set up any necessary directory structure in tmp_path
         # ...
 
@@ -119,11 +123,11 @@ class Test_KBCreator:
 
 class TestMultilingualDatasetCreator:
     @pytest.fixture
-    def dataset_creator(self, sample_langs, output_path, tmp_path):
-        return MultilingualDatasetCreator(tmp_path, sample_langs, output_path)
+    def dataset_creator(self, sample_langs, output_dir, tmp_path):
+        return MultilingualDatasetCreator(tmp_path, sample_langs, output_dir)
 
-    @patch("your_module._KBCreator.run")
-    @patch("your_module._LinksCreator.run")
+    @patch("multilingual_dataset.creator._KBCreator.run")
+    @patch("multilingual_dataset.creator._LinksCreator.run")
     def test_run(self, mock_links_run, mock_kb_run, dataset_creator):
         dataset_creator.run()
 
