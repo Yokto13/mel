@@ -8,13 +8,13 @@ class BatchSampler:
         self,
         embs: np.ndarray,
         qids: np.ndarray,
-        searcher_constructor: type[Searcher],
+        negative_searcher_constructor: type[Searcher],
         negative_sampling_type: NegativeSamplingType,
     ) -> None:
         self.embs = embs
         self.qids = qids
         self.negative_sampler = NegativeSampler(
-            embs, qids, searcher_constructor, negative_sampling_type
+            embs, qids, negative_searcher_constructor, negative_sampling_type
         )
         self.qids_to_idx = {qid: i for i, qid in enumerate(qids)}
 

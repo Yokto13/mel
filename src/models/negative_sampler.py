@@ -11,10 +11,16 @@ class NegativeSamplingType(Enum):
     MostSimilar = "top"
 
 
+# _rng = np.random.default_rng(seed=42)
+
+
+@numba.njit
 def _sample_shuffling_numba(batch_qids, negative_cnts, neighbors, neighbors_mask):
     res = np.empty((len(batch_qids), negative_cnts), dtype=np.int32)
     for i in range(len(batch_qids)):
         ns = neighbors[i][neighbors_mask[i]]
+        # _rng is not working with numba
+        # _rng.shuffle(ns)
         np.random.shuffle(ns)
         res[i] = ns[:negative_cnts]
     return res

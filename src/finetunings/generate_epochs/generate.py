@@ -3,7 +3,10 @@ from pathlib import Path
 import sys
 
 from models.negative_sampler import NegativeSamplingType
-from models.searchers.brute_force_searcher import BruteForceSearcher
+from models.searchers.brute_force_searcher import (
+    BruteForceSearcher,
+    DPBruteForceSearcher,
+)
 from utils.multifile_dataset import MultiFileDataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
@@ -72,6 +75,7 @@ def generate(
     batch_sampler = BatchSampler(
         index_embs,
         index_qids,
+        # DPBruteForceSearcher,
         BruteForceSearcher,
         NegativeSamplingType(NEGATIVE_SAMPLING_TYPE),
     )
