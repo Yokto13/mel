@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from tqdm import tqdm
 
 from utils.loaders import load_mentions
 
@@ -18,8 +19,9 @@ class Mixer:
         self.buffer_size = buffer_size
 
     def mix(self, file_paths: list[Path], n_of_mixings: int = 10) -> None:
+        print("mixxing")
         file_paths = deepcopy(file_paths)
-        for _ in range(n_of_mixings):
+        for _ in tqdm(range(n_of_mixings)):
             self._mix(file_paths)
 
     def _mix(self, file_paths: list[Path]) -> None:
