@@ -29,8 +29,11 @@ from finetunings.generate_epochs.embed_links_for_generation import (
     embed_links_for_generation,
 )
 from finetunings.finetune_model.train import train
+from finetunings.finetune_model.train_ddp import train_ddp
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, rename, remove_duplicates
+
+from multilingual_dataset.creator import create_multilingual_dataset
 
 from tokenization.generate_tokens import (
     tokens_for_finetuning_mewsli,
@@ -68,6 +71,8 @@ def choose_action(action):
             return generate
         case "train":
             return train
+        case "train_ddp":
+            return train_ddp
         case "evaluate":
             return evaluate
         case "copy":
@@ -128,6 +133,8 @@ def choose_action(action):
             return embs_from_tokens_model_name_and_state_dict
         case "embed_links_for_generation":
             return embed_links_for_generation
+        case "create_multilingual_dataset":
+            return create_multilingual_dataset
         case _:
             raise ValueError(f"Unknown action: {action}")
 
