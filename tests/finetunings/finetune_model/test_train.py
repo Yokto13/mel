@@ -6,8 +6,8 @@ import torch
 
 from finetunings.finetune_model.train import (
     _load_epoch_npz,
-    _batch_recall,
-    _get_wandb_logs,
+    batch_recall,
+    get_wandb_logs,
 )
 from utils.running_averages import RunningAverages
 
@@ -42,7 +42,7 @@ def test_batch_recall_k_1():
     outputs = torch.tensor([[0.1, 0.2, 0.9], [0.8, 0.1, 0.3]])
     target = torch.tensor([[0, 0, 1], [1, 0, 0]])
 
-    recall = _batch_recall(outputs, target, k=1)
+    recall = batch_recall(outputs, target, k=1)
     assert recall == 1.0  # Both correct answers are the top-1 prediction
 
 
@@ -51,7 +51,7 @@ def test_batch_recall_k_2():
     outputs = torch.tensor([[0.1, 0.2, 0.7], [0.8, 0.1, 0.3]])
     target = torch.tensor([[0, 1, 0], [0, 0, 1]])
 
-    recall = _batch_recall(outputs, target, k=2)
+    recall = batch_recall(outputs, target, k=2)
     assert recall == 1.0
 
 
@@ -60,7 +60,7 @@ def test_batch_recall_k_too_large():
     outputs = torch.tensor([[0.1, 0.2, 0.7], [0.8, 0.1, 0.3]])
     target = torch.tensor([[0, 1, 0], [0, 0, 1]])
 
-    recall = _batch_recall(outputs, target, k=4)
+    recall = batch_recall(outputs, target, k=4)
     assert recall == 0.0  # k is too large, so recall should be 0.0
 
 
@@ -69,7 +69,7 @@ def test_batch_recall_no_correct_predictions():
     outputs = torch.tensor([[0.7, 0.2, 0.1], [0.6, 0.3, 0.1]])
     target = torch.tensor([[0, 0, 1], [0, 0, 1]])
 
-    recall = _batch_recall(outputs, target, k=2)
+    recall = batch_recall(outputs, target, k=2)
     assert recall == 0.0  # None of the correct answers are in the top-2
 
 
@@ -81,7 +81,7 @@ def test_batch_recall_large_k():
         1, torch.zeros((10, 1), dtype=torch.long), 1
     )
 
-    recall = _batch_recall(outputs, target, k=100)
+    recall = batch_recall(outputs, target, k=100)
 
     assert recall == 0.0
 
@@ -111,7 +111,7 @@ def test_get_wandb_logs():
     mock_running_averages.recall_10_big = 0.7
 
     # Act
-    logs = _get_wandb_logs(loss_item, r_at_1, r_at_10, mock_running_averages)
+    logs = get_wandb_logs(loss_item, r_at_1, r_at_10, mock_running_averages)
 
     # Assert
     expected_logs = {

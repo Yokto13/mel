@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import logging
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 from fire import Fire
@@ -38,7 +37,7 @@ torch.manual_seed(SEED)
 
 
 @dataclass
-class _SaveInformation:
+class SaveInformation:
     type: str
     output_path: Path
     is_final: bool
@@ -51,7 +50,7 @@ def _load_epoch_npz(path: Path, epoch: int | str) -> tuple:
     return d["X"], d["lines"], d["Y"]
 
 
-def _batch_recall(outputs: torch.tensor, target: torch.tensor, k: int = 1) -> float:
+def batch_recall(outputs: torch.tensor, target: torch.tensor, k: int = 1) -> float:
     """Calculates recall inside the batch.
 
     The calculation is done per each row. The exact values of outputs and target are not importand only orderings matter.
@@ -73,7 +72,7 @@ def _batch_recall(outputs: torch.tensor, target: torch.tensor, k: int = 1) -> fl
     return recall_per_row.mean().item()
 
 
-def _save_non_final_model(model: nn.Module, save_information: _SaveInformation) -> None:
+def _save_non_final_model(model: nn.Module, save_information: SaveInformation) -> None:
     def construct_non_final_name():
         return f"{save_information.output_path}/{wandb.run.name}_{save_information.epoch}_{save_information.recall}.pth"
 
@@ -81,18 +80,18 @@ def _save_non_final_model(model: nn.Module, save_information: _SaveInformation) 
     torch.save(model.state_dict(), name)
 
 
-def _save_final_model(model: nn.Module, save_information: _SaveInformation) -> None:
+def _save_final_model(model: nn.Module, save_information: SaveInformation) -> None:
     torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
 
 
-def _save_model(model: nn.Module, save_information: _SaveInformation) -> None:
+def save_model(model: nn.Module, save_information: SaveInformation) -> None:
     if save_information.is_final:
         _save_final_model(model, save_information)
     else:
         _save_non_final_model(model, save_information)
 
 
-def _forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.tensor:
+def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.tensor:
     """Calculates normalized embeddings. Attentions are created automatically. Assumes 0 is the padding token.
 
     Args:
@@ -107,7 +106,7 @@ def _forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.te
     return torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
 
-def _get_wandb_logs(
+def get_wandb_logs(
     loss_item: float, r_at_1: float, r_at_10: float, running_averages: RunningAverages
 ) -> dict:
     return {
@@ -123,7 +122,7 @@ def _get_wandb_logs(
     }
 
 
-class _LinksAndDescriptionsTogetherDataset(Dataset):
+class LinksAndDescriptionsTogetherDataset(Dataset):
     def __init__(self, dataset_dir: Path, epoch: int) -> None:
         super().__init__()
         self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
@@ -148,7 +147,7 @@ class _LinksAndDescriptionsTogetherDataset(Dataset):
         return self._descriptions.shape[1]
 
 
-def _load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
+def load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
     if state_dict_path is None:
         return ModelFactory.load_bert_from_file(model_path)
     else:
@@ -181,7 +180,7 @@ def train(
     STATE_DICT_PATH: str | None = None,
 ):
     print("STATEDICTPATH", STATE_DICT_PATH)
-    model = _load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH)
+    model = load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH)
     model = nn.DataParallel(model)
     model.to(device)
 
@@ -199,7 +198,7 @@ def train(
         train_loss = 0
 
         _logger.debug(f"EPOCH: {epoch}")
-        dataset = _LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
+        dataset = LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
         dataloader = DataLoader(
             dataset, batch_size=None, num_workers=2, pin_memory=True
         )
@@ -209,7 +208,7 @@ def train(
 
             together = together.to(device)
 
-            together = _forward_to_embeddings(together, model)
+            together = forward_to_embeddings(together, model)
 
             links_embedded, descs_embedded = (
                 together[: dataset.links_cnt],
@@ -234,13 +233,13 @@ def train(
             loss_item = loss.item()
             train_loss += loss_item
 
-            r_at_1 = _batch_recall(outputs, labels, k=1)
-            r_at_10 = _batch_recall(outputs, labels, k=10)
+            r_at_1 = batch_recall(outputs, labels, k=1)
+            r_at_10 = batch_recall(outputs, labels, k=10)
 
             running_averages.update_loss(loss_item)
             running_averages.update_recall(r_at_1, r_at_10)
 
-            wand_dict = _get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
+            wand_dict = get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
             wandb.log(
                 wand_dict,
             )
@@ -248,17 +247,17 @@ def train(
 
         model.to("cpu")
         if epoch % 50 == 0:
-            save_information = _SaveInformation(
+            save_information = SaveInformation(
                 TYPE,
                 MODEL_SAVE_DIR,
                 False,
                 epoch,
                 wand_dict["running_r_at_1_big"],
             )
-            _save_model(model.module, save_information)
+            save_model(model.module, save_information)
 
-    save_information = _SaveInformation(TYPE, MODEL_SAVE_DIR, True)
-    _save_model(model.module, save_information)
+    save_information = SaveInformation(TYPE, MODEL_SAVE_DIR, True)
+    save_model(model.module, save_information)
 
 
 if __name__ == "__main__":

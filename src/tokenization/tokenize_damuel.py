@@ -49,6 +49,9 @@ def _process(
                 model_name, p, context_size, d, workers
             )
             tokens_for_finetuning_damuel_links(model_name, p, context_size, l, workers)
+            tokens_for_finetuning_damuel_descriptions_pages(
+                model_name, p, context_size, dp, workers
+            )
         case _DamuelGenerationType.IGNORE_CONTEXT_PAGES:
             # TODO: there should be more freedom over choosing the generation types.
             # Currently the Iterators sometimes disregard SRP which makes any custom tokenization very hard.
