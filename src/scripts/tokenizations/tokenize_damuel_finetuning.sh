@@ -7,7 +7,7 @@ cd ../../
 VENV=../venv/bin/activate
 source $VENV
 
-RESULT="$OUTPUTS/tokens_damuel_finetuning"
+RESULT="$OUTPUTS/tokens_damuel_finetuning_128"
 
 if [ -d "$RESULT" ]; then
     echo "Directory exists. Removing it."
@@ -17,5 +17,5 @@ else
     mkdir -p "$RESULT"
 fi
 
-python run_action.py tokens_for_all_damuel_finetuning "$DAMUEL/1.0" "$RESULT" 128 64 "setu4993/LEALLA-base"
+python run_action.py tokens_for_all_damuel_finetuning "$DAMUEL" "$RESULT" 128 64 "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 

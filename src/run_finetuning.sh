@@ -109,7 +109,7 @@ if [ ! -e "$WORKDIR/models_0/final.pth" ]; then
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW"\
      "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" $(($EPOCHS / 5)) "$LOGIT_MULTIPLIER" "$LR" "None" 0 "$TYPE" "$N_OF_ROUNDS"\
-     $NEG 1 $NEG_SAMPLING_TYPE
+     $NEG 8 $NEG_SAMPLING_TYPE
 fi
 
 STATE_DICT="$WORKDIR/models_0/final.pth"
