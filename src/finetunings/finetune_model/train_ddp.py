@@ -31,7 +31,11 @@ from finetunings.finetune_model.train import (
     load_model,
     forward_to_embeddings,
 )
-from finetunings.finetune_model.data import _load_epoch_npz, SaveInformation, save_model
+from finetunings.finetune_model.data import (
+    SaveInformation,
+    save_model,
+    LightWeightDataset,
+)
 from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
 from finetunings.finetune_model.ddp import setup, cleanup
 
@@ -41,7 +45,7 @@ from finetunings.finetune_model.ddp import setup, cleanup
 _RUNNING_AVERAGE_SMALL = 100
 _RUNNING_AVERAGE_BIG = 1000
 
-_logger = logging.getLogger("finetuning.finetune_model.train")
+_logger = logging.getLogger("finetuning.finetune_model.train_ddp")
 
 
 if torch.cuda.is_available():
@@ -66,30 +70,6 @@ def cleanup():
 
 SEED = 0
 torch.manual_seed(SEED)
-
-
-class LinksAndDescriptionsTogetherDataset(Dataset):
-    def __init__(self, dataset_dir: Path, epoch: int) -> None:
-        super().__init__()
-        self._links, self._descriptions, _ = _load_epoch_npz(dataset_dir, epoch)
-
-    def __len__(self):
-        return self._links.shape[0]
-
-    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
-        links = self._links[index]
-        descriptions = self._descriptions[index]
-        together = np.concatenate((links, descriptions))
-
-        return together, None
-
-    @property
-    def links_cnt(self) -> int:
-        return self._links.shape[1]
-
-    @property
-    def descriptions_cnt(self) -> int:
-        return self._descriptions.shape[1]
 
 
 def _ddp_train(
@@ -135,7 +115,7 @@ def _ddp_train(
 
         train_loss = 0
 
-        dataset = LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
+        dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
         dataloader = DataLoader(
             dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
         )
@@ -144,7 +124,8 @@ def _ddp_train(
             (dataset.links_cnt, dataset.descriptions_cnt), dtype=np.float32
         )
         for i in range(dataset.links_cnt):
-            labels[i, i * 8] = 1
+            r = dataset.descriptions_cnt // dataset.links_cnt
+            labels[i, i * r] = 1
 
         if is_the_main_process:
             print(labels.shape)
