@@ -2,10 +2,16 @@ import logging
 import os
 from pathlib import Path
 
+import numpy as np
+
 import torch
+
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 import torch.optim as optim
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 import torch.distributed as dist
@@ -15,6 +21,7 @@ import torch.multiprocessing as mp
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+
 import wandb
 
 from utils.argument_wrappers import ensure_datatypes
@@ -22,13 +29,10 @@ from utils.running_averages import RunningAverages
 
 from finetunings.finetune_model.train import (
     load_model,
-    LinksAndDescriptionsTogetherDataset,
-    get_wandb_logs,
-    SaveInformation,
-    batch_recall,
-    save_model,
     forward_to_embeddings,
 )
+from finetunings.finetune_model.data import _load_epoch_npz, SaveInformation, save_model
+from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
 from finetunings.finetune_model.ddp import setup, cleanup
 
 
@@ -62,6 +66,30 @@ def cleanup():
 
 SEED = 0
 torch.manual_seed(SEED)
+
+
+class LinksAndDescriptionsTogetherDataset(Dataset):
+    def __init__(self, dataset_dir: Path, epoch: int) -> None:
+        super().__init__()
+        self._links, self._descriptions, _ = _load_epoch_npz(dataset_dir, epoch)
+
+    def __len__(self):
+        return self._links.shape[0]
+
+    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
+        links = self._links[index]
+        descriptions = self._descriptions[index]
+        together = np.concatenate((links, descriptions))
+
+        return together, None
+
+    @property
+    def links_cnt(self) -> int:
+        return self._links.shape[1]
+
+    @property
+    def descriptions_cnt(self) -> int:
+        return self._descriptions.shape[1]
 
 
 def _ddp_train(
@@ -108,13 +136,29 @@ def _ddp_train(
         train_loss = 0
 
         dataset = LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
-        dataloader = DataLoader(dataset, batch_size=None, pin_memory=True)
+        dataloader = DataLoader(
+            dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
+        )
 
-        for together, labels in tqdm(dataloader, total=len(dataloader)):
-            together = together.to(rank)
+        labels = np.zeros(
+            (dataset.links_cnt, dataset.descriptions_cnt), dtype=np.float32
+        )
+        for i in range(dataset.links_cnt):
+            labels[i, i * 8] = 1
 
-            per_replica = together.shape[0] // world_size
-            replica_part = together[rank * per_replica : (rank + 1) * per_replica]
+        if is_the_main_process:
+            print(labels.shape)
+            print(labels[0])
+            print(labels[1])
+
+        labels = torch.from_numpy(labels).to(rank)
+        per_replica = (dataset.descriptions_cnt + dataset.links_cnt) // world_size
+        replica_slice = slice(rank * per_replica, (rank + 1) * per_replica)
+
+        for together, _ in tqdm(dataloader, total=len(dataloader)):
+
+            replica_part = together[replica_slice]
+            replica_part = replica_part.to(rank)
 
             replica_part = forward_to_embeddings(replica_part, model)
 
@@ -138,7 +182,6 @@ def _ddp_train(
 
             outputs = outputs * LOGIT_MULTIPLIER
 
-            labels = labels.to(rank)
             loss = criterion(outputs, labels)
 
             loss.backward()
@@ -195,7 +238,11 @@ def train_ddp(
     TYPE: str = "entity_names",
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
+    FAST_AND_FOURIOUS: bool = False,
 ):
+    if FAST_AND_FOURIOUS:
+        pass
+
     world_size = torch.cuda.device_count()
 
     mp.spawn(

@@ -1,13 +1,11 @@
-from dataclasses import dataclass
 import logging
 from pathlib import Path
 
-import numpy as np
 from fire import Fire
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import wandb
@@ -16,6 +14,12 @@ from utils.argument_wrappers import ensure_datatypes
 from utils.running_averages import RunningAverages
 from utils.embeddings import create_attention_mask
 from utils.model_factory import ModelFactory
+from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
+from finetunings.finetune_model.data import (
+    LinksAndDescriptionsTogetherDataset,
+    SaveInformation,
+    save_model,
+)
 
 # Settings ===========================================
 
@@ -36,61 +40,6 @@ SEED = 0
 torch.manual_seed(SEED)
 
 
-@dataclass
-class SaveInformation:
-    type: str
-    output_path: Path
-    is_final: bool
-    epoch: int = None
-    recall: int = None
-
-
-def _load_epoch_npz(path: Path, epoch: int | str) -> tuple:
-    d = np.load(path / f"epoch_{epoch}.npz")
-    return d["X"], d["lines"], d["Y"]
-
-
-def batch_recall(outputs: torch.tensor, target: torch.tensor, k: int = 1) -> float:
-    """Calculates recall inside the batch.
-
-    The calculation is done per each row. The exact values of outputs and target are not importand only orderings matter.
-    Consequently this works both with logits and softmax. If k is greater than the number of classes **returns 0**.
-
-    Args:
-        outputs (torch.tensor): Matrix where each row corresponds to one multiclass classification.
-        target (torch.tensor): Matrix where each row corresponds to one multiclass classification, same shape as outputs.
-        k (int, optional): Recall at K. Defaults to 1.
-
-    Returns:
-        float: Recall at K for this batch.
-    """
-    if len(outputs[0]) < k:  # batch is too small.
-        return 0.0
-    _, top_indices = outputs.topk(k, dim=-1)
-    top_values = target.gather(-1, top_indices)
-    recall_per_row = top_values.any(dim=-1).float()
-    return recall_per_row.mean().item()
-
-
-def _save_non_final_model(model: nn.Module, save_information: SaveInformation) -> None:
-    def construct_non_final_name():
-        return f"{save_information.output_path}/{wandb.run.name}_{save_information.epoch}_{save_information.recall}.pth"
-
-    name = construct_non_final_name()
-    torch.save(model.state_dict(), name)
-
-
-def _save_final_model(model: nn.Module, save_information: SaveInformation) -> None:
-    torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
-
-
-def save_model(model: nn.Module, save_information: SaveInformation) -> None:
-    if save_information.is_final:
-        _save_final_model(model, save_information)
-    else:
-        _save_non_final_model(model, save_information)
-
-
 def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.tensor:
     """Calculates normalized embeddings. Attentions are created automatically. Assumes 0 is the padding token.
 
@@ -104,47 +53,6 @@ def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.ten
     att = create_attention_mask(toks)
     embeddings = model(toks, att).pooler_output
     return torch.nn.functional.normalize(embeddings, p=2, dim=1)
-
-
-def get_wandb_logs(
-    loss_item: float, r_at_1: float, r_at_10: float, running_averages: RunningAverages
-) -> dict:
-    return {
-        "loss": loss_item,
-        "r_at_1": r_at_1,
-        "r_at_10": r_at_10,
-        "running_loss": running_averages.loss,
-        "running_r_at_1": running_averages.recall_1,
-        "running_r_at_10": running_averages.recall_10,
-        "running_loss_big": running_averages.loss_big,
-        "running_r_at_1_big": running_averages.recall_1_big,
-        "running_r_at_10_big": running_averages.recall_10_big,
-    }
-
-
-class LinksAndDescriptionsTogetherDataset(Dataset):
-    def __init__(self, dataset_dir: Path, epoch: int) -> None:
-        super().__init__()
-        self._links, self._descriptions, self._Y = _load_epoch_npz(dataset_dir, epoch)
-
-    def __len__(self):
-        return self._links.shape[0]
-
-    def __getitem__(self, index) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
-        links = self._links[index]
-        descriptions = self._descriptions[index]
-        y = self._Y[index]
-        together = np.concatenate((links, descriptions))
-
-        return together, y
-
-    @property
-    def links_cnt(self) -> int:
-        return self._links.shape[1]
-
-    @property
-    def descriptions_cnt(self) -> int:
-        return self._descriptions.shape[1]
 
 
 def load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
