@@ -70,7 +70,7 @@ class Batcher:
 
 
 @nb.njit
-def _prepare_batch(
+def _prepare_batch_with_Y(
     batch_size, line_size, per_mention, toks_size, sampler_tokens, positive, negative
 ):
     together_line = np.zeros((line_size, toks_size), dtype=np.int32)
@@ -96,6 +96,30 @@ def _prepare_batch(
     return together_line, batch_Y
 
 
+@nb.njit
+def _prepare_batch(
+    batch_size, line_size, toks_size, sampler_tokens, positive, negative
+):
+    together_line = np.empty((line_size, toks_size), dtype=np.int32)
+
+    together_line_idx = 0
+
+    # If index error check that we are not at the end of data
+    # if so then len(embs) < batch_size is likely to happen.
+    for i in range(batch_size):
+        pos_idx, neg_ids = positive[i], negative[i]
+
+        together_line[together_line_idx] = sampler_tokens[pos_idx]
+        together_line_idx += 1
+
+        together_line[together_line_idx : together_line_idx + len(neg_ids)] = (
+            sampler_tokens[neg_ids]
+        )
+        together_line_idx += len(neg_ids)
+
+    return together_line
+
+
 class DamuelNeighborsIterator:
     def __init__(
         self,
@@ -105,6 +129,7 @@ class DamuelNeighborsIterator:
         sampler: BatchSampler,
         sampler_tokens: npt.NDArray[np.int_],
         toks_size: int,
+        return_Y: bool = True,
     ) -> None:
         self.batcher = batcher
         self.batch_size = batch_size
@@ -112,6 +137,7 @@ class DamuelNeighborsIterator:
         self.batch_sampler = sampler
         self.sampler_tokens = sampler_tokens
         self.toks_size = toks_size
+        self.return_Y = return_Y
 
     def __iter__(self):
         per_mention = 1 + self.negative_cnt
@@ -122,13 +148,24 @@ class DamuelNeighborsIterator:
             positive, negative = self.batch_sampler.sample(
                 embs, qids, self.negative_cnt
             )
-            together_line, batch_Y = _prepare_batch(
-                self.batch_size,
-                line_size,
-                per_mention,
-                self.toks_size,
-                self.sampler_tokens,
-                positive,
-                negative,
-            )
-            yield batch, together_line, batch_Y
+            if self.return_Y:
+                together_line, batch_Y = _prepare_batch_with_Y(
+                    self.batch_size,
+                    line_size,
+                    per_mention,
+                    self.toks_size,
+                    self.sampler_tokens,
+                    positive,
+                    negative,
+                )
+                yield batch, together_line, batch_Y
+            else:
+                together_line = _prepare_batch(
+                    self.batch_size,
+                    line_size,
+                    self.toks_size,
+                    self.sampler_tokens,
+                    positive,
+                    negative,
+                )
+                yield batch, together_line
