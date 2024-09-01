@@ -130,13 +130,8 @@ def _ddp_train(
 
         labels = construct_labels(dataset)
         labels = torch.from_numpy(labels).to(rank)
-        per_replica = (dataset.descriptions_cnt + dataset.links_cnt) // world_size
-        replica_slice = slice(rank * per_replica, (rank + 1) * per_replica)
 
-        for together, _ in tqdm(dataloader, total=len(dataloader)):
-
-            replica_part = together[replica_slice]
-            replica_part = replica_part.to(rank)
+        for replica_part in tqdm(dataloader, total=len(dataloader)):
 
             replica_part = forward_to_embeddings(replica_part, model)
 
