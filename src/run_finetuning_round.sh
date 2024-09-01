@@ -107,7 +107,7 @@ if [ ! "$(ls -A $MODELS_DIR)" ]; then
     echo $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
     # sbatch --wait -p "gpu-troja,gpu-ms" -G $CARDS -C "gpuram24G|gpuram40G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
     # sbatch --wait -p "gpu-troja,gpu-ms" -G $CARDS -C "gpuram24G|gpuram40G" --mem=250G run ../venv/bin/python $ACTION_SCRIPT "train_ddp" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
-    sbatch --wait -p "gpu-troja" -G 4 -C "gpuram40G" --mem=200G run ../venv/bin/python $ACTION_SCRIPT "train_ddp" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT" True
+    sbatch --wait -p "gpu-troja" -G 8 -C "gpuram40G|gpuram24G" --mem=200G run ../venv/bin/python $ACTION_SCRIPT "train_ddp" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT" True
 fi
 
 # ====================EVALUATION====================
