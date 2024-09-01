@@ -100,7 +100,7 @@ mkdir -p $MODELS_DIR
 if [ ! "$(ls -A $MODELS_DIR)" ]; then
     echo "Running training for damuel"
     echo $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
-    sbatch --wait -p "gpu-troja,gpu-ms" -G $CARDS -C "gpuram24G|gpuram40G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$TYPE" "$MODELS_DIR" "$STATE_DICT"
+    sbatch --wait -p "gpu-troja,gpu-ms" -G $CARDS -C "gpuram24G|gpuram40G" --mem=150G run ../venv/bin/python $ACTION_SCRIPT "train" "$BATCH_DIR" "$MODEL_PATH" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" "$MODELS_DIR" "$STATE_DICT"
 fi
 
 # ====================EVALUATION====================

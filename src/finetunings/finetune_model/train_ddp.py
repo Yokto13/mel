@@ -72,6 +72,14 @@ SEED = 0
 torch.manual_seed(SEED)
 
 
+def construct_labels(dataset: LightWeightDataset) -> np.ndarray:
+    labels = np.zeros((dataset.links_cnt, dataset.descriptions_cnt), dtype=np.float32)
+    for i in range(dataset.links_cnt):
+        r = dataset.descriptions_cnt // dataset.links_cnt
+        labels[i, i * r] = 1
+    return labels
+
+
 def _ddp_train(
     rank: int,
     world_size: int,
@@ -120,18 +128,7 @@ def _ddp_train(
             dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
         )
 
-        labels = np.zeros(
-            (dataset.links_cnt, dataset.descriptions_cnt), dtype=np.float32
-        )
-        for i in range(dataset.links_cnt):
-            r = dataset.descriptions_cnt // dataset.links_cnt
-            labels[i, i * r] = 1
-
-        if is_the_main_process:
-            print(labels.shape)
-            print(labels[0])
-            print(labels[1])
-
+        labels = construct_labels(dataset)
         labels = torch.from_numpy(labels).to(rank)
         per_replica = (dataset.descriptions_cnt + dataset.links_cnt) // world_size
         replica_slice = slice(rank * per_replica, (rank + 1) * per_replica)
@@ -216,14 +213,9 @@ def train_ddp(
     EPOCHS: int,
     LOGIT_MULTIPLIER: int,
     LR: float,
-    TYPE: str = "entity_names",
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
-    FAST_AND_FOURIOUS: bool = False,
 ):
-    if FAST_AND_FOURIOUS:
-        pass
-
     world_size = torch.cuda.device_count()
 
     mp.spawn(

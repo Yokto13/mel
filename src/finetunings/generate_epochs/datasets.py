@@ -73,8 +73,8 @@ class Batcher:
 def _prepare_batch(
     batch_size, line_size, per_mention, toks_size, sampler_tokens, positive, negative
 ):
-    together_line = np.zeros((line_size, toks_size), dtype=np.int32)
-    batch_Y = np.zeros((batch_size, line_size))
+    together_line = np.empty((line_size, toks_size), dtype=np.int32)
+    batch_Y = np.empty((batch_size, line_size))
 
     together_line_idx = 0
 

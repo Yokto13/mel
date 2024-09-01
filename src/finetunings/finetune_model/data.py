@@ -11,7 +11,6 @@ import wandb
 
 @dataclass
 class SaveInformation:
-    type: str
     output_path: Path
     is_final: bool
     epoch: int = None

@@ -83,7 +83,6 @@ def train(
     EPOCHS: int,
     LOGIT_MULTIPLIER: int,
     LR: float,
-    TYPE: str = "entity_names",
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
 ):
