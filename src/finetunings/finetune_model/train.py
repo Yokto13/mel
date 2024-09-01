@@ -155,7 +155,6 @@ def train(
         model.to("cpu")
         if epoch % 50 == 0:
             save_information = SaveInformation(
-                TYPE,
                 MODEL_SAVE_DIR,
                 False,
                 epoch,
@@ -163,7 +162,7 @@ def train(
             )
             save_model(model.module, save_information)
 
-    save_information = SaveInformation(TYPE, MODEL_SAVE_DIR, True)
+    save_information = SaveInformation(MODEL_SAVE_DIR, True)
     save_model(model.module, save_information)
 
 
