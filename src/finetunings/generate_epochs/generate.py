@@ -121,14 +121,14 @@ def generate(
 
         # save compressed with lzma and pickle
         if GENERATE_Y:
-            np.savez_compressed(
+            np.savez(
                 OUTPUT_DIR / f"epoch_{epoch}.npz",
                 X=np.array(X),
                 lines=np.array(lines),
                 Y=np.array(Y),
             )
         else:
-            np.savez_compressed(
+            np.savez(
                 OUTPUT_DIR / f"epoch_{epoch}.npz", X=np.array(X), lines=np.array(lines)
             )
 
