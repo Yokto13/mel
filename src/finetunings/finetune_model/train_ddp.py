@@ -103,7 +103,7 @@ def update_recalls_and_wandb(outputs, labels, loss_item, running_averages):
     )
 
 
-def save_model(model, MODEL_SAVE_DIR):
+def save_final_model(model, MODEL_SAVE_DIR):
     save_information = SaveInformation(MODEL_SAVE_DIR, True)
     save_model(model.module, save_information)
 
@@ -200,7 +200,7 @@ def _ddp_train(
     if is_the_main_process:
         # We only save the model on the main process and only once
         # Intermediate saves could mess up synchronization
-        save_model(model.module, MODEL_SAVE_DIR)
+        save_final_model(model.module, MODEL_SAVE_DIR)
 
     cleanup()
 

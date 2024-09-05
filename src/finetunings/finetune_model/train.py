@@ -18,7 +18,7 @@ from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
 from finetunings.finetune_model.data import (
     LinksAndDescriptionsTogetherDataset,
     SaveInformation,
-    _save_model,
+    save_model,
 )
 
 # Settings ===========================================
@@ -161,10 +161,10 @@ def train(
                 epoch,
                 wand_dict["running_r_at_1_big"],
             )
-            _save_model(model.module, save_information)
+            save_model(model.module, save_information)
 
     save_information = SaveInformation(MODEL_SAVE_DIR, True)
-    _save_model(model.module, save_information)
+    save_model(model.module, save_information)
 
 
 if __name__ == "__main__":

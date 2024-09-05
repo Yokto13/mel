@@ -34,7 +34,7 @@ def _save_final_model(model: nn.Module, save_information: SaveInformation) -> No
     torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
 
 
-def _save_model(model: nn.Module, save_information: SaveInformation) -> None:
+def save_model(model: nn.Module, save_information: SaveInformation) -> None:
     if save_information.is_final:
         _save_final_model(model, save_information)
     else:
