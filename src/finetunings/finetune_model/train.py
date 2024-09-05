@@ -18,7 +18,7 @@ from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
 from finetunings.finetune_model.data import (
     LinksAndDescriptionsTogetherDataset,
     SaveInformation,
-    save_model,
+    _save_model,
 )
 
 # Settings ===========================================
@@ -40,6 +40,7 @@ SEED = 0
 torch.manual_seed(SEED)
 
 
+@torch.compile
 def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.tensor:
     """Calculates normalized embeddings. Attentions are created automatically. Assumes 0 is the padding token.
 
@@ -160,10 +161,10 @@ def train(
                 epoch,
                 wand_dict["running_r_at_1_big"],
             )
-            save_model(model.module, save_information)
+            _save_model(model.module, save_information)
 
     save_information = SaveInformation(MODEL_SAVE_DIR, True)
-    save_model(model.module, save_information)
+    _save_model(model.module, save_information)
 
 
 if __name__ == "__main__":

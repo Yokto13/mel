@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch, Mock
 import numpy as np
 import pytest
 import torch
-import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer
 
 from finetunings.finetune_model.data import (
@@ -12,6 +11,7 @@ from finetunings.finetune_model.data import (
     _load_epoch_npz,
 )
 from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
+from finetunings.finetune_model.train_ddp import construct_labels
 from finetunings.finetune_model.train import forward_to_embeddings
 from utils.running_averages import RunningAverages
 
@@ -311,3 +311,23 @@ class TestLightWeightDataset:
         assert mock_dataset_rank_0.descriptions_cnt == 6
         assert mock_dataset_rank_1.descriptions_cnt == 6
         assert mock_dataset_rank_2.descriptions_cnt == 6
+
+
+class TestDDPUtils:
+    def test_construct_labels(self):
+        dataset = MagicMock(spec=LightWeightDataset)
+        dataset.links_cnt = 3
+        dataset.descriptions_cnt = 9
+
+        labels = construct_labels(dataset)
+
+        expected_labels = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0],
+            ],
+            dtype=np.float32,
+        )
+
+        assert np.array_equal(labels, expected_labels)

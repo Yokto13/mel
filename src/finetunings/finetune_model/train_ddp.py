@@ -80,6 +80,34 @@ def construct_labels(dataset: LightWeightDataset) -> np.ndarray:
     return labels
 
 
+@torch.compile
+def _calculate_loss(
+    links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
+):
+    outputs = torch.mm(links_embedded, descs_embedded.t())
+    outputs = outputs * LOGIT_MULTIPLIER
+    loss = criterion(outputs, labels)
+    return loss, outputs
+
+
+def update_recalls_and_wandb(outputs, labels, loss_item, running_averages):
+    r_at_1 = batch_recall(outputs, labels, k=1)
+    r_at_10 = batch_recall(outputs, labels, k=10)
+
+    running_averages.update_loss(loss_item)
+    running_averages.update_recall(r_at_1, r_at_10)
+
+    wand_dict = get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
+    wandb.log(
+        wand_dict,
+    )
+
+
+def save_model(model, MODEL_SAVE_DIR):
+    save_information = SaveInformation(MODEL_SAVE_DIR, True)
+    save_model(model.module, save_information)
+
+
 def _ddp_train(
     rank: int,
     world_size: int,
@@ -114,6 +142,8 @@ def _ddp_train(
     optimizer = optim.Adam(model.parameters(), lr=LR)
     criterion = nn.CrossEntropyLoss()
 
+    scaler = torch.cuda.amp.GradScaler()
+
     running_averages = None
     if is_the_main_process:
         running_averages = RunningAverages(_RUNNING_AVERAGE_SMALL, _RUNNING_AVERAGE_BIG)
@@ -133,54 +163,44 @@ def _ddp_train(
 
         for replica_part in tqdm(dataloader, total=len(dataloader)):
 
-            replica_part = forward_to_embeddings(replica_part, model)
+            with torch.autocast(device_type="cuda"):
+                replica_part = forward_to_embeddings(replica_part, model)
 
-            with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
-                all_replicas = [
-                    torch.zeros_like(replica_part) for _ in range(world_size)
-                ]
-                torch.distributed.all_gather(all_replicas, replica_part)
+                with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
+                    all_replicas = [
+                        torch.zeros_like(replica_part) for _ in range(world_size)
+                    ]
+                    torch.distributed.all_gather(all_replicas, replica_part)
 
-            # Allow gradients propagation for the slice owned by the current process
-            all_replicas[rank] = replica_part
+                # Allow gradients propagation for the slice owned by the current process
+                all_replicas[rank] = replica_part
 
-            all_replicas = torch.cat(all_replicas, dim=0)
+                all_replicas = torch.cat(all_replicas, dim=0)
 
-            links_embedded, descs_embedded = (
-                all_replicas[: dataset.links_cnt],
-                all_replicas[dataset.links_cnt :],
-            )
+                links_embedded, descs_embedded = (
+                    all_replicas[: dataset.links_cnt],
+                    all_replicas[dataset.links_cnt :],
+                )
 
-            outputs = torch.mm(links_embedded, descs_embedded.t())
+                loss, outputs = _calculate_loss(
+                    links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
+                )
 
-            outputs = outputs * LOGIT_MULTIPLIER
-
-            loss = criterion(outputs, labels)
-
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             optimizer.zero_grad()
 
             loss_item = loss.item()
             train_loss += loss_item
 
             if is_the_main_process:
-                r_at_1 = batch_recall(outputs, labels, k=1)
-                r_at_10 = batch_recall(outputs, labels, k=10)
-
-                running_averages.update_loss(loss_item)
-                running_averages.update_recall(r_at_1, r_at_10)
-
-                wand_dict = get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
-                wandb.log(
-                    wand_dict,
-                )
+                update_recalls_and_wandb(outputs, labels, loss_item, running_averages)
 
     if is_the_main_process:
         # We only save the model on the main process and only once
         # Intermediate saves could mess up synchronization
-        save_information = SaveInformation(MODEL_SAVE_DIR, True)
-        save_model(model.module, save_information)
+        save_model(model.module, MODEL_SAVE_DIR)
 
     cleanup()
 
