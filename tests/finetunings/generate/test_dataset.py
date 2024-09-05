@@ -25,7 +25,7 @@ def test_shuffling(mock_load_fn):
     batcher = Batcher(Path("some/path"), known_qids, batch_size)
 
     initial_index = batcher._data_index.copy()
-    batcher.shuffler()
+    batcher.shuffle()
     shuffled_index = batcher._data_index
 
     # Check that the indices are shuffled

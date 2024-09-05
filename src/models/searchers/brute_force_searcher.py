@@ -1,14 +1,16 @@
 import logging
+from typing import Optional
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+torch.backends.cuda.matmul.allow_tf32 = True
+
 from models.searchers.searcher import Searcher
 
 _logger = logging.getLogger("models.searchers.brute_force_searcher")
-
 
 class BruteForceSearcher(Searcher):
     def __init__(
@@ -16,24 +18,24 @@ class BruteForceSearcher(Searcher):
     ):
         if torch.cuda.is_available():
             _logger.info("Running on CUDA.")
-            self.device = torch.device("cuda")
+            self.device: torch.device = torch.device("cuda")
         else:
             _logger.info("CUDA is not available.")
-            self.device = torch.device("cpu")
+            self.device: torch.device = torch.device("cpu")
         super().__init__(embs, results, run_build_from_init)
 
-    def find(self, batch, num_neighbors) -> np.ndarray:
-        batch_torch = torch.tensor(batch, device=self.device)
+    def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
+        batch_torch: torch.Tensor = torch.tensor(batch, device=self.device)
         # batch is (batch_size, dim)
         # embs after build are (dim, embs_count)
         # dot_product = batch_torch @ self.embs  # (batch_size, embs_count)
-        dot_product = F.linear(batch_torch, self.embs)
+        dot_product: torch.Tensor = F.linear(batch_torch, self.embs)
         _, top_indices = dot_product.topk(num_neighbors)
-        top_indices = top_indices.cpu().numpy()
-        return self.results[top_indices]
+        top_indices_np: np.ndarray = top_indices.cpu().numpy()
+        return self.results[top_indices_np]
 
-    def build(self):
-        self.embs = torch.tensor(self.embs, device=self.device)
+    def build(self) -> None:
+        self.embs: torch.Tensor = torch.tensor(self.embs, device=self.device)
 
 
 class _WrappedSearcher(nn.Module):
@@ -43,7 +45,6 @@ class _WrappedSearcher(nn.Module):
         self.num_neighbors: int = num_neighbors
 
     def forward(self, x):
-        # dot_product = x @ self.kb_embs
         dot_product = F.linear(x, self.kb_embs)
         _, top_indices = dot_product.topk(self.num_neighbors)
         return top_indices
@@ -55,14 +56,15 @@ class DPBruteForceSearcher(Searcher):
     ):
         if torch.cuda.is_available():
             _logger.info("Running on CUDA.")
-            self.device = torch.device("cuda")
+            self.device: torch.device = torch.device("cuda")
         else:
             _logger.info("CUDA is not available.")
-            self.device = torch.device("cpu")
-        self.module_searcher = None
+            self.device: torch.device = torch.device("cpu")
+        self.module_searcher: Optional[nn.DataParallel] = None
+        self.required_num_neighbors: Optional[int] = None
         super().__init__(embs, results, run_build_from_init)
 
-    def find(self, batch, num_neighbors) -> np.ndarray:
+    def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
         if self.module_searcher is None:
             self.module_searcher = nn.DataParallel(
                 _WrappedSearcher(torch.from_numpy(self.embs), num_neighbors)
@@ -74,9 +76,9 @@ class DPBruteForceSearcher(Searcher):
                 f"num_neighbors was changed from {self.required_num_neighbors} to {num_neighbors} and this is not allowed in DPBruteForceSearcher"
             )
         with torch.no_grad():
-            top_indices = self.module_searcher(torch.tensor(batch, device=self.device))
-        top_indices = top_indices.cpu().numpy()
-        return self.results[top_indices]
+            top_indices: torch.Tensor = self.module_searcher(torch.tensor(batch, device=self.device))
+        top_indices_np: np.ndarray = top_indices.cpu().numpy()
+        return self.results[top_indices_np]
 
     def build(self):
         pass
