@@ -121,7 +121,6 @@ class NegativeSampler:
         assert len(embs) == len(qids)
         self.embs = embs
         self.qids = qids
-        print("max qid", np.max(self.qids))
         # self.set_arr = np.zeros(int(np.max(self.qids)) + 1, dtype=np.bool_)
         self.searcher = searcher_constructor(embs, np.arange(len(embs)))
         print(sampling_type)
@@ -138,7 +137,6 @@ class NegativeSampler:
         # performance seems comparable with _get_neighbors_mask_set_arr
         # by the Occams razor _get_neighbors_mask_set is better.
         wanted_neighbors_mask = _get_neighbors_mask_set(batch_qids, self.qids[neighbors])
-        print(wanted_neighbors_mask)
         return self.sample_f(
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )
