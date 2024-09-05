@@ -79,8 +79,12 @@ def generate(
         NegativeSamplingType(NEGATIVE_SAMPLING_TYPE),
     )
 
+    _logger.debug("Batch sampler created")
+
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
     tokens = np.array([x[0] for x in multifile_dataset])
+
+    _logger.debug("Tokens created")
 
     # dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
     batcher = Batcher(LINKS_EMBS_DIR, batch_sampler.qids, BATCH_SIZE)
@@ -95,6 +99,8 @@ def generate(
     )
 
     gen = iter(damuel_neighbors_iterator)
+
+    _logger.debug("Starting generation")
 
     for epoch in range(EPOCHS):
         epoch_steps_counter = 0

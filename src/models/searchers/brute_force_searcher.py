@@ -24,13 +24,13 @@ class BruteForceSearcher(Searcher):
             self.device: torch.device = torch.device("cpu")
         super().__init__(embs, results, run_build_from_init)
 
+    @torch.compile
     def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
-        batch_torch: torch.Tensor = torch.tensor(batch, device=self.device)
-        # batch is (batch_size, dim)
-        # embs after build are (dim, embs_count)
-        # dot_product = batch_torch @ self.embs  # (batch_size, embs_count)
-        dot_product: torch.Tensor = F.linear(batch_torch, self.embs)
-        _, top_indices = dot_product.topk(num_neighbors)
+        with torch.no_grad():
+            batch_torch: torch.Tensor = torch.tensor(batch, device=self.device)
+            # embs after build are (dim, embs_count)
+            dot_product: torch.Tensor = F.linear(batch_torch, self.embs)
+            _, top_indices = dot_product.topk(num_neighbors)
         top_indices_np: np.ndarray = top_indices.cpu().numpy()
         return self.results[top_indices_np]
 
