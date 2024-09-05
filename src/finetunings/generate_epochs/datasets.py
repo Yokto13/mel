@@ -44,13 +44,17 @@ class Batcher:
         self._max_idx = len(self._embs) // self._batch_size
         self._batch_idx = 0
 
-    def shuffler(self):
+        # making shure that data are shuffled right from the start is important
+        # otherwise we can easily get batches where QIDs repeat which is something to be avoided.
+        self.shuffle()
+
+    def shuffle(self):
         _rng.shuffle(self._data_index)
 
     def get_batch(self):
         if self._batch_idx == self._max_idx - 1:
             self._batch_idx = 0
-            self.shuffler()
+            self.shuffle()
         indices = self._data_index[
             self._batch_idx * self._batch_size : self._batch_idx * self._batch_size
             + self._batch_size
