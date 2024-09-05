@@ -40,7 +40,7 @@ LOGIT_MULTIPLIER=20
 LR=0.00001
 # TYPE="mentions_gillick_loss"
 TYPE="mentions"
-N_OF_ROUNDS=7
+N_OF_ROUNDS=10
 NEG=7
 
 # copy params
@@ -174,3 +174,19 @@ if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
     ./run_ml_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 7 "$TYPE" "$N_OF_ROUNDS" $NEG 3
 fi
+
+if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
+    echo "Running round 7"
+
+    ./run_ml_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 8 "$TYPE" "$N_OF_ROUNDS" $NEG 3
+fi
+
+
+if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
+    echo "Running round 7"
+
+    ./run_ml_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 9 "$TYPE" "$N_OF_ROUNDS" $NEG 3
+fi
+
