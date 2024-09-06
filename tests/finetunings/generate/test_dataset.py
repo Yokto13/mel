@@ -34,9 +34,9 @@ def test_shuffling(mock_load_fn):
     known_qids = np.arange(10000)
     batcher = Batcher(Path("some/path"), known_qids, batch_size)
 
-    initial_index = batcher._data_index.copy()
-    batcher.shuffle()
-    shuffled_index = batcher._data_index
+    initial_index = batcher._base_index.copy()
+    batcher._shuffle()
+    shuffled_index = batcher._base_index
 
     # Check that the indices are shuffled
     assert not np.array_equal(initial_index, shuffled_index)
@@ -119,7 +119,7 @@ def test_initial_shuffle(mock_load_fn):
 
     first_batch = batcher.get_batch()
 
-    batcher._batch_idx = 0
+    batcher._index_idx = 0
     batcher._data_index = np.arange(len(batcher._embs))
 
     unshuffled_batch = batcher.get_batch()

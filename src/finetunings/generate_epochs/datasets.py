@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 from pathlib import Path
 import sys
@@ -42,37 +43,52 @@ class Batcher:
             (embs, qids, tokens), known_qids
         )
 
-        self._data_index = np.arange(len(self._embs))
+        self._base_index = np.arange(len(self._embs))
+        self._data_index = None
         self._batch_size = batch_size
-        self._max_idx = len(self._embs) // self._batch_size
+        self._max_idx = None
         self._batch_idx = 0
 
-        # making shure that data are shuffled right from the start is important
-        # otherwise we can easily get batches where QIDs repeat which is something to be avoided.
-        self.shuffle()
+        # Ensure data is shuffled from the start to avoid QID repetition in batches
+        self._reset_index()
 
-    def shuffle(self):
-        _rng.shuffle(self._data_index)
+    def _shuffle(self) -> None:
+        _rng.shuffle(self._base_index)
 
-    def get_batch(self):
-        indices = self._get_unique_batch_indices()
+    def get_batch(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        indices = self._get_batch_indices()
         batch = self._construct_batch(indices)
         return batch
 
-    def _construct_batch(self, indices):
+    def _reset_index(self) -> None:
+        self._shuffle()
+        self._data_index = self._create_unique_qid_index()
+        self._max_idx = len(self._data_index) // self._batch_size
+
+    def _create_unique_qid_index(self) -> np.ndarray:
+        data_idx = []
+        qids_in_batch = set()
+
+        for idx in self._base_index:
+            qid = self._qids[idx]
+            if qid not in qids_in_batch:
+                data_idx.append(idx)
+                qids_in_batch.add(qid)
+
+                if len(qids_in_batch) == self._batch_size:
+                    qids_in_batch.clear()
+
+        return np.array(data_idx)
+
+    def _construct_batch(
+        self, indices: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return (self._embs[indices], self._qids[indices], self._tokens[indices])
 
-    def _get_unique_batch_indices(self):
-        indices = self._get_batch_indices()
-        while not self._qids_in_batch_are_unique(indices):
-            indices = self._get_batch_indices()
-            _logger.warning("QIDs are not unique, skipping batch")
-        return indices
-
-    def _get_batch_indices(self):
+    def _get_batch_indices(self) -> np.ndarray:
         if self._batch_idx == self._max_idx - 1:
             self._batch_idx = 0
-            self.shuffle()
+            self._reset_index()
         indices = self._data_index[
             self._batch_idx * self._batch_size : self._batch_idx * self._batch_size
             + self._batch_size
@@ -80,7 +96,7 @@ class Batcher:
         self._batch_idx += 1
         return indices
 
-    def _qids_in_batch_are_unique(self, indices):
+    def _qids_in_batch_are_unique(self, indices: np.ndarray) -> bool:
         unique_qids = np.unique(self._qids[indices])
         return len(unique_qids) == len(indices)
 
@@ -88,7 +104,9 @@ class Batcher:
         while True:
             yield self.get_batch()
 
-    def _remove_when_qid_missing(self, data, known_qids):
+    def _remove_when_qid_missing(
+        self, data: tuple[np.ndarray, np.ndarray, np.ndarray], known_qids: npt.ArrayLike
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         embs, qids, tokens = data
         mask = np.isin(qids, known_qids)
         return embs[mask], qids[mask], tokens[mask]
