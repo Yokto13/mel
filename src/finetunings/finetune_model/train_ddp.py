@@ -86,7 +86,7 @@ def _calculate_loss(
 ):
     outputs = torch.mm(links_embedded, descs_embedded.t())
     outputs = outputs * LOGIT_MULTIPLIER
-    loss = criterion(outputs, labels)
+    loss = criterion(outputs, labels) + criterion(outputs.t(), labels.t())
     return loss, outputs
 
 
