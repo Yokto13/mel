@@ -1,4 +1,5 @@
 from pathlib import Path
+from models.searchers.brute_force_searcher import BruteForceSearcher
 from utils.loaders import load_embs_and_qids
 
 import fire
@@ -43,6 +44,11 @@ def get_scann_searcher(embs, qids) -> ScaNNSearcher:
     return searcher
 
 
+def get_brute_force_searcher(embs, qids) -> BruteForceSearcher:
+    searcher = BruteForceSearcher(embs, qids)
+    return searcher
+
+
 def get_faiss_searcher(embs, qids) -> ScaNNSearcher:
     searcher = FaissSearcher(embs, qids)
     return searcher
@@ -59,8 +65,9 @@ def find_recall(
     mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
 
     print(damuel_embs.shape, damuel_qids.shape)
-    searcher = get_scann_searcher(damuel_embs, damuel_qids)
+    # searcher = get_scann_searcher(damuel_embs, damuel_qids)
     # searcher = get_faiss_searcher(damuel_embs, damuel_qids)
+    searcher = get_brute_force_searcher(damuel_embs, damuel_qids)
     rc = RecallCalculator(searcher)
 
     for R in recalls:
