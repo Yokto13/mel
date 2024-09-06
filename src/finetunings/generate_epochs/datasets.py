@@ -52,6 +52,20 @@ class Batcher:
         _rng.shuffle(self._data_index)
 
     def get_batch(self):
+        indices = self._get_unique_batch_indices()
+        batch = self._construct_batch(indices)
+        return batch
+
+    def _construct_batch(self, indices):
+        return (self._embs[indices], self._qids[indices], self._tokens[indices])
+
+    def _get_unique_batch_indices(self):
+        indices = self._get_batch_indices()
+        while not self._qids_in_batch_are_unique(indices):
+            indices = self._get_batch_indices()
+        return indices
+
+    def _get_batch_indices(self):
         if self._batch_idx == self._max_idx - 1:
             self._batch_idx = 0
             self.shuffle()
@@ -60,8 +74,11 @@ class Batcher:
             + self._batch_size
         ]
         self._batch_idx += 1
-        batch = (self._embs[indices], self._qids[indices], self._tokens[indices])
-        return batch
+        return indices
+
+    def _qids_in_batch_are_unique(self, indices):
+        unique_qids = np.unique(self._qids[indices])
+        return len(unique_qids) == len(indices)
 
     def __iter__(self):
         while True:
