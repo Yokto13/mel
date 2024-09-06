@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import sys
 
@@ -11,6 +12,8 @@ import numpy.typing as npt
 from torch.utils.data import IterableDataset
 
 from utils.loaders import load_embs_qids_tokens
+
+_logger = logging.getLogger("finetunings.generate_epochs.datasets")
 
 
 # Might be usefull when we get to the point where Batcher cannot fit to memory.
@@ -63,6 +66,7 @@ class Batcher:
         indices = self._get_batch_indices()
         while not self._qids_in_batch_are_unique(indices):
             indices = self._get_batch_indices()
+            _logger.warning("QIDs are not unique, skipping batch")
         return indices
 
     def _get_batch_indices(self):
