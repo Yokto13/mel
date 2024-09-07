@@ -74,23 +74,16 @@ class Batcher:
         base_index: np.ndarray, qids: np.ndarray, batch_size: int
     ) -> np.ndarray:
         data_idx = np.empty(len(base_index), dtype=np.int64)
-        qids_in_batch = np.empty(batch_size, dtype=qids.dtype)
+        qids_in_batch = set()
         idx_counter = 0
-        qids_counter = 0
-
-        for i in range(len(base_index)):
-            idx = base_index[i]
+        for idx in base_index:
             qid = qids[idx]
-
-            if qid not in qids_in_batch[:qids_counter]:
+            if qid not in qids_in_batch:
                 data_idx[idx_counter] = idx
                 idx_counter += 1
-                qids_in_batch[qids_counter] = qid
-                qids_counter += 1
-
-                if qids_counter == batch_size:
-                    qids_counter = 0
-
+                qids_in_batch.add(qid)
+            if len(qids_in_batch) == batch_size:
+                qids_in_batch.clear()
         return data_idx[:idx_counter]
 
     def _construct_batch(
