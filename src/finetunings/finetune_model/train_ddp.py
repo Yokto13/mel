@@ -105,7 +105,7 @@ def update_recalls_and_wandb(outputs, labels, loss_item, running_averages):
 
 def save_final_model(model, MODEL_SAVE_DIR):
     save_information = SaveInformation(MODEL_SAVE_DIR, True)
-    save_model(model.module, save_information)
+    save_model(model, save_information)
 
 
 def _ddp_train(
