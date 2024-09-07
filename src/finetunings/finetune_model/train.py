@@ -57,7 +57,9 @@ def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.ten
 
 
 def load_model(model_path: str, state_dict_path: str | None) -> nn.Module:
-    if state_dict_path is None:
+    if (
+        state_dict_path is None or state_dict_path == "None"
+    ):  # it seems that parsing sometimes fails...
         return ModelFactory.load_bert_from_file(model_path)
     else:
         return ModelFactory.load_bert_from_file_and_state_dict(
