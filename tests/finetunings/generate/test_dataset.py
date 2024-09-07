@@ -47,6 +47,36 @@ def test_shuffling(mock_load_fn):
     "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
     side_effect=mock_load_embs_qids_tokens,
 )
+def test_reset_index(mock_load_fn):
+    batch_size = 2
+    known_qids = np.arange(10000)
+    batcher = Batcher(Path("some/path"), known_qids, batch_size)
+
+    initial_base_index = batcher._base_index.copy()
+    initial_data_index = batcher._data_index.copy()
+
+    batcher._reset_index()
+
+    # Check that the base index is shuffled
+    assert not np.array_equal(initial_base_index, batcher._base_index)
+    assert sorted(initial_base_index) == sorted(batcher._base_index)
+
+    # Check that the data index is updated
+    assert not np.array_equal(initial_data_index, batcher._data_index)
+
+    # Check that max_idx is updated
+    assert batcher._max_idx == len(batcher._data_index) // batch_size
+
+    # Check that all QIDs in each batch are unique
+    for i in range(0, len(batcher._data_index), batch_size):
+        batch_qids = batcher._qids[batcher._data_index[i : i + batch_size]]
+        assert len(np.unique(batch_qids)) == len(batch_qids)
+
+
+@patch(
+    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
+    side_effect=mock_load_embs_qids_tokens,
+)
 def test_get_batch(mock_load_fn):
     known_qids = np.array([1, 2, 3, 4, 5])
     batch_size = 2
