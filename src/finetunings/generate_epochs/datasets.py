@@ -82,8 +82,8 @@ class Batcher:
                 data_idx[idx_counter] = idx
                 idx_counter += 1
                 qids_in_batch.add(qid)
-            if len(qids_in_batch) == batch_size:
-                qids_in_batch.clear()
+                if len(qids_in_batch) == batch_size:
+                    qids_in_batch.clear()
         return data_idx[:idx_counter]
 
     def _construct_batch(
