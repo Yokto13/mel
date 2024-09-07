@@ -36,7 +36,7 @@ POS=1
 NEG=${14:-7}
 CARDS=${15:-8}
 NEG_SAMPLING_TYPE=${16:-"top"}
-CONTEXT_SIZE=64
+CONTEXT_SIZE=128
 STEPS_PER_EPOCH=1000
 
 # Multiple by 2 to make sure that if a link contained something faulty we can skip it.
@@ -91,7 +91,7 @@ if [ ! "$(ls -A $BATCH_DIR)" ]; then
     echo "Running batches generating for damuel"
     echo $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" $NEG_SAMPLING_TYPE
     # sbatch --wait -p "cpu-ms,cpu-troja" -c60 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE"
-    sbatch --wait -p  "gpu-troja,gpu-ms" -G 1 -C "gpuram40G" --mem=70G  run ../venv/bin/python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" $NEG_SAMPLING_TYPE
+    sbatch --wait -p  "gpu-troja,gpu-ms" -G 1 -C "gpuram40G" --mem=70G  run ../venv/bin/python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" $NEG_SAMPLING_TYPE False
     # python $ACTION_SCRIPT "generate" "$DAMUEL_LINKS_DIR" "$DAMUEL_DESC_TOKENS" "$DAMUEL_FOR_INDEX_DIR" "$BATCH_DIR" "$MODEL_PATH" "$BATCH_SIZE" "$EPOCHS" "$STEPS_PER_EPOCH" "$NEG" "$CONTEXT_SIZE" "$STATE_DICT"
 fi
 

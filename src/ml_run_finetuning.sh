@@ -175,16 +175,20 @@ if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
      "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 7 "$TYPE" "$N_OF_ROUNDS" $NEG 3
 fi
 
-if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
-    echo "Running round 7"
+STATE_DICT="$WORKDIR/models_7/final.pth"
+
+if [ ! -e "$WORKDIR/models_8/final.pth" ]; then
+    echo "Running round 8"
 
     ./run_ml_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 8 "$TYPE" "$N_OF_ROUNDS" $NEG 3
 fi
 
 
-if [ ! -e "$WORKDIR/models_7/final.pth" ]; then
-    echo "Running round 7"
+STATE_DICT="$WORKDIR/models_8/final.pth"
+
+if [ ! -e "$WORKDIR/models_9/final.pth" ]; then
+    echo "Running round 9"
 
     ./run_ml_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
      "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 9 "$TYPE" "$N_OF_ROUNDS" $NEG 3
