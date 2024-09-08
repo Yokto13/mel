@@ -28,3 +28,24 @@ def test_smaller_dim_forward(mock_embedding_model):
     output = smaller_dim(input_tensor)
 
     assert output.shape == (5, target_dim)
+
+
+def test_smaller_dim_state_dict(mock_embedding_model):
+    target_dim = 128
+    original_model = SmallerDim(mock_embedding_model, target_dim)
+
+    state_dict = original_model.state_dict()
+
+    loaded_model = SmallerDim(mock_embedding_model, target_dim)
+
+    loaded_model.load_state_dict(state_dict)
+
+    assert loaded_model.target_dim == target_dim
+    assert loaded_model.mapping.out_features == target_dim
+
+    input_tensor = torch.randn(5, 10)
+    with torch.no_grad():
+        original_output = original_model(input_tensor)
+        loaded_output = loaded_model(input_tensor)
+
+    assert torch.allclose(original_output, loaded_output)
