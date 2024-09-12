@@ -122,3 +122,22 @@ def test_mix_preserves_consistency(create_dummy_npz_files):
     for path, original_shape in zip(file_paths, original_shapes):
         tokens, qids = load_npz_content(path)
         assert len(qids) == tokens.shape[0]
+
+
+def test_mix_compress(tmp_path):
+    file_path_1 = tmp_path / "mentions_0.npz"
+    file_path_2 = tmp_path / "mentions_1.npz"
+    tokens = np.random.randint(1, 1000, size=(100, 10))
+    qids = np.random.randint(1, 1000, size=(100,))
+    np.savez(file_path_1, tokens=tokens, qids=qids)
+    np.savez(file_path_2, tokens=tokens, qids=qids)
+
+    mixer = Mixer(buffer_size=1000)
+    mixer.mix([file_path_1], n_of_mixings=1, compress_output=True)
+
+    mixer.mix([file_path_2], n_of_mixings=1, compress_output=False)
+
+    assert file_path_1.exists()
+    assert file_path_2.exists()
+
+    assert file_path_1.stat().st_size < file_path_2.stat().st_size
