@@ -1,3 +1,5 @@
+import concurrent.futures
+from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -24,14 +26,18 @@ class Mixer:
         print("mixxing")
         file_paths = deepcopy(file_paths)
         for i in tqdm(range(n_of_mixings)):
-            if i == n_of_mixings - 1:
-                self._mix(file_paths, compress_output)
+            if i == n_of_mixings - 1 and compress_output:
+                self._mix(file_paths, compress_output=True)
             else:
                 self._mix(file_paths, compress_output=False)
 
     def _mix(self, file_paths: list[Path], compress_output: bool) -> None:
         np.random.shuffle(file_paths)
-        for chunk in self._chunk(file_paths, self.buffer_size):
+        for chunk in tqdm(
+            self._chunk(file_paths, self.buffer_size),
+            desc="Mixing",
+            total=len(file_paths) // self.buffer_size + 1,
+        ):
             tokens, qids = self._load_tokens_and_qids(chunk)
             tokens, qids = self._shuffle(tokens, qids)
             self._save_tokens_and_qids(tokens, qids, chunk, compress_output)
@@ -54,11 +60,18 @@ class Mixer:
             tokens, qids, len(chunk)
         )
 
-        for tokens, qids, file_path in zip(tokens_chunked, qids_chunked, chunk):
+        def save_file(tokens, qids, file_path):
             if compress:
-                self._save_compressed(file_path, tokens, qids)
+                np.savez_compressed(file_path, tokens=tokens, qids=qids)
             else:
-                self._save(file_path, tokens, qids)
+                np.savez(file_path, tokens=tokens, qids=qids)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(save_file, tokens, qids, file_path)
+                for tokens, qids, file_path in zip(tokens_chunked, qids_chunked, chunk)
+            ]
+            concurrent.futures.wait(futures)
 
     def _get_tokens_qids_chunks(
         self, tokens: np.ndarray, qids: np.ndarray, chunk_count: int
@@ -68,26 +81,20 @@ class Mixer:
             qids, token_chunk_size
         )
 
-    def _save_compressed(
-        self, file_path: Path, tokens: np.ndarray, qids: np.ndarray
-    ) -> None:
-        np.savez_compressed(file_path, tokens=tokens, qids=qids)
-
-    def _save(self, file_path: Path, tokens: np.ndarray, qids: np.ndarray) -> None:
-        np.savez(file_path, tokens=tokens, qids=qids)
-
     def _load_tokens_and_qids(self, chunk: list[Path]) -> tuple[np.ndarray, np.ndarray]:
-        all_tokens = []
-        all_qids = []
-        for file_path in chunk:
-            tokens, qids = load_mentions(file_path)
-            all_tokens.append(tokens)
-            all_qids.append(qids)
+        def load_file(file_path):
+            return load_mentions(file_path)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = list(executor.map(load_file, chunk))
+
+        all_tokens, all_qids = zip(*results)
 
         all_tokens = np.concatenate(all_tokens)
         all_qids = np.concatenate(all_qids)
 
         return all_tokens, all_qids
 
-    def _chunk(self, data: list[Any], chunk_size: int) -> list[list[Any]]:
-        return [data[i : i + chunk_size] for i in range(0, len(data), chunk_size)]
+    def _chunk(self, data: list[Any], chunk_size: int) -> Iterator[list[Any]]:
+        for i in range(0, len(data), chunk_size):
+            yield data[i : i + chunk_size]

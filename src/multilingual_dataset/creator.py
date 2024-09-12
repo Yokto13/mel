@@ -1,13 +1,19 @@
 from collections import Counter, defaultdict
+from collections.abc import Iterable
+import concurrent.futures
 from itertools import zip_longest
+import logging
 from pathlib import Path
 from typing import Union
 
 import numpy as np
+from tqdm import tqdm
 
 from multilingual_dataset.mixer import Mixer
 from utils.damuel_paths import DamuelPaths
 from utils.loaders import load_mentions
+
+_logger = logging.getLogger("multilingual_dataset.creator")
 
 
 class _LinksCreator:
@@ -20,7 +26,7 @@ class _LinksCreator:
         self.dest_links_dir.mkdir(parents=True, exist_ok=True)
 
         self.single_mixer = Mixer(buffer_size=1)
-        self.standard_mixer = Mixer(buffer_size=20)
+        self.standard_mixer = Mixer(buffer_size=200)
 
     def run(self) -> None:
         """Gathers links from all languages and writes them to dest_dir.
@@ -32,27 +38,34 @@ class _LinksCreator:
 
         out_file_paths = []
 
-        for i, file_paths in enumerate(zip_longest(*link_file_paths)):
+        for i, file_paths in tqdm(
+            enumerate(zip_longest(*link_file_paths)),
+            desc="Copying links",
+            total=max(len(link_file_paths) for link_file_paths in link_file_paths),
+        ):
             out_file_path = self.dest_links_dir / f"mentions_{i}.npz"
-            self._copy_files([path for path in file_paths if path], out_file_path)
+            self._copy_files((path for path in file_paths if path), out_file_path)
 
             out_file_paths.append(out_file_path)
 
-        self.single_mixer.mix(out_file_paths, n_of_mixings=1)
-        self.standard_mixer.mix(out_file_paths, n_of_mixings=5)
+        self.single_mixer.mix(out_file_paths, n_of_mixings=1, compress_output=False)
+        self.standard_mixer.mix(out_file_paths, n_of_mixings=5, compress_output=True)
 
-    def _copy_files(self, source_file_paths: list[Path], dest_file_path: Path) -> None:
-        tokens = []
-        qids = []
-        for source_file_path in source_file_paths:
-            tokens_, qids_ = load_mentions(source_file_path)
-            tokens.append(tokens_)
-            qids.append(qids_)
+    def _copy_files(
+        self, source_file_paths: Iterable[Path], dest_file_path: Path
+    ) -> None:
+        def load_file(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
+            return load_mentions(file_path)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = list(executor.map(load_file, source_file_paths))
+
+        tokens, qids = zip(*results)
 
         tokens = np.concatenate(tokens)
         qids = np.concatenate(qids)
 
-        np.savez_compressed(dest_file_path, tokens=tokens, qids=qids)
+        np.savez(dest_file_path, tokens=tokens, qids=qids)
 
     def _get_link_file_paths(self, link_dir_paths: list[Path]) -> list[list[Path]]:
         link_file_paths = []
@@ -79,9 +92,20 @@ class _KBCreator:
         self._copy_chosen_pages(lang_qid_lists)
 
     def _copy_chosen_pages(self, lang_qid_lists: dict[str, list[int]]) -> None:
-        for lang in self.langs:
-            filepaths = self._get_file_paths(self.damuel_paths.get_pages([lang]))
-            self._copy_chosen_pages_from_lang(lang_qid_lists[lang], filepaths, lang)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for lang in self.langs:
+                filepaths = self._get_file_paths(self.damuel_paths.get_pages([lang]))
+                futures.append(
+                    executor.submit(
+                        self._copy_chosen_pages_from_lang,
+                        lang_qid_lists[lang],
+                        filepaths,
+                        lang,
+                    )
+                )
+
+            concurrent.futures.wait(futures)
 
     def _copy_chosen_pages_from_lang(
         self, wanted_qids: list[int], filepaths: list[Path], lang: str
@@ -108,7 +132,11 @@ class _KBCreator:
         self, qid_lang_mapping: dict[int, str]
     ) -> dict[str, list[int]]:
         lang_qid_lists = defaultdict(list)
-        for qid, lang in qid_lang_mapping.items():
+        for qid, lang in tqdm(
+            qid_lang_mapping.items(),
+            desc="Grouping QIDs by language",
+            total=len(qid_lang_mapping),
+        ):
             lang_qid_lists[lang].append(qid)
         return lang_qid_lists
 
@@ -116,22 +144,37 @@ class _KBCreator:
         qid_lang_counts, lang_sizes = self._get_qid_lang_counts()
         return self._get_mapping_from_counts_and_lang_sizes(qid_lang_counts, lang_sizes)
 
-    def _get_qid_lang_counts(self) -> tuple[dict[int, int], dict[str, int]]:
+    def _get_qid_lang_counts(self) -> tuple[dict[int, dict[str, int]], dict[str, int]]:
         qid_lang_counts = self._init_qid_lang_counts()
         lang_sizes = defaultdict(int)
-        for lang in self.langs:
-            for link_file_path in self._get_file_paths(
-                self.damuel_paths.get_links([lang])
-            ):
-                qids = np.load(link_file_path)["qids"]
-
-                for qid in qids:
-                    if lang not in qid_lang_counts[qid]:
-                        qid_lang_counts[qid][lang] = 0
-                    qid_lang_counts[qid][lang] += 1
+        for lang, dir_filepath in tqdm(
+            zip(self.langs, self.damuel_paths.get_links(self.langs)),
+            desc="Counting QIDs in links",
+            total=len(self.langs),
+        ):
+            links_filepaths = self._get_file_paths([dir_filepath])
+            qids = self._load_qids_from_filepaths(links_filepaths)
+            # Why use np.unique here when the sorting is n log n compared to a simple loop?
+            # Looping through qids and incrementing the count by 1 is actually slower because
+            # of the overhead of dictionary accessing.
+            unique_qids, counts = np.unique(qids, return_counts=True)
+            for qid, count in zip(unique_qids, counts):
+                if lang not in qid_lang_counts[qid]:
+                    qid_lang_counts[qid][lang] = 0
+                qid_lang_counts[qid][lang] += count
             lang_sizes[lang] += len(qids)
 
         return qid_lang_counts, lang_sizes
+
+    def _load_qids_from_filepaths(self, filepaths: list[Path]) -> list[int]:
+        def read_file(filepath: Path) -> np.ndarray:
+            with np.load(filepath) as data:
+                return data["qids"]
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            qids = list(executor.map(read_file, filepaths))
+
+        return [item for sublist in qids for item in sublist]
 
     def _get_mapping_from_counts_and_lang_sizes(
         self, qid_lang_counts: dict[int, Counter], lang_sizes: dict[str, int]
@@ -146,13 +189,22 @@ class _KBCreator:
             dict[int, str]
         """
         qid_lang_mapping = {}
-        for qid, lang_counts in qid_lang_counts.items():
-            ordered_lang_counts = sorted(
-                lang_counts.items(),
-                key=lambda x: (x[1], lang_sizes[x[0]]),
-                reverse=True,
-            )
-            qid_lang_mapping[qid] = ordered_lang_counts[0][0]
+        for qid, lang_counts in tqdm(
+            qid_lang_counts.items(),
+            desc="Mapping QIDs to languages",
+            total=len(qid_lang_counts),
+        ):
+            max_lang = None
+            max_count = -1
+            max_size = -1
+            for lang, count in lang_counts.items():
+                if count > max_count or (
+                    count == max_count and lang_sizes[lang] > max_size
+                ):
+                    max_lang = lang
+                    max_count = count
+                    max_size = lang_sizes[lang]
+            qid_lang_mapping[qid] = max_lang
 
         return qid_lang_mapping
 
@@ -186,8 +238,13 @@ class MultilingualDatasetCreator:
         )
 
     def run(self) -> None:
+        _logger.info("Starting to create KB")
         self._kb_creator.run()
+        _logger.info("Finished creating KB")
+
+        _logger.info("Starting to create links")
         self._links_creator.run()
+        _logger.info("Finished creating links")
 
 
 def create_multilingual_dataset(
