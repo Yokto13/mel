@@ -59,7 +59,6 @@ tokens_for_all_damuel_finetuning_pages = partial(
     tokens_for_all_damuel, ignore_context=False, only_pages=True
 )
 
-from utils.extractors.orchestrator import damuel_description_tokens
 from utils.arg_names import get_args_names
 
 print("Imports finished")
@@ -99,8 +98,6 @@ def choose_action(action):
             return tokens_for_finetuning_mewsli
         case "tokens_descriptions":
             return tokens_for_finetuning_damuel_descriptions
-        case "tokens_descriptions_new":
-            return damuel_description_tokens
         case "tokens_links":
             return tokens_for_finetuning_damuel_links
         case "tokens_descriptions_at":

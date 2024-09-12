@@ -45,7 +45,7 @@ def test_smaller_dim_state_dict(mock_embedding_model):
 
     loaded_model.load_state_dict(state_dict)
 
-    assert loaded_model.target_dim == target_dim
+    assert loaded_model.output_dim == target_dim
     assert loaded_model.mapping.out_features == target_dim
 
     input_tensor = torch.randn(5, 10)

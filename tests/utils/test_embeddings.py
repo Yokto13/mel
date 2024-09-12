@@ -2,9 +2,11 @@ import pytest
 import torch
 from torch.utils.data import Dataset
 import numpy as np
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoTokenizer
 
 from utils.embeddings import embed
+from utils.model_factory import ModelFactory
+from models.pooling_wrappers import CLSWrapper
 
 
 class SimpleDataset(Dataset):
@@ -31,7 +33,7 @@ class SimpleDataset(Dataset):
 
 @pytest.fixture
 def model():
-    return AutoModel.from_pretrained("setu4993/LEALLA-base")
+    return ModelFactory.auto_load_from_file("setu4993/LEALLA-base")
 
 
 @pytest.fixture
@@ -117,7 +119,7 @@ def test_embed_basic(model, dataset):
     assert isinstance(embeddings, np.ndarray)
     assert isinstance(qids, np.ndarray)
     assert embeddings.shape[0] == len(dataset)
-    assert embeddings.shape[1] == model.config.hidden_size
+    assert embeddings.shape[1] == model.model.config.hidden_size
     assert qids.shape[0] == len(dataset)
     assert embeddings.dtype == np.float16
 
@@ -131,7 +133,7 @@ def test_embed_no_qids(model, dataset):
 
     assert isinstance(embeddings, np.ndarray)
     assert embeddings.shape[0] == len(dataset)
-    assert embeddings.shape[1] == model.config.hidden_size
+    assert embeddings.shape[1] == model.model.config.hidden_size
 
 
 def test_embed_with_tokens(model, dataset):
@@ -145,7 +147,7 @@ def test_embed_with_tokens(model, dataset):
     assert isinstance(qids, np.ndarray)
     assert isinstance(tokens, np.ndarray)
     assert embeddings.shape[0] == len(dataset)
-    assert embeddings.shape[1] == model.config.hidden_size
+    assert embeddings.shape[1] == model.model.config.hidden_size
     assert qids.shape[0] == len(dataset)
     assert tokens.shape[0] == len(dataset)
     assert tokens.shape[1] == 128  # max_length in the dataset
