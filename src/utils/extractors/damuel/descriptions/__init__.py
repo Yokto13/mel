@@ -1,1 +1,0 @@
-from .descriptions_iterator import DamuelDescriptionsIterator
