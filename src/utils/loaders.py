@@ -1,3 +1,4 @@
+import functools
 import json
 import numpy as np
 import pandas as pd
@@ -139,6 +140,20 @@ def get_emb_state_dict(model_state_dict_path):
     return d
 
 
+def _sort_by_output(output_idx: int):
+    def _sort_by_output_wrapper(wrapped):
+        @functools.wraps(wrapped)
+        def _wrapper(*args, **kwargs):
+            output: tuple[np.ndarray, ...] = wrapped(*args, **kwargs)
+            sort_indices = np.argsort(output[output_idx])
+            return [o[sort_indices] for o in output]
+
+        return _wrapper
+
+    return _sort_by_output_wrapper
+
+
+@_sort_by_output(1)
 def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings and qids from the directory.
 
@@ -156,6 +171,7 @@ def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     return d["embs"], d["qids"]
 
 
+@_sort_by_output(1)
 def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings, qids, and tokens from the directory.
 
@@ -173,6 +189,7 @@ def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]
     return d["embs"], d["qids"], d["tokens"]
 
 
+@_sort_by_output(1)
 def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     if type(file_path) == str:
         file_path = Path(file_path)
