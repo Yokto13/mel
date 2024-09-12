@@ -118,10 +118,11 @@ def _ddp_train(
     LR: float,
     MODEL_SAVE_DIR: str,
     STATE_DICT_PATH: str | None,
+    TARGET_DIM: int | None,
 ):
     setup(rank, world_size)
 
-    model = load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH)
+    model = load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH, TARGET_DIM)
     model = DDP(model.to(rank), device_ids=[rank])
 
     is_the_main_process = rank == 0
@@ -230,6 +231,7 @@ def train_ddp(
     LR: float,
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
+    TARGET_DIM: int | None = None,
 ):
     world_size = torch.cuda.device_count()
 
@@ -244,6 +246,7 @@ def train_ddp(
             LR,
             MODEL_SAVE_DIR,
             STATE_DICT_PATH,
+            TARGET_DIM,
         ),
         nprocs=world_size,
     )

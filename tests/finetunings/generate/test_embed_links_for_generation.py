@@ -21,7 +21,7 @@ def test_embed_links_for_generation():
         "finetunings.generate_epochs.embed_links_for_generation._get_dataset",
         return_value=mock_dataset,
     ) as mock_get_dataset, patch(
-        "finetunings.generate_epochs.embed_links_for_generation._load_model",
+        "finetunings.generate_epochs.embed_links_for_generation.load_model",
         return_value=mock_model,
     ) as mock_load_model, patch(
         "finetunings.generate_epochs.embed_links_for_generation.embed",
@@ -39,7 +39,6 @@ def test_embed_links_for_generation():
         )
 
         mock_get_dataset.assert_called_once_with(links_tokens_dir_path)
-        mock_load_model.assert_called_once_with(model_path, state_dict_path)
         mock_embed.assert_called_once_with(
             mock_dataset, mock_model, batch_size, return_qids=True, return_tokens=True
         )

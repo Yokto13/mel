@@ -1,4 +1,5 @@
 import torch
+from transformers.utils import ModelOutput
 
 
 class SmallerDim(torch.nn.Module):
@@ -9,5 +10,9 @@ class SmallerDim(torch.nn.Module):
         self.embedding_dim = embedding_model.pooler.dense.out_features
         self.mapping = torch.nn.Linear(self.embedding_dim, self.target_dim)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.mapping(self.embedding_model(x))
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor) -> ModelOutput:
+        embeddings = self.embedding_model(
+            x, attention_mask=attention_mask
+        ).pooler_output
+        mapped_embeddings = self.mapping(embeddings)
+        return ModelOutput(pooler_output=mapped_embeddings)

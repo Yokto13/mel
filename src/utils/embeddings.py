@@ -138,14 +138,9 @@ def embs_from_tokens_model_name_and_state_dict(
     batch_size: int,
     dest_path: str,
     state_dict_path: str | None,
+    target_dim: int | None = None,
 ):
-    if state_dict_path is None:
-        model = ModelFactory.load_bert_from_file(model_name)
-    else:
-        _logger.debug("Loading model state dict")
-        model = ModelFactory.load_bert_from_file_and_state_dict(
-            model_name, state_dict_path
-        )
+    model = ModelFactory.auto_load_from_file(model_name, state_dict_path, target_dim)
     embs_from_tokens_and_model(source_path, model, batch_size, dest_path)
 
 

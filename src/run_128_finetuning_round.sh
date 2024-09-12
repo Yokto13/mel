@@ -131,7 +131,7 @@ if [ ! "$(ls -A $DAMUEL_FOR_INDEX_NEW_DIR)" ]; then
 fi
 
 # sbatch --wait -p "cpu-ms,cpu-troja" -c10 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "recalls" "$DAMUEL_FOR_INDEX_NEW_DIR" "$MEWSLI_EMBS_DIR"
-sbatch -p "cpu-ms,cpu-troja" -c60 --mem=100G --exclude="belzebub,iridium" run ../venv/bin/python $ACTION_SCRIPT "recalls" "$DAMUEL_FOR_INDEX_NEW_DIR" "$MEWSLI_EMBS_DIR"
+sbatch -p "gpu-troja,gpu-ms" -G 1 -C "gpuram24G|gpuram40G|gpuram48G" --mem=50G run ../venv/bin/python $ACTION_SCRIPT "recalls" "$DAMUEL_FOR_INDEX_NEW_DIR" "$MEWSLI_EMBS_DIR"
 
 # ====================CLEAN UP====================
 

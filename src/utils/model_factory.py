@@ -52,7 +52,7 @@ class ModelFactory:
     def _load_without_target_dim(
         cls, file_path: str, state_dict_path: str | None
     ) -> torch.nn.Module:
-        if state_dict_path is None:
+        if state_dict_path is None or state_dict_path == "None": # TODO fix this
             return cls.load_bert_from_file(file_path)
         else:
             return cls.load_bert_from_file_and_state_dict(file_path, state_dict_path)
@@ -61,7 +61,7 @@ class ModelFactory:
     def _load_with_target_dim(
         cls, file_path: str, state_dict_path: str | None, target_dim: int
     ) -> torch.nn.Module:
-        if state_dict_path is None:
+        if state_dict_path is None or state_dict_path == "None":
             return cls.load_bert_with_reduced_dim(file_path, target_dim)
         else:
             return cls.load_bert_with_reduced_dim_and_state_dict(
