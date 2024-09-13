@@ -262,6 +262,6 @@ def run_kb_creator(
     source_dir: Union[str, Path],
     langs: list[str],
     dest_dir: Union[str, Path],
-    langs_per_qid: int = 1,
+    langs_per_qid: int,
 ) -> None:
     _KBCreator(DamuelPaths(source_dir), langs, Path(dest_dir), langs_per_qid).run()
