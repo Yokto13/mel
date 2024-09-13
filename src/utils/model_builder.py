@@ -4,12 +4,17 @@ from transformers import AutoModel
 from torch import nn
 
 from models.change_dim_wrapper import ChangeDimWrapper
-from models.pooling_wrappers import PoolerOutputWrapper, SentenceTransformerWrapper
+from models.pooling_wrappers import (
+    PoolerOutputWrapper,
+    SentenceTransformerWrapper,
+    CLSWrapper,
+)
 
 
-class OutputType(StrEnum):
-    CLS = "cls"
+class ModelOutputType(StrEnum):
+    PoolerOutput = "pooler_output"
     SENTENCE_TRANSFORMER = "sentence_transformer"
+    CLS = "cls"
 
 
 class ModelBuilder:
@@ -27,7 +32,7 @@ class ModelBuilder:
     def dim(self):
         return self._dim
 
-    def set_output_type(self, output_type: OutputType):
+    def set_output_type(self, output_type: ModelOutputType):
         self._output_type = output_type
 
     def set_dim(self, dim: int):
@@ -43,9 +48,11 @@ class ModelBuilder:
         self._model = AutoModel.from_pretrained(self.model_path)
 
     def _wrap_with_output_layer(self):
-        if self.output_type == OutputType.CLS:
+        if self.output_type == ModelOutputType.PoolerOutput:
             self._model = PoolerOutputWrapper(self._model)
-        elif self.output_type == OutputType.SENTENCE_TRANSFORMER:
+        elif self.output_type == ModelOutputType.CLS:
+            self._model = CLSWrapper(self._model)
+        elif self.output_type == ModelOutputType.SENTENCE_TRANSFORMER:
             self._model = SentenceTransformerWrapper(self._model)
         else:
             raise ValueError(f"Invalid output type: {self.output_type}")

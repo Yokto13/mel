@@ -7,7 +7,7 @@ from transformers import BertModel
 
 from models.change_dim_wrapper import ChangeDimWrapper
 from models.pooling_wrappers import PoolingWrapper
-from utils.model_builder import OutputType, ModelBuilder
+from utils.model_builder import ModelOutputType, ModelBuilder
 
 _logger = logging.getLogger("utils.model_factory")
 
@@ -44,16 +44,18 @@ class ModelFactory:
         file_path: str,
         state_dict_path: str | None = None,
         target_dim: int | None = None,
-        output_type: OutputType | None = None,
+        output_type: ModelOutputType | None = None,
     ) -> torch.nn.Module:
         builder = ModelBuilder(file_path)
         if output_type is None:
-            output_type = OutputType.CLS  # the original/old default
+            output_type = ModelOutputType.PoolerOutput  # the original/old default
         builder.set_output_type(output_type)
         if target_dim is not None:
             builder.set_dim(target_dim)
         model = builder.build()
-        if state_dict_path is not None:
+        if (
+            state_dict_path is not None and state_dict_path != "None"
+        ):  # sometimes arg parsing fails
             model = cls._add_state_dict_to_model(state_dict_path, model)
         return model
 
@@ -61,7 +63,7 @@ class ModelFactory:
     def _add_state_dict_to_model(
         cls, state_dict_path: str, model: torch.nn.Module
     ) -> torch.nn.Module:
-        d = torch.load(state_dict_path)
+        d = torch.load(state_dict_path, map_location="cpu")
         try:
             model.load_state_dict(d)
         except RuntimeError as e:

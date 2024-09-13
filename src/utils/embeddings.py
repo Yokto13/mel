@@ -12,6 +12,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from transformers import BertModel
 
+from utils.model_builder import ModelBuilder, ModelOutputType
 from utils.multifile_dataset import MultiFileDataset
 from utils.model_factory import ModelFactory
 
@@ -127,8 +128,17 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
     return embs, qids
 
 
-def embs_from_tokens_and_model_name(source, model_name, batch_size, dest):
-    model = ModelFactory.load_bert_from_file(model_name)
+def embs_from_tokens_and_model_name(
+    source, model_name, batch_size, dest, output_type: str | None = None
+):
+    builder = ModelBuilder(model_name)
+    output_type = (
+        ModelOutputType(output_type)
+        if output_type is not None
+        else ModelOutputType.PoolerOutput
+    )
+    builder.set_output_type(output_type)
+    model = builder.build()
     embs_from_tokens_and_model(source, model, batch_size, dest)
 
 
