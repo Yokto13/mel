@@ -78,13 +78,18 @@ class _LinksCreator:
 
 class _KBCreator:
     def __init__(
-        self, damuel_paths: DamuelPaths, langs: list[str], dest_dir: Path
+        self,
+        damuel_paths: DamuelPaths,
+        langs: list[str],
+        dest_dir: Path,
+        langs_per_qid: int = 1,
     ) -> None:
         self.damuel_paths: DamuelPaths = damuel_paths
         self.langs: list[str] = langs
         self.dest_descs_dir: Path = dest_dir / "descs_pages"
         self.dest_descs_dir.mkdir(parents=True, exist_ok=True)
         self.dest_dir: Path = dest_dir
+        self.langs_per_qid: int = langs_per_qid
 
     def run(self) -> None:
         qid_lang_mapping = self._get_qid_lang_mapping()
@@ -132,15 +137,16 @@ class _KBCreator:
         self, qid_lang_mapping: dict[int, str]
     ) -> dict[str, list[int]]:
         lang_qid_lists = defaultdict(list)
-        for qid, lang in tqdm(
+        for qid, langs in tqdm(
             qid_lang_mapping.items(),
             desc="Grouping QIDs by language",
             total=len(qid_lang_mapping),
         ):
-            lang_qid_lists[lang].append(qid)
+            for lang in langs:
+                lang_qid_lists[lang].append(qid)
         return lang_qid_lists
 
-    def _get_qid_lang_mapping(self) -> dict[int, str]:
+    def _get_qid_lang_mapping(self) -> dict[int, list[str]]:
         qid_lang_counts, lang_sizes = self._get_qid_lang_counts()
         return self._get_mapping_from_counts_and_lang_sizes(qid_lang_counts, lang_sizes)
 
@@ -178,7 +184,7 @@ class _KBCreator:
 
     def _get_mapping_from_counts_and_lang_sizes(
         self, qid_lang_counts: dict[int, Counter], lang_sizes: dict[str, int]
-    ) -> dict[int, str]:
+    ) -> dict[int, list[str]]:
         """Chooses the most common language for each QID ties are broken in favor of the larger language.
 
         Args:
@@ -186,7 +192,7 @@ class _KBCreator:
             lang_sizes (dict[str, int])
 
         Returns:
-            dict[int, str]
+            dict[int, list[str]]
         """
         qid_lang_mapping = {}
         for qid, lang_counts in tqdm(
@@ -194,17 +200,14 @@ class _KBCreator:
             desc="Mapping QIDs to languages",
             total=len(qid_lang_counts),
         ):
-            max_lang = None
-            max_count = -1
-            max_size = -1
-            for lang, count in lang_counts.items():
-                if count > max_count or (
-                    count == max_count and lang_sizes[lang] > max_size
-                ):
-                    max_lang = lang
-                    max_count = count
-                    max_size = lang_sizes[lang]
-            qid_lang_mapping[qid] = max_lang
+            items_by_importance = sorted(
+                lang_counts.items(), key=lambda x: (-x[1], -lang_sizes[x[0]])
+            )
+            n_of_langs_to_choose = min(self.langs_per_qid, len(items_by_importance))
+            choosen_langs = [
+                item[0] for item in items_by_importance[:n_of_langs_to_choose]
+            ]
+            qid_lang_mapping[qid] = choosen_langs
 
         return qid_lang_mapping
 
@@ -253,3 +256,12 @@ def create_multilingual_dataset(
     dest_dir: Union[str, Path],
 ) -> None:
     MultilingualDatasetCreator(Path(source_dir), langs, Path(dest_dir)).run()
+
+
+def run_kb_creator(
+    source_dir: Union[str, Path],
+    langs: list[str],
+    dest_dir: Union[str, Path],
+    langs_per_qid: int = 1,
+) -> None:
+    _KBCreator(DamuelPaths(source_dir), langs, Path(dest_dir), langs_per_qid).run()
