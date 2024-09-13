@@ -6,6 +6,7 @@ from typing import Any
 from transformers import BertModel
 
 from models.change_dim_wrapper import ChangeDimWrapper
+from models.pooling_wrappers import PoolingWrapper
 from utils.model_builder import OutputType, ModelBuilder
 
 _logger = logging.getLogger("utils.model_factory")
@@ -61,9 +62,15 @@ class ModelFactory:
         cls, state_dict_path: str, model: torch.nn.Module
     ) -> torch.nn.Module:
         d = torch.load(state_dict_path)
-        problematic_keys = model.load_state_dict(d)
-        if len(problematic_keys.missing_keys) or len(problematic_keys.unexpected_keys):
+        try:
+            model.load_state_dict(d)
+        except RuntimeError as e:
             _logger.warning(
-                f"The following keys are missing in the model {problematic_keys}"
+                f"Failed to load state dict: {e}, trying to load it the old way."
             )
+            if isinstance(model, PoolingWrapper):
+                model.model.load_state_dict(d)
+                _logger.warning("Loaded state dict into base model.")
+            else:
+                raise e
         return model

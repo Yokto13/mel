@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModel
+import torch
 
 from models.pooling_wrappers import CLSWrapper
 from utils.model_factory import ModelFactory
@@ -62,3 +63,19 @@ def test_auto_load_with_passthrough():
 
     output = model(tokenized.input_ids, tokenized.attention_mask)
     assert output.shape == (1, 12)
+
+
+def test_auto_load_from_file_state_dict_old(tmp_path):
+    original_model = AutoModel.from_pretrained("setu4993/LEALLA-base")
+    state_dict_path = f"{tmp_path}/final.pth"
+
+    torch.save(original_model.state_dict(), state_dict_path)
+
+    model = ModelFactory.auto_load_from_file(
+        "setu4993/LEALLA-base", state_dict_path=state_dict_path
+    )
+
+    assert model is not None
+    assert isinstance(model, CLSWrapper)
+    base_model = model.model
+    assert base_model.config.hidden_size == original_model.config.hidden_size
