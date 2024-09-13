@@ -34,7 +34,7 @@ def test_auto_load_from_file_state_dict_and_target_dim(mock_torch_load, tmp_path
     )
 
     assert model is not None
-    mock_torch_load.assert_called_once_with(state_dict_path)
+    mock_torch_load.assert_called_once_with(state_dict_path, map_location="cpu")
 
 
 @patch("torch.load")
@@ -50,7 +50,7 @@ def test_auto_load_from_file_state_dict_and_not_target_dim(mock_torch_load, tmp_
     )
 
     assert model is not None
-    mock_torch_load.assert_called_once_with(state_dict_path)
+    mock_torch_load.assert_called_once_with(state_dict_path, map_location="cpu")
 
 
 def test_auto_load_with_passthrough():

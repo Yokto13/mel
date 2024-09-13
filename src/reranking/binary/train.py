@@ -79,7 +79,9 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load dataset
-    dataset_path = Path("path/to/dataset.npz")
+    dataset_path = Path(
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test.npz"
+    )
     dataset = np.load(dataset_path)
 
     description_tokens = dataset["description_tokens"]

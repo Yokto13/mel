@@ -91,9 +91,13 @@ def create_binary_dataset(
             y.append(0)
 
     # Convert to numpy arrays
-    description_tokens = np.array(description_tokens, dtype=object)
-    link_tokens_list = np.array(link_tokens_list, dtype=object)
+    description_tokens = np.array(description_tokens)
+    link_tokens_list = np.array(link_tokens_list)
     y = np.array(y)
+
+    print(description_tokens.shape)
+    print(link_tokens_list.shape)
+    print(y.shape)
 
     # Save dataset
     np.savez(
@@ -118,7 +122,7 @@ if __name__ == "__main__":
         "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/models_2/final.pth"
     )
     output_path = Path(
-        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test"
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test/reranker_dataset.npz"
     )
     model_name = (
         "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"

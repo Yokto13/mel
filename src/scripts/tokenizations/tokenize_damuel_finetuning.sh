@@ -17,5 +17,6 @@ else
     mkdir -p "$RESULT"
 fi
 
-python run_action.py tokens_for_all_damuel_finetuning "$DAMUEL" "$RESULT" 128 128 "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
+# python run_action.py tokens_for_all_damuel_finetuning "$DAMUEL" "$RESULT" 128 128 "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-small"
+python run_action.py tokens_for_all_damuel_finetuning "$DAMUEL" "$RESULT" 128 128 "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-small"
 

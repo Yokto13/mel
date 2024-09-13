@@ -32,7 +32,7 @@ DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/descs_pages"
 DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning/$LANG"
 MODEL_PATH="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
-WORKDIR="$OUTPUTS/workdirs/small_dim"
+WORKDIR="$OUTPUTS/workdirs/small_dim_192"
 BATCH_SIZE=64
 EPOCHS=100
 LOGIT_MULTIPLIER=50
@@ -43,7 +43,7 @@ TYPE="mentions"
 N_OF_ROUNDS=8
 NEG=7
 NEG_SAMPLING_TYPE="top"
-TARGET_DIM=64
+TARGET_DIM=192
 
 # copy params
 echo "Copying params"
