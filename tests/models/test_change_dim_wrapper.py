@@ -1,6 +1,6 @@
 import pytest
 import torch
-from src.models.pooling_wrappers import CLSWrapper
+from src.models.pooling_wrappers import PoolerOutputWrapper
 from models.change_dim_wrapper import ChangeDimWrapper
 
 
@@ -69,7 +69,7 @@ def test_smaller_dim_with_lealla_base(target_dim, model_name):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     base_model = AutoModel.from_pretrained(model_name)
 
-    model = CLSWrapper(base_model)
+    model = PoolerOutputWrapper(base_model)
 
     # Initialize SmallerDim with LEALLA-base
     smaller_dim = ChangeDimWrapper(model, target_dim)

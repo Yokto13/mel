@@ -2,7 +2,11 @@ import pytest
 import torch
 from transformers import AutoModel, AutoTokenizer
 
-from src.models.pooling_wrappers import CLSWrapper, SentenceTransformerWrapper
+from src.models.pooling_wrappers import (
+    CLSWrapper,
+    PoolerOutputWrapper,
+    SentenceTransformerWrapper,
+)
 
 
 @pytest.fixture(
@@ -22,7 +26,7 @@ def model_setup(request):
 
 def test_cls_wrapper_forward(model_setup):
     model, input_ids, attention_mask, output_dim = model_setup
-    cls_wrapper = CLSWrapper(model)
+    cls_wrapper = PoolerOutputWrapper(model)
 
     output = cls_wrapper(input_ids, attention_mask)
 
@@ -38,3 +42,12 @@ def test_sentence_transformer_wrapper_forward(model_setup):
 
     assert output.shape == (1, output_dim)
     assert torch.is_tensor(output)
+
+
+def test_cls_wrapper_forward(model_setup):
+    model, input_ids, attention_mask, output_dim = model_setup
+    cls_wrapper = CLSWrapper(model)
+
+    output = cls_wrapper(input_ids, attention_mask)
+
+    assert output.shape == (1, output_dim)

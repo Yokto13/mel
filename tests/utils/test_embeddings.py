@@ -6,7 +6,7 @@ from transformers import AutoTokenizer
 
 from utils.embeddings import embed
 from utils.model_factory import ModelFactory
-from models.pooling_wrappers import CLSWrapper
+from models.pooling_wrappers import PoolerOutputWrapper
 
 
 class SimpleDataset(Dataset):

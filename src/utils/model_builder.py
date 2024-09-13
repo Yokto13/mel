@@ -4,7 +4,7 @@ from transformers import AutoModel
 from torch import nn
 
 from models.change_dim_wrapper import ChangeDimWrapper
-from models.pooling_wrappers import CLSWrapper, SentenceTransformerWrapper
+from models.pooling_wrappers import PoolerOutputWrapper, SentenceTransformerWrapper
 
 
 class OutputType(StrEnum):
@@ -44,7 +44,7 @@ class ModelBuilder:
 
     def _wrap_with_output_layer(self):
         if self.output_type == OutputType.CLS:
-            self._model = CLSWrapper(self._model)
+            self._model = PoolerOutputWrapper(self._model)
         elif self.output_type == OutputType.SENTENCE_TRANSFORMER:
             self._model = SentenceTransformerWrapper(self._model)
         else:

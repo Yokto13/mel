@@ -1,6 +1,6 @@
 import pytest
 from models.change_dim_wrapper import ChangeDimWrapper
-from models.pooling_wrappers import CLSWrapper, SentenceTransformerWrapper
+from models.pooling_wrappers import PoolerOutputWrapper, SentenceTransformerWrapper
 from src.utils.model_builder import ModelBuilder, OutputType
 
 from transformers import AutoTokenizer
@@ -43,7 +43,7 @@ def test_set_dim(model_builder):
 @pytest.mark.parametrize(
     "output_type, wrapper_class",
     [
-        (OutputType.CLS, CLSWrapper),
+        (OutputType.CLS, PoolerOutputWrapper),
         (OutputType.SENTENCE_TRANSFORMER, SentenceTransformerWrapper),
     ],
 )

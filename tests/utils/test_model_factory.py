@@ -3,7 +3,7 @@ from unittest.mock import patch
 from transformers import AutoTokenizer, AutoModel
 import torch
 
-from models.pooling_wrappers import CLSWrapper
+from models.pooling_wrappers import PoolerOutputWrapper
 from utils.model_factory import ModelFactory
 
 
@@ -11,7 +11,7 @@ def test_auto_load_from_file_default():
     model = ModelFactory.auto_load_from_file("setu4993/LEALLA-base")
 
     assert model is not None
-    assert isinstance(model, CLSWrapper)
+    assert isinstance(model, PoolerOutputWrapper)
 
 
 def test_auto_load_from_file_smaller_dim():
@@ -76,6 +76,6 @@ def test_auto_load_from_file_state_dict_old(tmp_path):
     )
 
     assert model is not None
-    assert isinstance(model, CLSWrapper)
+    assert isinstance(model, PoolerOutputWrapper)
     base_model = model.model
     assert base_model.config.hidden_size == original_model.config.hidden_size

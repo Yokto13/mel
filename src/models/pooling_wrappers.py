@@ -15,12 +15,20 @@ class PoolingWrapper(nn.Module):
         return self.model.pooler.dense.out_features
 
 
-class CLSWrapper(PoolingWrapper):
+class PoolerOutputWrapper(PoolingWrapper):
     def __init__(self, model: nn.Module):
         super().__init__(model)
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         return self.model(input_ids, attention_mask).pooler_output
+
+
+class CLSWrapper(PoolingWrapper):
+    def __init__(self, model: nn.Module):
+        super().__init__(model)
+
+    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
+        return self.model(input_ids, attention_mask).last_hidden_state[:, 0, :]
 
 
 class SentenceTransformerWrapper(PoolingWrapper):
