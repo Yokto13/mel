@@ -12,6 +12,7 @@ from models.searchers.searcher import Searcher
 
 _logger = logging.getLogger("models.searchers.brute_force_searcher")
 
+
 class BruteForceSearcher(Searcher):
     def __init__(
         self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
@@ -27,7 +28,7 @@ class BruteForceSearcher(Searcher):
     @torch.compile
     def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
         with torch.no_grad():
-            batch_torch: torch.Tensor = torch.tensor(batch, device=self.device)
+            batch_torch: torch.Tensor = torch.from_numpy(batch).to(self.device)
             # embs after build are (dim, embs_count)
             dot_product: torch.Tensor = F.linear(batch_torch, self.embs)
             _, top_indices = dot_product.topk(num_neighbors)
@@ -76,7 +77,9 @@ class DPBruteForceSearcher(Searcher):
                 f"num_neighbors was changed from {self.required_num_neighbors} to {num_neighbors} and this is not allowed in DPBruteForceSearcher"
             )
         with torch.no_grad():
-            top_indices: torch.Tensor = self.module_searcher(torch.tensor(batch, device=self.device))
+            top_indices: torch.Tensor = self.module_searcher(
+                torch.tensor(batch, device=self.device)
+            )
         top_indices_np: np.ndarray = top_indices.cpu().numpy()
         return self.results[top_indices_np]
 

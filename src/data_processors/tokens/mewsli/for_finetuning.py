@@ -23,7 +23,10 @@ class MewsliTokensIteratorFinetuning(MewsliTokensIterator):
             True,
             expected_size,
         )
-        assert mention_token in tokenizer.get_vocab()
+        assert (
+            mention_token in tokenizer.get_vocab()
+            or mention_token.lower() in tokenizer.get_vocab()
+        )  # some tokenizers enforce lower case
 
     def _get_iterator(self):
         return ContextMewsliTokensIteratorFinetuning(self)

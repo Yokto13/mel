@@ -74,8 +74,8 @@ def generate(
     batch_sampler = BatchSampler(
         index_embs,
         index_qids,
-        # DPBruteForceSearcher,
-        BruteForceSearcher,
+        DPBruteForceSearcher,
+        # BruteForceSearcher,
         NegativeSamplingType(NEGATIVE_SAMPLING_TYPE),
     )
 
