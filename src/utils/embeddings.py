@@ -8,6 +8,10 @@ from tqdm import tqdm
 
 import numpy as np
 import torch
+
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from transformers import BertModel
@@ -89,6 +93,8 @@ def embed(
 
     log_processer = _Processer(each=10**6)
 
+    scaler = torch.cuda.amp.GradScaler()
+
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
@@ -96,10 +102,10 @@ def embed(
             if torch.cuda.is_available():
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
-            # _logger.debug(
-            # f"batch_toks.shape, attention_mask.shape: {batch_toks.shape}, {attention_mask.shape}"
-            # )
-            batch_embeddings = model(batch_toks, attention_mask)
+
+            with torch.cuda.amp.autocast():
+                batch_embeddings = model(batch_toks, attention_mask)
+
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
             batch_embeddings = batch_embeddings / np.linalg.norm(
                 batch_embeddings, ord=2, axis=1, keepdims=True
