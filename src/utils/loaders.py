@@ -195,3 +195,14 @@ def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
         file_path = Path(file_path)
     d = np.load(file_path)
     return d["tokens"], d["qids"]
+
+
+@_sort_by_output(1)
+def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    tokens, qids = [], []
+    for file in dir_path.iterdir():
+        if file.is_file() and file.suffix == ".npz":
+            d = np.load(file)
+            tokens.extend(d["tokens"])
+            qids.extend(d["qids"])
+    return np.array(tokens), np.array(qids)
