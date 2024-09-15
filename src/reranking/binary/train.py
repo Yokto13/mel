@@ -80,7 +80,7 @@ def main():
 
     # Load dataset
     dataset_path = Path(
-        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test.npz"
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test/reranker_dataset.npz"
     )
     dataset = np.load(dataset_path)
 
@@ -93,9 +93,9 @@ def main():
     # link_attn = create_attention_mask(link_tokens)
 
     # Convert to tensors
-    description_tokens = torch.from_numpy(description_tokens).to(device)
-    link_tokens = torch.from_numpy(link_tokens).to(device)
-    labels = torch.from_numpy(labels).to(device)
+    description_tokens = torch.from_numpy(description_tokens)
+    link_tokens = torch.from_numpy(link_tokens)
+    labels = torch.from_numpy(labels)
 
     # Load pre-trained transformer model and tokenizer
     transformer = AutoModel.from_pretrained(

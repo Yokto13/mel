@@ -1,4 +1,5 @@
 from enum import StrEnum
+import logging
 
 from transformers import AutoModel
 from torch import nn
@@ -9,6 +10,8 @@ from models.pooling_wrappers import (
     SentenceTransformerWrapper,
     CLSWrapper,
 )
+
+_logger = logging.getLogger("models.model_builder")
 
 
 class ModelOutputType(StrEnum):
@@ -33,12 +36,15 @@ class ModelBuilder:
         return self._dim
 
     def set_output_type(self, output_type: ModelOutputType):
+        _logger.info(f"Setting output type to {output_type}")
         self._output_type = output_type
 
     def set_dim(self, dim: int):
+        _logger.info(f"Setting dim to {dim}")
         self._dim = dim
 
     def build(self) -> nn.Module:
+        _logger.info("Building model")
         self._load_model()
         self._wrap_with_output_layer()
         self._enforce_output_dim()
