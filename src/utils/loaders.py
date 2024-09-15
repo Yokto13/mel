@@ -153,7 +153,7 @@ def _sort_by_output(output_idx: int):
     return _sort_by_output_wrapper
 
 
-@_sort_by_output(1)
+# @_sort_by_output(1)
 def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings and qids from the directory.
 
@@ -171,7 +171,7 @@ def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     return d["embs"], d["qids"]
 
 
-@_sort_by_output(1)
+# @_sort_by_output(1)
 def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings, qids, and tokens from the directory.
 
@@ -189,7 +189,7 @@ def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]
     return d["embs"], d["qids"], d["tokens"]
 
 
-@_sort_by_output(1)
+# @_sort_by_output(1)
 def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     if type(file_path) == str:
         file_path = Path(file_path)
