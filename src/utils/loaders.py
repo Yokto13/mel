@@ -145,7 +145,7 @@ def _sort_by_output(output_idx: int):
         @functools.wraps(wrapped)
         def _wrapper(*args, **kwargs):
             output: tuple[np.ndarray, ...] = wrapped(*args, **kwargs)
-            sort_indices = np.argsort(output[output_idx])
+            sort_indices = np.argsort(output[output_idx], kind="stable")
             return [o[sort_indices] for o in output]
 
         return _wrapper
