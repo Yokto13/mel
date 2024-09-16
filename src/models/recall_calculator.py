@@ -48,7 +48,7 @@ class RecallCalculator:
         qid_was_present = []
 
         for emb, qid in zip(mewsli_embs, mewsli_qids):
-            # This should be reworked to batching solution
+            # TODO: This should be reworked to batching solution
             negihboring_qids = self._get_neighboring_qids(np.array([emb]), k)
             qid_was_present.append(qid in negihboring_qids[0])
 
