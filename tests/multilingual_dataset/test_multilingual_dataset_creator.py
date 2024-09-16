@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 import numpy as np
 import pytest
 from pathlib import Path
@@ -152,7 +152,36 @@ class Test_KBCreator:
             lang_sizes,
         )
 
-        assert result == {1: "en", 2: "fr", 3: "es", 4: "en", 5: "fr"}
+        assert result == {1: ["en"], 2: ["fr"], 3: ["es"], 4: ["en"], 5: ["fr"]}
+
+    def test_run_with_langs_per_qid_2(self, damuel_paths, sample_langs, output_dir):
+        kb_creator = _KBCreator(
+            damuel_paths, sample_langs, Path(output_dir), langs_per_qid=2
+        )
+        output_dir = Path(output_dir) / "descs_pages"
+
+        assert not any(output_dir.iterdir())
+
+        kb_creator.run()
+
+        assert any(output_dir.iterdir())
+
+        all_qids = []
+        lang_counts = defaultdict(int)
+
+        for file in output_dir.iterdir():
+            data = np.load(file)
+            qids = data["qids"]
+            lang = file.stem.split("_")[1]
+
+            all_qids.extend(qids)
+            lang_counts[lang] += len(qids)
+
+        unique_qids = set(all_qids)
+        assert len(unique_qids) * 2 >= len(all_qids) > len(unique_qids)
+
+        # Check that we have a mix of languages
+        assert len(lang_counts) > 1
 
 
 class TestMultilingualDatasetCreator:

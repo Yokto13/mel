@@ -24,7 +24,11 @@ class DamuelDescriptionsTokensIteratorFinetuning(DamuelIterator):
         )
 
         self.name_token = name_token
-        assert self.name_token in tokenizer.get_vocab()
+
+        assert (
+            name_token in tokenizer.get_vocab()
+            or name_token.lower() in tokenizer.get_vocab()
+        )  # some tokenizers enforce lower case
 
         self.entry_processor = EntryProcessor(
             TokenizerWrapper(self.tokenizer, expected_size),

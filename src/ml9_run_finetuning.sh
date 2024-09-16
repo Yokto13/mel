@@ -26,10 +26,10 @@ set -ueo pipefail
 # ...
 
 LANG="es"
-DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/ml-9/descs_pages"
+DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/ml-9v2/descs_pages"
 # DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/descs"
 # echo "RUNNING WITH DESCS NOT PAGES!!!"
-DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/ml-9/links"
+DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/ml-9v2/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning"
 MODEL_PATH="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 WORKDIR="$OUTPUTS/workdirs/ml9"

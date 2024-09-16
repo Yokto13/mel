@@ -1,4 +1,5 @@
 from utils.arg_names import get_args_names
+from utils.embeddings import embed
 
 
 def test_get_args_no_args():

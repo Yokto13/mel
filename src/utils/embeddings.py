@@ -8,10 +8,15 @@ from tqdm import tqdm
 
 import numpy as np
 import torch
+
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from transformers import BertModel
 
+from utils.model_builder import ModelBuilder, ModelOutputType
 from utils.multifile_dataset import MultiFileDataset
 from utils.model_factory import ModelFactory
 
@@ -88,6 +93,8 @@ def embed(
 
     log_processer = _Processer(each=10**6)
 
+    scaler = torch.cuda.amp.GradScaler()
+
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
@@ -95,10 +102,10 @@ def embed(
             if torch.cuda.is_available():
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
-            # _logger.debug(
-            # f"batch_toks.shape, attention_mask.shape: {batch_toks.shape}, {attention_mask.shape}"
-            # )
-            batch_embeddings = model(batch_toks, attention_mask).pooler_output
+
+            with torch.cuda.amp.autocast():
+                batch_embeddings = model(batch_toks, attention_mask)
+
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
             batch_embeddings = batch_embeddings / np.linalg.norm(
                 batch_embeddings, ord=2, axis=1, keepdims=True
@@ -127,8 +134,17 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
     return embs, qids
 
 
-def embs_from_tokens_and_model_name(source, model_name, batch_size, dest):
-    model = ModelFactory.load_bert_from_file(model_name)
+def embs_from_tokens_and_model_name(
+    source, model_name, batch_size, dest, output_type: str | None = None
+):
+    builder = ModelBuilder(model_name)
+    output_type = (
+        ModelOutputType(output_type)
+        if output_type is not None
+        else ModelOutputType.PoolerOutput
+    )
+    builder.set_output_type(output_type)
+    model = builder.build()
     embs_from_tokens_and_model(source, model, batch_size, dest)
 
 

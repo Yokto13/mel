@@ -33,7 +33,8 @@ from finetunings.finetune_model.train_ddp import train_ddp
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, rename, remove_duplicates
 
-from multilingual_dataset.creator import create_multilingual_dataset
+from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
+from multilingual_dataset.combine_embs import combine_embs_by_qid
 
 from tokenization.generate_tokens import (
     tokens_for_finetuning_mewsli,
@@ -59,7 +60,6 @@ tokens_for_all_damuel_finetuning_pages = partial(
     tokens_for_all_damuel, ignore_context=False, only_pages=True
 )
 
-from utils.extractors.orchestrator import damuel_description_tokens
 from utils.arg_names import get_args_names
 
 print("Imports finished")
@@ -99,8 +99,6 @@ def choose_action(action):
             return tokens_for_finetuning_mewsli
         case "tokens_descriptions":
             return tokens_for_finetuning_damuel_descriptions
-        case "tokens_descriptions_new":
-            return damuel_description_tokens
         case "tokens_links":
             return tokens_for_finetuning_damuel_links
         case "tokens_descriptions_at":
@@ -135,6 +133,10 @@ def choose_action(action):
             return embed_links_for_generation
         case "create_multilingual_dataset":
             return create_multilingual_dataset
+        case "run_kb_creator":
+            return run_kb_creator
+        case "combine_embs_by_qid":
+            return combine_embs_by_qid
         case _:
             raise ValueError(f"Unknown action: {action}")
 

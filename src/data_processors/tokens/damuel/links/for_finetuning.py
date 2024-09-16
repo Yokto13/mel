@@ -25,7 +25,10 @@ class DamuelLinksTokensIteratorFinetuning(DamuelLinksIterator):
         )
 
         self.mention_token = mention_token
-        assert self.mention_token in tokenizer.get_vocab()
+        assert (
+            mention_token in tokenizer.get_vocab()
+            or mention_token.lower() in tokenizer.get_vocab()
+        )  # some tokenizers enforce lower case
 
         self.entry_processor = EntryProcessor(
             TokenizerWrapper(tokenizer, expected_size), only_wiki

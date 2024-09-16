@@ -119,6 +119,7 @@ def _ddp_train(
     MODEL_SAVE_DIR: str,
     STATE_DICT_PATH: str | None,
     TARGET_DIM: int | None,
+    WEIGHT_DECAY: float | None,
 ):
     setup(rank, world_size)
 
@@ -137,10 +138,11 @@ def _ddp_train(
                 "LR": LR,
                 "MODEL_SAVE_DIR": MODEL_SAVE_DIR,
                 "STATE_DICT_PATH": STATE_DICT_PATH,
+                "WEIGHT_DECAY": WEIGHT_DECAY,
             },
         )
 
-    optimizer = optim.Adam(model.parameters(), lr=LR)
+    optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     criterion = nn.CrossEntropyLoss()
 
     scaler = torch.cuda.amp.GradScaler()
@@ -232,6 +234,7 @@ def train_ddp(
     MODEL_SAVE_DIR: str = "models",
     STATE_DICT_PATH: str | None = None,
     TARGET_DIM: int | None = None,
+    WEIGHT_DECAY: float = 0.0,
 ):
     world_size = torch.cuda.device_count()
 
@@ -247,6 +250,7 @@ def train_ddp(
             MODEL_SAVE_DIR,
             STATE_DICT_PATH,
             TARGET_DIM,
+            WEIGHT_DECAY,
         ),
         nprocs=world_size,
     )

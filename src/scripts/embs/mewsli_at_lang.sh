@@ -8,6 +8,7 @@ VENV=../venv/bin/activate
 source $VENV
 
 LANG="$1"
+OUTPUT_TYPE="$2"
 
 RESULT="$OUTPUTS/embs_mewsli_at/$LANG"
 INPUT="$OUTPUTS/tokens_mewsli_at/$LANG"
@@ -22,4 +23,4 @@ else
     mkdir $RESULT
 fi
 
-python run_action.py "embs_from_tokens_and_model_name" $INPUT "setu4993/LEALLA-small" 16384 $RESULT
+python run_action.py "embs_from_tokens_and_model_name" $INPUT "setu4993/LEALLA-small" 16384 $RESULT "$OUTPUT_TYPE"

@@ -1,9 +1,9 @@
 from pathlib import PosixPath
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import torch
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoTokenizer
 
 from finetunings.finetune_model.data import (
     LinksAndDescriptionsTogetherDataset,
@@ -13,6 +13,7 @@ from finetunings.finetune_model.data import (
 from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
 from finetunings.finetune_model.train_ddp import construct_labels
 from finetunings.finetune_model.train import forward_to_embeddings
+from utils.model_factory import ModelFactory
 from utils.running_averages import RunningAverages
 
 
@@ -182,7 +183,7 @@ class TestForwardToEmbeddings:
     @pytest.fixture(scope="module")
     def model_and_tokenizer(self):
         # Load the model and tokenizer
-        model = AutoModel.from_pretrained("setu4993/LEALLA-small")
+        model = ModelFactory.auto_load_from_file("setu4993/LEALLA-small")
         tokenizer = AutoTokenizer.from_pretrained("setu4993/LEALLA-small")
         return model, tokenizer
 
@@ -204,7 +205,7 @@ class TestForwardToEmbeddings:
 
         result = forward_to_embeddings(input_ids, model)
 
-        assert result.shape == (len(sample_texts), model.config.hidden_size)
+        assert result.shape == (len(sample_texts), model.output_dim)
 
         torch.testing.assert_allclose(
             torch.norm(result, p=2, dim=1),

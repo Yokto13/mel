@@ -1,3 +1,4 @@
+import functools
 import json
 import numpy as np
 import pandas as pd
@@ -125,20 +126,20 @@ def load_mewsli_context_from_files(
     return contexts, qids
 
 
-def get_emb_state_dict(model_state_dict_path):
-    """Loads a state dict from a file and returns it.
+def _sort_by_output(output_idx: int):
+    def _sort_by_output_wrapper(wrapped):
+        @functools.wraps(wrapped)
+        def _wrapper(*args, **kwargs):
+            output: tuple[np.ndarray, ...] = wrapped(*args, **kwargs)
+            sort_indices = np.argsort(output[output_idx], kind="stable")
+            return [o[sort_indices] for o in output]
 
-    Handles various conversions.
-    This is needed because for older models we store just the dict of the underlying embedding model.
-    In some newer models that train parameters above the embedding model, we store the whole state dict.
-    Here we just return the model part of the state dict which is all that is needed to construct the embeddings.
-    """
-    d = torch.load(model_state_dict_path)
-    if "softmax_multiplier" in d:
-        return {k.replace("model.", ""): v for k, v in d.items() if "model." in k}
-    return d
+        return _wrapper
+
+    return _sort_by_output_wrapper
 
 
+# @_sort_by_output(1)
 def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings and qids from the directory.
 
@@ -156,6 +157,7 @@ def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     return d["embs"], d["qids"]
 
 
+# @_sort_by_output(1)
 def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings, qids, and tokens from the directory.
 
@@ -173,8 +175,20 @@ def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]
     return d["embs"], d["qids"], d["tokens"]
 
 
+# @_sort_by_output(1)
 def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     if type(file_path) == str:
         file_path = Path(file_path)
     d = np.load(file_path)
     return d["tokens"], d["qids"]
+
+
+@_sort_by_output(1)
+def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    tokens, qids = [], []
+    for file in dir_path.iterdir():
+        if file.is_file() and file.suffix == ".npz":
+            d = np.load(file)
+            tokens.extend(d["tokens"])
+            qids.extend(d["qids"])
+    return np.array(tokens), np.array(qids)

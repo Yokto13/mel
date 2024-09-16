@@ -52,7 +52,7 @@ def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.ten
         torch.tensor: normalized embs.
     """
     att = create_attention_mask(toks)
-    embeddings = model(toks, att).pooler_output
+    embeddings = model(toks, att)
     return torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
 
