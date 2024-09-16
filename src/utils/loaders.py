@@ -126,20 +126,6 @@ def load_mewsli_context_from_files(
     return contexts, qids
 
 
-def get_emb_state_dict(model_state_dict_path):
-    """Loads a state dict from a file and returns it.
-
-    Handles various conversions.
-    This is needed because for older models we store just the dict of the underlying embedding model.
-    In some newer models that train parameters above the embedding model, we store the whole state dict.
-    Here we just return the model part of the state dict which is all that is needed to construct the embeddings.
-    """
-    d = torch.load(model_state_dict_path)
-    if "softmax_multiplier" in d:
-        return {k.replace("model.", ""): v for k, v in d.items() if "model." in k}
-    return d
-
-
 def _sort_by_output(output_idx: int):
     def _sort_by_output_wrapper(wrapped):
         @functools.wraps(wrapped)
