@@ -36,6 +36,17 @@ else:
     _logger.debug("CUDA is not available.")
     device = torch.device("cpu")
 
+
+def reorder_data_to_match_qids(tokens, wrong_qids, correct_qids):
+    # make sure that qids contain the same elements
+    if not np.array_equal(np.unique(wrong_qids), np.unique(correct_qids)):
+        raise ValueError("Qids contain different elements")
+    # find the index of the correct qids in the wrong qids
+    correct_indices = [np.where(wrong_qids == qid)[0][0] for qid in correct_qids]
+    # reorder the tokens using the correct indices
+    return tokens[correct_indices]
+
+
 SEED = 0
 torch.manual_seed(SEED)
 
@@ -82,8 +93,19 @@ def generate(
     _logger.debug("Batch sampler created")
 
     multifile_dataset = MultiFileDataset(INDEX_TOKENS_DIR)
-    tokens = np.array([x[0] for x in multifile_dataset])
+    tokens, qids = zip(*multifile_dataset)
+    tokens = np.array(tokens)
+    qids = np.array(qids)
 
+    are_qids_same = np.array_equal(qids, batch_sampler.qids)
+    if not are_qids_same:
+        _logger.warning("Qids are not the same")
+        if len(qids) != len(batch_sampler.qids):
+            raise ValueError(
+                "Qids are not the same, and they don't have the same length"
+            )
+        _logger.warning(f"Reordering qids and tokens to match the batch sampler")
+        tokens = reorder_data_to_match_qids(tokens, qids, batch_sampler.qids)
     _logger.debug("Tokens created")
 
     # dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
