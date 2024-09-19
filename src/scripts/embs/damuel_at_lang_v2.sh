@@ -7,14 +7,15 @@ cd ../../
 VENV=../venv/bin/activate
 source $VENV
 
-LANG="$1"
+INPUT="$1"
 OUTPUT_TYPE="$2"
+RESULT="$3"
 
-RESULT="$OUTPUTS/embs_damuel_at/$LANG"
+# RESULT="$OUTPUTS/embs_damuel_at/$LANG"
 DESCS="$RESULT/descs"
 DESCS_PAGES="$RESULT/descs_pages"
 LINKS="$RESULT/links"
-INPUT="$OUTPUTS/tokens_damuel_at/$LANG"
+# INPUT="$OUTPUTS/tokens_damuel_at/$LANG"
 
 if [ -d "$DESCS" ]; then
     echo "Directory exists. Cleaning it."

@@ -9,8 +9,8 @@ source $VENV
 
 LANG="$1"
 OUTPUT_TYPE="$2"
+RESULT="$3"
 
-RESULT="$OUTPUTS/embs_mewsli_at/$LANG"
 INPUT="$OUTPUTS/tokens_mewsli_at/$LANG"
 
 if [ -d "$RESULT" ]; then

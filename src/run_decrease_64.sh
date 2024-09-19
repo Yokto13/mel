@@ -147,7 +147,7 @@ if [ ! -e "$WORKDIR/models_4/final.pth" ]; then
     echo "Running round 4"
 
     ./run_finetuning_round_decrease_dim.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
-     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 4 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE
+     "$WORKDIR" "$BATCH_SIZE" "$EPOCHS" "$LOGIT_MULTIPLIER" "$LR" $STATE_DICT 4 "$TYPE" "$N_OF_ROUNDS" $NEG 1 $NEG_SAMPLING_TYPE $TARGET_DIM
 fi
 
 STATE_DICT="$WORKDIR/models_4/final.pth"

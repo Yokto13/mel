@@ -116,7 +116,7 @@ fi
 STATE_DICT="$WORKDIR/models_0/final.pth"
 
 # if [ ! -e "$WORKDIR/models_1/final.pth" ]; then
-if [ ! -e "$WORKDIR/models_1/final.pth" ]; then
+if [ ! -e "$WORKDIR/models_1/finaal.pth" ]; then
     echo "Running round 1"
 
     ./run_finetuning_round.sh "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" "$MEWSLI_TOKENS_RAW" "$MODEL_PATH"\
