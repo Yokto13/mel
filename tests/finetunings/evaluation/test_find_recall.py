@@ -1,12 +1,15 @@
+import json
 import pytest
 import numpy as np
-from pathlib import Path
+from unittest.mock import patch
 
 from finetunings.evaluation.find_recall import (
     load_embs_and_qids_with_normalization,
     get_scann_searcher,
     get_brute_force_searcher,
     get_faiss_searcher,
+    load_qids_remap,
+    qids_remap,
 )
 from models.searchers.scann_searcher import ScaNNSearcher
 from models.searchers.brute_force_searcher import BruteForceSearcher
@@ -51,3 +54,31 @@ def test_get_faiss_searcher(dummy_data):
     embs, qids = dummy_data
     searcher = get_faiss_searcher(embs, qids)
     assert isinstance(searcher, FaissSearcher)
+
+
+def test_load_qids_remap(tmp_path):
+    # Create a temporary JSON file with QID mappings
+    test_qid_map = {"Q1": "Q10", "Q2": "Q20", "Q3": "Q30"}
+    test_file = tmp_path / "qid_redirects.json"
+    with open(test_file, "w") as f:
+        json.dump(test_qid_map, f)
+
+    # Load and check the data
+    loaded_qid_map = load_qids_remap(test_file)
+
+    assert loaded_qid_map == {1: 10, 2: 20, 3: 30}
+
+
+def test_qids_remap():
+    # Mock the load_qids_remap function
+    mock_qid_map = {1: 10, 2: 20, 3: 30}
+    with patch(
+        "finetunings.evaluation.find_recall.load_qids_remap", return_value=mock_qid_map
+    ):
+        # Test qids_remap function
+        input_qids = np.array([1, 2, 3, 4, 5])
+        expected_output = np.array([10, 20, 30, 4, 5])
+
+        remapped_qids = qids_remap(input_qids, "dummy_path")
+
+        assert np.array_equal(remapped_qids, expected_output)
