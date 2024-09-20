@@ -5,10 +5,12 @@ import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Callable
+from typing import Any
 from tqdm import tqdm
 from pathlib import Path
 
 from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
+from data_processors.tokens.tokens_cutter import TokensCutter
 
 
 def contains_wiki_key(entry: dict) -> bool:
@@ -58,8 +60,12 @@ class TokenizationPipeline:
 
 
 class LoaderStep(TokenizationStep, ABC):
-    def __init__(self, path: str):
-        self.path = path
+    def __init__(self, path: str, remainder: int = None, mod: int = None):
+        super().__init__(path)
+        if not os.path.isdir(self.path):
+            raise ValueError(f"Provided path {self.path} is not a directory")
+        self.remainder = remainder
+        self.mod = mod
 
     @abstractmethod
     def process(self) -> Generator[str, None, None]:
@@ -67,14 +73,19 @@ class LoaderStep(TokenizationStep, ABC):
 
 
 class DaMuELLoader(LoaderStep):
-    def __init__(self, path: str):
-        super().__init__(path)
+    def __init__(self, path: str, remainder: int = None, mod: int = None):
+        super().__init__(path, remainder, mod)
         if not os.path.isdir(self.path):
             raise ValueError(f"Provided path {self.path} is not a directory")
 
     def process(self) -> Generator[str, None, None]:
-        for filename in os.listdir(self.path):
-            if filename.startswith("part-"):
+        file_list = [
+            filename
+            for filename in os.listdir(self.path)
+            if filename.startswith("part-")
+        ]
+        for filename in tqdm(file_list, desc="Processing DaMuEL files"):
+            if self._should_process_file(filename):
                 file_path = os.path.join(self.path, filename)
                 with self._open_file(file_path) as file:
                     for line in file:
@@ -86,17 +97,25 @@ class DaMuELLoader(LoaderStep):
         else:
             return open(file_path, "r")
 
+    def _should_process_file(self, filename: str) -> bool:
+        if self.remainder is None or self.mod is None:
+            return True
+        if filename.endswith(".xz"):
+            filename = filename[:-3]
+        file_number = int(filename.split("-")[1])
+        return file_number % self.mod == self.remainder
 
-class DaMuELFilter(TokenizationStep):
+
+class Filter(TokenizationStep):
     def __init__(self, filter_func: Callable[[dict], bool]):
         self.filter_func = filter_func
 
     def process(
-        self, input_gen: Generator[dict, None, None]
+        self, input_gen: Generator[Any, None, None]
     ) -> Generator[dict, None, None]:
-        for json_obj in input_gen:
-            if self.filter_func(json_obj):
-                yield json_obj
+        for obj in input_gen:
+            if self.filter_func(obj):
+                yield obj
 
 
 class DaMuELLinkProcessor(TokenizationStep):
@@ -109,12 +128,43 @@ class DaMuELLinkProcessor(TokenizationStep):
 
 
 class DaMuELDescriptionProcessor(TokenizationStep):
+    def __init__(self, use_context: bool = False):
+        self.use_context = use_context
+
     def process(
         self, input_gen: Generator[dict, None, None]
-    ) -> Generator[str, None, None]:
-        for json_obj in input_gen:
-            # Implement DaMuEL description processing logic here
-            yield f"DaMuEL descriptions processed: {json_obj}"
+    ) -> Generator[tuple, None, None]:
+        if self.use_context:
+            yield from self._process_with_context(input_gen)
+        else:
+            yield from self._process_without_context(input_gen)
+
+    def _process_with_context(
+        self, input_gen: Generator[dict, None, None]
+    ) -> Generator[tuple, None, None]:
+        # Implementation for context mode
+        ...
+
+    def _process_without_context(
+        self, input_gen: Generator[dict, None, None]
+    ) -> Generator[tuple, None, None]:
+        for damuel_entry in input_gen:
+            title = self._extract_title(damuel_entry)
+            if title is None:
+                continue
+
+            qid = self._parse_qid(damuel_entry["qid"])
+            yield title, qid
+
+    def _extract_title(self, damuel_entry: dict) -> str:
+        if "wiki" in damuel_entry:
+            return damuel_entry["wiki"]["title"]
+        elif "label" in damuel_entry:
+            return damuel_entry["label"]
+        return None
+
+    def _parse_qid(self, qid: str) -> int:
+        return int(qid[1:])
 
 
 class MewsliLoader(LoaderStep):
@@ -124,8 +174,12 @@ class MewsliLoader(LoaderStep):
         self.data_df = pd.read_csv(mewsli_tsv_path, sep="\t")
 
     def process(self) -> Generator[tuple, None, None]:
-        for row in self.data_df.itertuples():
-            qid = int(row.qid[1:])
+        for row in tqdm(
+            self.data_df.itertuples(),
+            total=len(self.data_df),
+            desc=f"Processing {self.path}",
+        ):
+            qid = self._parse_qid(row.qid)
             if self.use_context:
                 with open(Path(self.path).parent / "text" / row.docid, "r") as f:
                     text = f.read()
@@ -139,14 +193,24 @@ class MewsliLoader(LoaderStep):
         mention_end = row.position + row.length
         return slice(mention_start, mention_end)
 
+    def _parse_qid(self, qid: str) -> int:
+        return int(qid[1:])
+
 
 class ContextTokenizer(TokenizationStep):
+    def __init__(self, tokenizer, expected_size):
+        self.tokenizer_wrapper = TokenizerWrapper(tokenizer, expected_size)
+        self.expected_size = expected_size
+
     def process(
-        self, input_gen: Generator[str, None, None]
-    ) -> Generator[str, None, None]:
-        for text in input_gen:
-            # Implement context tokenization logic here
-            yield f"Context tokenized: {text}"
+        self, input_gen: Generator[tuple, None, None]
+    ) -> Generator[tuple, None, None]:
+        for mention_slice, text, qid in input_gen:
+            tokens_cutter = TokensCutter(
+                text, self.tokenizer_wrapper, self.expected_size
+            )
+            tokens = tokens_cutter.cut_mention_with_context(mention_slice)
+            yield tokens, qid
 
 
 class MentionOnlyTokenizer(TokenizationStep):
@@ -171,7 +235,7 @@ class NPZSaver(TokenizationStep):
     ) -> Generator[None, None, None]:
         tokens_list = []
         qids_list = []
-        for tokens, qids in tqdm(input_gen):
+        for tokens, qids in input_gen:
             tokens_list.append(tokens)
             qids_list.append(qids)
 
@@ -193,9 +257,43 @@ class MewsliMentionPipeline(TokenizationPipeline):
         tokenizer,
         expected_size: int,
         output_filename: str,
-        compress: bool = False,
+        compress: bool = True,
     ):
         super().__init__()
         self.add(MewsliLoader(mewsli_tsv_path, use_context=False))
+        self.add(MentionOnlyTokenizer(tokenizer, expected_size))
+        self.add(NPZSaver(output_filename, compress))
+
+
+class MewsliMentionContextPipeline(TokenizationPipeline):
+    def __init__(
+        self,
+        mewsli_tsv_path: str,
+        tokenizer,
+        expected_size: int,
+        output_filename: str,
+        compress: bool = True,
+    ):
+        super().__init__()
+        self.add(MewsliLoader(mewsli_tsv_path, use_context=True))
+        self.add(ContextTokenizer(tokenizer, expected_size))
+        self.add(NPZSaver(output_filename, compress))
+
+
+class DamuelDescriptionMentionPipeline(TokenizationPipeline):
+    def __init__(
+        self,
+        damuel_path: str,
+        tokenizer,
+        expected_size: int,
+        output_filename: str,
+        compress: bool = True,
+        remainder: int = None,
+        mod: int = None,
+    ):
+        super().__init__()
+        self.add(DaMuELLoader(damuel_path, remainder, mod))
+        self.add(Filter(contains_wiki_key))
+        self.add(DaMuELDescriptionProcessor(use_context=False))
         self.add(MentionOnlyTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))

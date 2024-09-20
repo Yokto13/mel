@@ -47,6 +47,11 @@ from tokenization.generate_tokens import (
 
 from tokenization.tokenize_mewsli import tokens_for_all_mewsli
 from tokenization.tokenize_damuel import tokens_for_all_damuel
+from tokenization.runner import (
+    run_damuel_description_mention,
+    run_mewsli_mention,
+    run_mewsli_mention_context,
+)
 
 
 tokens_for_all_mewsli_at = partial(tokens_for_all_mewsli, ignore_context=True)
@@ -61,6 +66,7 @@ tokens_for_all_damuel_finetuning_pages = partial(
 )
 
 from utils.arg_names import get_args_names
+from utils.validate_tokens import validate_tokens
 
 print("Imports finished")
 
@@ -137,6 +143,14 @@ def choose_action(action):
             return run_kb_creator
         case "combine_embs_by_qid":
             return combine_embs_by_qid
+        case "run_mewsli_mention":
+            return run_mewsli_mention
+        case "run_mewsli_mention_context":
+            return run_mewsli_mention_context
+        case "validate_tokens":
+            return validate_tokens
+        case "run_damuel_description_mention":
+            return run_damuel_description_mention
         case _:
             raise ValueError(f"Unknown action: {action}")
 

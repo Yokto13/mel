@@ -1,7 +1,14 @@
 import multiprocessing
 from typing import List
 
-from tokenization.pipeline.pipeline import TokenizationPipeline
+from transformers import AutoTokenizer
+import os
+from tokenization.pipeline.pipeline import (
+    MewsliMentionContextPipeline,
+    TokenizationPipeline,
+    DamuelDescriptionMentionPipeline,
+    MewsliMentionPipeline,
+)
 
 
 def run_pipeline(pipeline: TokenizationPipeline) -> None:
@@ -18,31 +25,91 @@ def run_pipelines(
         pool.map(run_pipeline, pipelines)
 
 
-if __name__ == "__main__":
-    # Example usage
-    from transformers import AutoTokenizer
-    from tokenization.pipeline.pipeline import MewsliMentionPipeline
+def run_mewsli_mention() -> None:
 
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained(
+        "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
+    )
     expected_size = 64
+
+    output_base_dir = "/lnet/work/home-students-external/farhan/troja/outputs/pipelines/mewsli_mention"
+    languages = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]
+
+    for lang in languages:
+        os.makedirs(os.path.join(output_base_dir, lang), exist_ok=True)
 
     pipelines = [
         MewsliMentionPipeline(
-            mewsli_tsv_path="path/to/mewsli1.tsv",
+            mewsli_tsv_path=f"/lnet/work/home-students-external/farhan/mewsli/mewsli-9/output/dataset/{lang}/mentions.tsv",
             tokenizer=tokenizer,
             expected_size=expected_size,
-            output_filename="output1.npz",
+            output_filename=f"{output_base_dir}/{lang}/tokens_qids.npz",
             compress=True,
-        ),
-        MewsliMentionPipeline(
-            mewsli_tsv_path="path/to/mewsli2.tsv",
-            tokenizer=tokenizer,
-            expected_size=expected_size,
-            output_filename="output2.npz",
-            compress=True,
-        ),
-        # Add more pipelines as needed
+        )
+        for lang in languages
     ]
 
-    num_processes = 4  # Specify the number of processes to use
+    num_processes = 9
     run_pipelines(pipelines, num_processes)
+
+
+def run_mewsli_mention_context() -> None:
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
+    )
+    expected_size = 64
+
+    output_base_dir = "/lnet/work/home-students-external/farhan/troja/outputs/pipelines/mewsli_finetuning"
+    languages = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]
+
+    for lang in languages:
+        os.makedirs(os.path.join(output_base_dir, lang), exist_ok=True)
+
+    pipelines = [
+        MewsliMentionContextPipeline(
+            mewsli_tsv_path=f"/lnet/work/home-students-external/farhan/mewsli/mewsli-9/output/dataset/{lang}/mentions.tsv",
+            tokenizer=tokenizer,
+            expected_size=expected_size,
+            output_filename=f"{output_base_dir}/{lang}/tokens_qids.npz",
+            compress=True,
+        )
+        for lang in languages
+    ]
+
+    num_processes = 9
+    run_pipelines(pipelines, num_processes)
+
+
+def run_damuel_description_mention() -> None:
+    tokenizer = AutoTokenizer.from_pretrained(
+        "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
+    )
+    expected_size = 64
+
+    output_base_dir = "/lnet/work/home-students-external/farhan/troja/outputs/pipelines/damuel_description_mention"
+    languages = ["es"]
+
+    for lang in languages:
+        os.makedirs(os.path.join(output_base_dir, lang), exist_ok=True)
+
+    pipelines = [
+        DamuelDescriptionMentionPipeline(
+            damuel_path=f"/lnet/work/home-students-external/farhan/damuel/1.0-xz/damuel_1.0_{lang}",
+            tokenizer=tokenizer,
+            expected_size=expected_size,
+            output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",
+            compress=True,
+            remainder=i,
+            mod=10,
+        )
+        for lang in languages
+        for i in range(10)
+    ]
+
+    num_processes = 9
+    run_pipelines(pipelines, num_processes)
+
+
+if __name__ == "__main__":
+    run_mewsli_mention()
