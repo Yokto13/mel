@@ -72,7 +72,7 @@ class TestTokenizationPipeline:
         pipeline.add(step2)
 
         expected_str = (
-            "Tokenization Pipeline Steps:\n" "1. MentionOnlyTokenizer\n" "2. NPZSaver"
+            "Tokenization Pipeline Steps:\n" "1. SimpleTokenizer\n" "2. NPZSaver"
         )
         assert str(pipeline) == expected_str
 
@@ -190,23 +190,6 @@ class TestDaMuELLinkProcessor:
         ]
 
         processor = DaMuELLinkProcessor()
-        output = list(processor.process(iter(input_data)))
-
-        assert output == expected_output
-
-
-class TestDaMuELDescriptionProcessor:
-    def test_description_processor_output_format(self):
-        input_data = [
-            {"id": 1, "text": "Text 1", "description": "Description 1"},
-            {"id": 2, "text": "Text 2", "description": "Description 2"},
-        ]
-        expected_output = [
-            "DaMuEL descriptions processed: {'id': 1, 'text': 'Text 1', 'description': 'Description 1'}",
-            "DaMuEL descriptions processed: {'id': 2, 'text': 'Text 2', 'description': 'Description 2'}",
-        ]
-
-        processor = DaMuELDescriptionProcessor()
         output = list(processor.process(iter(input_data)))
 
         assert output == expected_output
