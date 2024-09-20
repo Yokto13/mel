@@ -10,7 +10,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
-from data_processors.tokens.tokens_cutter import TokensCutter
+from data_processors.tokens.tokens_cutter import TokensCutter, TokensCutterV2
 
 
 def contains_wiki_key(entry: dict) -> bool:
@@ -132,16 +132,77 @@ class Filter(TokenizationStep):
 
 
 class DaMuELLinkProcessor(TokenizationStep):
+    def __init__(
+        self,
+        tokenizer,
+        expected_size,
+        mention_token,
+        require_wiki_origin,
+        use_context: bool = False,
+        label_token: str = None,
+    ):
+        super().__init__()
+        self.tokenizer = tokenizer
+        self.expected_size = expected_size
+        self.mention_token = mention_token
+        self.require_wiki_origin = require_wiki_origin
+        self.use_context = use_context
+        self.label_token = label_token
+        if use_context and label_token is None:
+            raise ValueError("Label token must be provided for context mode")
+
     def process(
         self, input_gen: Generator[dict, None, None]
     ) -> Generator[str, None, None]:
-        for json_obj in input_gen:
-            # Implement DaMuEL link processing logic here
-            yield f"DaMuEL links processed: {json_obj}"
+        if self.use_context:
+            yield from self._process_with_context(input_gen)
+        else:
+            yield from self._process_without_context(input_gen)
+
+    def _process_with_context(
+        self, input_gen: Generator[dict, None, None]
+    ) -> Generator[str, None, None]:
+        for damuel_entry in input_gen:
+            wiki = damuel_entry["wiki"]  # requires filter prior to this
+            tokens_cutter = TokensCutterV2(
+                wiki["text"], self.tokenizer, self.expected_size, self.mention_token
+            )
+            damuel_tokens = wiki["tokens"]
+            for link_idx, link in enumerate(wiki["links"]):
+                if self._should_skip_link(link):
+                    continue
+                qid = self._parse_qid(link["qid"])
+                start = link["start"]
+                end = link["end"] - 1
+                try:
+                    mention_slice_chars = slice(
+                        damuel_tokens[start]["start"], damuel_tokens[end]["end"]
+                    )
+                except IndexError:
+                    print("Index Error, skipping")
+                    continue
+                cutted_tokens = tokens_cutter.cut(link_idx)
+                yield cutted_tokens, qid
+
+    def _parse_qid(self, qid: str) -> int:
+        return int(qid[1:])
+
+    def _should_skip_link(self, link: dict) -> bool:
+        if "qid" not in link:
+            return True
+        if self.only_wiki and link["origin"] != "wiki":
+            return True
+        return False
+
+    def _process_without_context(
+        self, input_gen: Generator[dict, None, None]
+    ) -> Generator[str, None, None]:
+        raise NotImplementedError("Not implemented yet")
 
 
 class DaMuELDescriptionProcessor(TokenizationStep):
     def __init__(self, use_context: bool = False, label_token: str = None):
+        super().__init__()
         self.use_context = use_context
         self.label_token = label_token
         if use_context and label_token is None:
