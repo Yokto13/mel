@@ -183,7 +183,6 @@ class TokensCutterV2:
             mention_token, add_special_tokens=False
         )[0]
         self.tokens = self.tokenizer.encode(text, return_tensors="np")[0]
-        print(self.tokens)
 
         self.start_token = self.tokenizer.encode(text, add_special_tokens=True)[0]
         self.end_token = self.tokenizer.encode(text, add_special_tokens=True)[-1]
@@ -191,9 +190,8 @@ class TokensCutterV2:
         self.mention_idx_to_slice = self._get_mention_idx_to_slice(
             self.tokens, self.mention_token_id
         )
-        print(self.mention_idx_to_slice)
 
-    def cut(self, mention_idx):
+    def cut(self, mention_idx: int):
         return_mask = self._get_return_mask(mention_idx)
 
         res_tokens = np.empty(self.expected_size, dtype=np.int32)
@@ -217,7 +215,6 @@ class TokensCutterV2:
             return_mask[mention_slice.stop - 1] = (
                 True  # this adds the right mention token to the return mask
             )
-            # print(return_mask)
             return return_mask
 
         return_mask[mention_slice] = True
