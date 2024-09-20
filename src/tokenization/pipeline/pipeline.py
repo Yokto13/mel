@@ -136,7 +136,6 @@ class DaMuELLinkProcessor(PipelineStep):
         self,
         tokenizer,
         expected_size,
-        mention_token,
         require_wiki_origin,
         use_context: bool = False,
         label_token: str = None,
@@ -144,7 +143,6 @@ class DaMuELLinkProcessor(PipelineStep):
         super().__init__()
         self.tokenizer = tokenizer
         self.expected_size = expected_size
-        self.mention_token = mention_token
         self.require_wiki_origin = require_wiki_origin
         self.use_context = use_context
         self.label_token = label_token
@@ -164,14 +162,11 @@ class DaMuELLinkProcessor(PipelineStep):
     ) -> Generator[str, None, None]:
         for damuel_entry in input_gen:
             wiki = damuel_entry["wiki"]  # requires filter prior to this
-            tokens_cutter = TokensCutterV2(
-                wiki["text"], self.tokenizer, self.expected_size, self.mention_token
-            )
             damuel_tokens = wiki["tokens"]
-            for link_idx, link in enumerate(wiki["links"]):
-                if self._should_skip_link(link):
-                    continue
-                qid = self._parse_qid(link["qid"])
+            links = [link for link in wiki["links"] if not self._should_skip_link(link)]
+            mention_slices = []
+            choosen_links = []
+            for link_idx, link in enumerate(links):
                 start = link["start"]
                 end = link["end"] - 1
                 try:
@@ -181,8 +176,37 @@ class DaMuELLinkProcessor(PipelineStep):
                 except IndexError:
                     print("Index Error, skipping")
                     continue
+                mention_slices.append(mention_slice_chars)
+                choosen_links.append(link)
+
+            text_with_tokens_around_mentions = self._add_tokens_around_mentions(
+                wiki["text"], mention_slices, self.label_token
+            )
+
+            tokens_cutter = TokensCutterV2(
+                text_with_tokens_around_mentions,
+                self.tokenizer,
+                self.expected_size,
+                self.label_token,
+            )
+            for link_idx, link in enumerate(choosen_links):
+                qid = self._parse_qid(link["qid"])
                 cutted_tokens = tokens_cutter.cut(link_idx)
                 yield cutted_tokens, qid
+
+    def _add_tokens_around_mentions(
+        self, text: str, mention_slices: list[slice], label_token: str
+    ) -> str:
+        text_chunks = []
+        prev_mention_end = 0
+        for mention_slice in mention_slices:
+            text_chunks.append(text[prev_mention_end : mention_slice.start])
+            text_chunks.append(self.label_token)
+            text_chunks.append(text[mention_slice])
+            text_chunks.append(self.label_token)
+            prev_mention_end = mention_slice.stop
+        text_chunks.append(text[prev_mention_end:])
+        return "".join(text_chunks)
 
     def _parse_qid(self, qid: str) -> int:
         return int(qid[1:])
@@ -190,7 +214,7 @@ class DaMuELLinkProcessor(PipelineStep):
     def _should_skip_link(self, link: dict) -> bool:
         if "qid" not in link:
             return True
-        if self.only_wiki and link["origin"] != "wiki":
+        if self.require_wiki_origin and link["origin"] != "wiki":
             return True
         return False
 
@@ -419,4 +443,32 @@ class DamuelDescriptionContextPipeline(TokenizationPipeline):
         self.add(Filter(contains_wiki_key))
         self.add(DaMuELDescriptionProcessor(use_context=True, label_token=label_token))
         self.add(SimpleTokenizer(tokenizer, expected_size))
+        self.add(NPZSaver(output_filename, compress))
+
+
+class DamuelLinkContextPipeline(TokenizationPipeline):
+    def __init__(
+        self,
+        damuel_path: str,
+        tokenizer,
+        expected_size: int,
+        output_filename: str,
+        label_token: str,
+        compress: bool = True,
+        remainder: int = None,
+        mod: int = None,
+        require_wiki_origin: bool = True,
+    ):
+        super().__init__()
+        self.add(DaMuELLoader(damuel_path, remainder, mod))
+        self.add(Filter(contains_wiki_key))
+        self.add(
+            DaMuELLinkProcessor(
+                tokenizer,
+                expected_size,
+                require_wiki_origin,
+                use_context=True,
+                label_token=label_token,
+            )
+        )
         self.add(NPZSaver(output_filename, compress))
