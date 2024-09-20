@@ -2,7 +2,8 @@ from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
 import pytest
 from transformers import BertTokenizerFast
 
-from data_processors.tokens.tokens_cutter import TokensCutter
+from data_processors.tokens.tokens_cutter import TokensCutter, TokensCutterV2
+from data_processors.tokens.tokens_cutter import iterate_by_two, iterate_indices
 
 
 @pytest.fixture
@@ -124,3 +125,73 @@ class TestTokensCutter:
             setup_tokens_cutter_lorem_ipsum.text[text_len - 30 : text_len]
             in returned_text
         )
+
+
+class TestTokensCutterV2:
+    @pytest.fixture
+    def setup_tokens_cutter_v2(self):
+        tokenizer = BertTokenizerFast.from_pretrained("setu4993/LEALLA-small")
+        tokenizer.add_tokens(["[M]"])
+        text = (
+            "Prague is the capital and largest [M]city[M] of the [M] Czech Republic [M] and the historical capital of [M] Bohemia [M]."
+            "[M] Uber large mention which spans more than 10 tokens because we need to test also what happens when mention is larger than expected size [M]"
+            "Situated on the [M] Vltava [M] river..."
+        )
+        expected_size = 10
+        return TokensCutterV2(text, tokenizer, expected_size, "[M]")
+
+    @pytest.mark.parametrize("mention_index", [0, 1, 2, 3, 4])
+    def test_cut_mention_v2(self, setup_tokens_cutter_v2, mention_index):
+        mention_token_id = setup_tokens_cutter_v2.tokenizer.encode(
+            "[M]", add_special_tokens=False
+        )[0]
+        mention = setup_tokens_cutter_v2.cut(mention_index)
+        # assert that mention contains mention_token_id twice
+        assert (mention == mention_token_id).sum() == 2
+        # assert that mention_token_id is not at the start and end of the mention
+        assert mention[0] != mention_token_id
+        assert mention[-1] != mention_token_id
+
+        assert len(mention) == setup_tokens_cutter_v2.expected_size
+
+    @pytest.mark.parametrize("mention_index", [0, 1, 2, 3, 4])
+    def test_cut_mention_v2_special_tokens(self, setup_tokens_cutter_v2, mention_index):
+        blabla_tokens = setup_tokens_cutter_v2.tokenizer.encode("blabla")
+        # CLS and SEP tokens are added at the beginning and end of the text in our tokenizers
+        # We must make sure that cuts do not include these tokens out
+        start_token = blabla_tokens[0]
+        end_token = blabla_tokens[-1]
+
+        mention = setup_tokens_cutter_v2.cut(mention_index)
+        assert mention[0] == start_token
+        assert mention[-1] == end_token
+
+
+@pytest.mark.parametrize(
+    "iterable,expected",
+    [
+        ([], []),
+        ([1], []),
+        ([1, 2], [(1, 2)]),
+        ([1, 2, 3, 4], [(1, 2), (3, 4)]),
+    ],
+)
+def test_iterate_by_two(iterable, expected):
+    assert list(iterate_by_two(iterable)) == expected
+
+
+@pytest.mark.parametrize(
+    "l_start,r_start,max_length,expected",
+    [
+        (0, 0, 0, []),
+        (0, 0, 1, [(0, 0)]),
+        (1, 1, 3, [(1, 1), (0, 2)]),
+        (2, 2, 4, [(2, 2), (1, 3), (0, None)]),
+        (3, 3, 5, [(3, 3), (2, 4), (1, None), (0, None)]),
+        (4, 4, 6, [(4, 4), (3, 5), (2, None), (1, None), (0, None)]),
+        (0, 1, 2, [(0, 1)]),
+        (0, 1, 4, [(0, 1), (None, 2), (None, 3)]),
+    ],
+)
+def test_iterate_indices(l_start, r_start, max_length, expected):
+    assert list(iterate_indices(l_start, r_start, max_length)) == expected
