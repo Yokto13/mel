@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from unittest.mock import patch, mock_open
 from tokenization.pipeline.pipeline import (
-    TokenizationStep,
+    PipelineStep,
     TokenizationPipeline,
     DaMuELLoader,
     Filter,
@@ -52,9 +52,9 @@ class TestTokenizationPipeline:
 
     def test_run_pipeline(self, mocker):
         pipeline = TokenizationPipeline()
-        step1 = mocker.Mock(spec=TokenizationStep)
+        step1 = mocker.Mock(spec=PipelineStep)
         step1.process.return_value = ["step1_output1", "step1_output2"]
-        step2 = mocker.Mock(spec=TokenizationStep)
+        step2 = mocker.Mock(spec=PipelineStep)
         step2.process.return_value = ["step2_output1", "step2_output2"]
         pipeline.add(step1)
         pipeline.add(step2)

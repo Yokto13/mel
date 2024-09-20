@@ -18,7 +18,7 @@ def contains_wiki_key(entry: dict) -> bool:
     return "wiki" in entry
 
 
-class TokenizationStep(ABC):
+class PipelineStep(ABC):
     @abstractmethod
     def process(
         self, input_gen: Generator[str, None, None] = None
@@ -28,9 +28,9 @@ class TokenizationStep(ABC):
 
 class TokenizationPipeline:
     def __init__(self):
-        self.steps: list[TokenizationStep] = []
+        self.steps: list[PipelineStep] = []
 
-    def add(self, step: TokenizationStep) -> None:
+    def add(self, step: PipelineStep) -> None:
         self.steps.append(step)
 
     def run(self) -> None:
@@ -59,7 +59,7 @@ class TokenizationPipeline:
         )
 
 
-class LoaderStep(TokenizationStep, ABC):
+class LoaderStep(PipelineStep, ABC):
     def __init__(self, path: str):
         self.path = path
 
@@ -119,7 +119,7 @@ class DaMuELLoader(LoaderStep):
         return file_number % self.mod == self.remainder
 
 
-class Filter(TokenizationStep):
+class Filter(PipelineStep):
     def __init__(self, filter_func: Callable[[dict], bool]):
         self.filter_func = filter_func
 
@@ -131,7 +131,7 @@ class Filter(TokenizationStep):
                 yield obj
 
 
-class DaMuELLinkProcessor(TokenizationStep):
+class DaMuELLinkProcessor(PipelineStep):
     def __init__(
         self,
         tokenizer,
@@ -200,7 +200,7 @@ class DaMuELLinkProcessor(TokenizationStep):
         raise NotImplementedError("Not implemented yet")
 
 
-class DaMuELDescriptionProcessor(TokenizationStep):
+class DaMuELDescriptionProcessor(PipelineStep):
     def __init__(self, use_context: bool = False, label_token: str = None):
         super().__init__()
         self.use_context = use_context
@@ -300,7 +300,7 @@ class MewsliLoader(LoaderStep):
         return int(qid[1:])
 
 
-class ContextTokenizer(TokenizationStep):
+class ContextTokenizer(PipelineStep):
     def __init__(self, tokenizer, expected_size):
         self.tokenizer_wrapper = TokenizerWrapper(tokenizer, expected_size)
         self.expected_size = expected_size
@@ -316,7 +316,7 @@ class ContextTokenizer(TokenizationStep):
             yield tokens, qid
 
 
-class SimpleTokenizer(TokenizationStep):
+class SimpleTokenizer(PipelineStep):
     def __init__(self, tokenizer, expected_size):
         self.tokenizer_wrapper = TokenizerWrapper(tokenizer, expected_size)
 
@@ -328,7 +328,7 @@ class SimpleTokenizer(TokenizationStep):
             yield tokens, qid
 
 
-class NPZSaver(TokenizationStep):
+class NPZSaver(PipelineStep):
     def __init__(self, filename: str, compress: bool = False):
         self.filename = filename
         self.compress = compress
