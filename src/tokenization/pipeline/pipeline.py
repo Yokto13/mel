@@ -1,5 +1,5 @@
 import os
-import json
+import orjson
 import lzma
 import numpy as np
 import pandas as pd
@@ -82,12 +82,27 @@ class DaMuELLoader(LoaderStep):
             for filename in os.listdir(self.path)
             if filename.startswith("part-")
         ]
-        for filename in tqdm(file_list, desc="Processing DaMuEL files"):
-            if self._should_process_file(filename):
-                file_path = os.path.join(self.path, filename)
-                with self._open_file(file_path) as file:
-                    for line in file:
-                        yield json.loads(line)
+
+        if self.mod is not None:
+            file_list = [
+                filename
+                for filename in file_list
+                if self._should_process_file(filename)
+            ]
+
+        tqdm_position = self.remainder if self.remainder is not None else 0
+        tqdm_desc = f"Processing DaMuEL files {self.path[-6:]}"
+        if self.mod is not None:
+            tqdm_desc += f" Remainder: {self.remainder}, Mod: {self.mod}"
+        for filename in tqdm(
+            file_list,
+            desc=tqdm_desc,
+            position=tqdm_position,
+        ):
+            file_path = os.path.join(self.path, filename)
+            with self._open_file(file_path) as file:
+                for line in file:
+                    yield orjson.loads(line)
 
     def _open_file(self, file_path: str):
         if file_path.endswith(".xz"):
