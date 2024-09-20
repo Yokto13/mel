@@ -83,13 +83,13 @@ class TestDaMuELLoader:
         data_dir = tmp_path / "damuel_data"
         data_dir.mkdir()
 
-        file1 = data_dir / "part-00000.json"
+        file1 = data_dir / "part-00000"
         file1.write_text('{"id": 1, "text": "Hello"}\n{"id": 2, "text": "World"}')
 
-        file2 = data_dir / "part-00001.json"
+        file2 = data_dir / "part-00001"
         file2.write_text('{"id": 3, "text": "Foo"}\n{"id": 4, "text": "Bar"}')
 
-        compressed_file = data_dir / "part-00002.json.xz"
+        compressed_file = data_dir / "part-00002.xz"
         with lzma.open(compressed_file, "wt") as f:
             f.write('{"id": 5, "text": "Compressed"}\n{"id": 6, "text": "Data"}')
 
@@ -178,6 +178,40 @@ class TestFilter:
                 np.testing.assert_equal(a, b)
 
 
+class TestDaMuELLinkProcessor:
+    def test_link_processor_output_format(self):
+        input_data = [
+            {"id": 1, "text": "Text 1", "links": ["link1", "link2"]},
+            {"id": 2, "text": "Text 2", "links": ["link3"]},
+        ]
+        expected_output = [
+            "DaMuEL links processed: {'id': 1, 'text': 'Text 1', 'links': ['link1', 'link2']}",
+            "DaMuEL links processed: {'id': 2, 'text': 'Text 2', 'links': ['link3']}",
+        ]
+
+        processor = DaMuELLinkProcessor()
+        output = list(processor.process(iter(input_data)))
+
+        assert output == expected_output
+
+
+class TestDaMuELDescriptionProcessor:
+    def test_description_processor_output_format(self):
+        input_data = [
+            {"id": 1, "text": "Text 1", "description": "Description 1"},
+            {"id": 2, "text": "Text 2", "description": "Description 2"},
+        ]
+        expected_output = [
+            "DaMuEL descriptions processed: {'id': 1, 'text': 'Text 1', 'description': 'Description 1'}",
+            "DaMuEL descriptions processed: {'id': 2, 'text': 'Text 2', 'description': 'Description 2'}",
+        ]
+
+        processor = DaMuELDescriptionProcessor()
+        output = list(processor.process(iter(input_data)))
+
+        assert output == expected_output
+
+
 class TestMewsliLoader:
     def test_mewsli_loader_line_count(self, mewsli_data):
         mentions_file, mentions_data = mewsli_data
@@ -202,6 +236,39 @@ class TestMewsliLoader:
         loader = MewsliLoader(mentions_file)
         assert loader._parse_qid("Q123") == 123
         assert loader._parse_qid("Q456789") == 456789
+
+
+class TestContextTokenizer:
+    def test_context_tokenizer_output_format(self, mocker):
+        tokenizer_mock = mocker.Mock()
+        tokenizer_mock.tokenize.side_effect = lambda x: np.array([1, 2, 3])
+
+        tokenizer_wrapper_mock = mocker.patch(
+            "tokenization.pipeline.pipeline.TokenizerWrapper"
+        )
+        tokenizer_wrapper_mock.return_value = tokenizer_mock
+
+        tokens_cutter_mock = mocker.patch("tokenization.pipeline.pipeline.TokensCutter")
+        tokens_cutter_mock.return_value.cut_mention_with_context.return_value = (
+            np.array([1, 2, 3])
+        )
+
+        mention_slices = [slice(0, 5), slice(10, 15)]
+        texts = ["Text 1", "Text 2"]
+        qids = [1, 2]
+        input_gen = zip(mention_slices, texts, qids)
+
+        tokenizer = ContextTokenizer(tokenizer_mock, expected_size=64)
+        output = list(tokenizer.process(input_gen))
+
+        assert len(output) == len(mention_slices)
+        print(output)
+        for (tokens, qid), expected_qid in zip(output, qids):
+            print(tokens)
+            print(qid)
+            print(expected_qid)
+            assert isinstance(tokens, np.ndarray)
+            assert qid == expected_qid
 
 
 class TestMentionOnlyTokenizer:
@@ -273,31 +340,3 @@ class TestNPZSaver:
         list(saver.process(input_gen))
 
         assert os.path.exists(expected_filename)
-
-
-class TestDaMuELDescriptionProcessor:
-    def test_description_processor_no_context(self):
-        input_data = [
-            {"qid": "Q1", "label": "Title 1"},
-            {"qid": "Q2", "wiki": {"title": "Title 2"}},
-            {"qid": "Q3", "other": "Other data"},
-        ]
-        expected_output = [("Title 1", 1), ("Title 2", 2)]
-
-        processor = DaMuELDescriptionProcessor(use_context=False)
-        output = list(processor.process(iter(input_data)))
-
-        assert output == expected_output
-
-    def test_parse_qid(self):
-        processor = DaMuELDescriptionProcessor()
-        assert processor._parse_qid("Q123") == 123
-        assert processor._parse_qid("Q456789") == 456789
-
-    def test_extract_title(self):
-        processor = DaMuELDescriptionProcessor()
-        assert processor._extract_title({"label": "Title"}) == "Title"
-        assert (
-            processor._extract_title({"wiki": {"title": "Wiki Title"}}) == "Wiki Title"
-        )
-        assert processor._extract_title({"other": "Other data"}) is None

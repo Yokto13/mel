@@ -60,12 +60,8 @@ class TokenizationPipeline:
 
 
 class LoaderStep(TokenizationStep, ABC):
-    def __init__(self, path: str, remainder: int = None, mod: int = None):
-        super().__init__(path)
-        if not os.path.isdir(self.path):
-            raise ValueError(f"Provided path {self.path} is not a directory")
-        self.remainder = remainder
-        self.mod = mod
+    def __init__(self, path: str):
+        self.path = path
 
     @abstractmethod
     def process(self) -> Generator[str, None, None]:
@@ -74,9 +70,11 @@ class LoaderStep(TokenizationStep, ABC):
 
 class DaMuELLoader(LoaderStep):
     def __init__(self, path: str, remainder: int = None, mod: int = None):
-        super().__init__(path, remainder, mod)
+        super().__init__(path)
         if not os.path.isdir(self.path):
             raise ValueError(f"Provided path {self.path} is not a directory")
+        self.remainder = remainder
+        self.mod = mod
 
     def process(self) -> Generator[str, None, None]:
         file_list = [
