@@ -141,8 +141,11 @@ class DaMuELLinkProcessor(TokenizationStep):
 
 
 class DaMuELDescriptionProcessor(TokenizationStep):
-    def __init__(self, use_context: bool = False):
+    def __init__(self, use_context: bool = False, label_token: str = None):
         self.use_context = use_context
+        self.label_token = label_token
+        if use_context and label_token is None:
+            raise ValueError("Label token must be provided for context mode")
 
     def process(
         self, input_gen: Generator[dict, None, None]
@@ -155,8 +158,19 @@ class DaMuELDescriptionProcessor(TokenizationStep):
     def _process_with_context(
         self, input_gen: Generator[dict, None, None]
     ) -> Generator[tuple, None, None]:
-        # Implementation for context mode
-        ...
+        for damuel_entry in input_gen:
+            title = self._extract_title(damuel_entry)
+            if title is None:
+                continue
+            title = self._wrap_title(title, self.label_token)
+
+            description = self._extract_description(damuel_entry)
+            if description is None:
+                description = ""
+            text = self._construct_text_from_title_and_description(title, description)
+
+            qid = self._parse_qid(damuel_entry["qid"])
+            yield text, qid
 
     def _process_without_context(
         self, input_gen: Generator[dict, None, None]
@@ -175,6 +189,21 @@ class DaMuELDescriptionProcessor(TokenizationStep):
         elif "label" in damuel_entry:
             return damuel_entry["label"]
         return None
+
+    def _extract_description(self, damuel_entry: dict) -> str:
+        if "wiki" in damuel_entry:
+            return damuel_entry["wiki"]["text"]
+        elif "description" in damuel_entry:
+            return damuel_entry["description"]
+        return None
+
+    def _wrap_title(self, title: str, label_token: str) -> str:
+        return f"{label_token}{title}{label_token}"
+
+    def _construct_text_from_title_and_description(
+        self, title: str, description: str
+    ) -> str:
+        return f"{title}\n{description}"
 
     def _parse_qid(self, qid: str) -> int:
         return int(qid[1:])
@@ -226,7 +255,7 @@ class ContextTokenizer(TokenizationStep):
             yield tokens, qid
 
 
-class MentionOnlyTokenizer(TokenizationStep):
+class SimpleTokenizer(TokenizationStep):
     def __init__(self, tokenizer, expected_size):
         self.tokenizer_wrapper = TokenizerWrapper(tokenizer, expected_size)
 
@@ -274,7 +303,7 @@ class MewsliMentionPipeline(TokenizationPipeline):
     ):
         super().__init__()
         self.add(MewsliLoader(mewsli_tsv_path, use_context=False))
-        self.add(MentionOnlyTokenizer(tokenizer, expected_size))
+        self.add(SimpleTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))
 
 
@@ -308,5 +337,25 @@ class DamuelDescriptionMentionPipeline(TokenizationPipeline):
         self.add(DaMuELLoader(damuel_path, remainder, mod))
         self.add(Filter(contains_wiki_key))
         self.add(DaMuELDescriptionProcessor(use_context=False))
-        self.add(MentionOnlyTokenizer(tokenizer, expected_size))
+        self.add(SimpleTokenizer(tokenizer, expected_size))
+        self.add(NPZSaver(output_filename, compress))
+
+
+class DamuelDescriptionContextPipeline(TokenizationPipeline):
+    def __init__(
+        self,
+        damuel_path: str,
+        tokenizer,
+        expected_size: int,
+        output_filename: str,
+        label_token: str,
+        compress: bool = True,
+        remainder: int = None,
+        mod: int = None,
+    ):
+        super().__init__()
+        self.add(DaMuELLoader(damuel_path, remainder, mod))
+        self.add(Filter(contains_wiki_key))
+        self.add(DaMuELDescriptionProcessor(use_context=True, label_token=label_token))
+        self.add(SimpleTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))

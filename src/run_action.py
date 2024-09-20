@@ -48,9 +48,10 @@ from tokenization.generate_tokens import (
 from tokenization.tokenize_mewsli import tokens_for_all_mewsli
 from tokenization.tokenize_damuel import tokens_for_all_damuel
 from tokenization.runner import (
+    run_damuel_description_context,
     run_damuel_description_mention,
     run_mewsli_mention,
-    run_mewsli_mention_context,
+    run_mewsli_context,
 )
 
 
@@ -145,12 +146,14 @@ def choose_action(action):
             return combine_embs_by_qid
         case "run_mewsli_mention":
             return run_mewsli_mention
-        case "run_mewsli_mention_context":
-            return run_mewsli_mention_context
+        case "run_mewsli_context":
+            return run_mewsli_context
         case "validate_tokens":
             return validate_tokens
         case "run_damuel_description_mention":
             return run_damuel_description_mention
+        case "run_damuel_description_context":
+            return run_damuel_description_context
         case _:
             raise ValueError(f"Unknown action: {action}")
 

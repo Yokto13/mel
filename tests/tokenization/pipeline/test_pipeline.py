@@ -12,7 +12,7 @@ from tokenization.pipeline.pipeline import (
     DaMuELDescriptionProcessor,
     MewsliLoader,
     ContextTokenizer,
-    MentionOnlyTokenizer,
+    SimpleTokenizer,
     NPZSaver,
     contains_wiki_key,
 )
@@ -42,7 +42,7 @@ def mewsli_data(tmp_path):
 class TestTokenizationPipeline:
     def test_add_step(self):
         pipeline = TokenizationPipeline()
-        step1 = MentionOnlyTokenizer(None, 64)
+        step1 = SimpleTokenizer(None, 64)
         step2 = NPZSaver("test.npz")
         pipeline.add(step1)
         pipeline.add(step2)
@@ -66,7 +66,7 @@ class TestTokenizationPipeline:
 
     def test_pipeline_str_representation(self):
         pipeline = TokenizationPipeline()
-        step1 = MentionOnlyTokenizer(None, 64)
+        step1 = SimpleTokenizer(None, 64)
         step2 = NPZSaver("test.npz")
         pipeline.add(step1)
         pipeline.add(step2)
@@ -285,7 +285,7 @@ class TestMentionOnlyTokenizer:
         qids = [1, 2, 3]
         input_gen = zip(mentions, qids)
 
-        tokenizer = MentionOnlyTokenizer(tokenizer_mock, expected_size=64)
+        tokenizer = SimpleTokenizer(tokenizer_mock, expected_size=64)
         output = list(tokenizer.process(input_gen))
 
         assert len(output) == len(mentions)
