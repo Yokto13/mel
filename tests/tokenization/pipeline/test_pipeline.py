@@ -8,7 +8,7 @@ from tokenization.pipeline.pipeline import (
     TokenizationPipeline,
     DaMuELLoader,
     Filter,
-    DaMuELLinkProcessor,
+    DaMuELLinkAndTokenization,
     DaMuELDescriptionProcessor,
     MewsliLoader,
     ContextTokenizer,
@@ -189,7 +189,7 @@ class TestDaMuELLinkProcessor:
             "DaMuEL links processed: {'id': 2, 'text': 'Text 2', 'links': ['link3']}",
         ]
 
-        processor = DaMuELLinkProcessor()
+        processor = DaMuELLinkAndTokenization()
         output = list(processor.process(iter(input_data)))
 
         assert output == expected_output
