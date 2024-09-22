@@ -3,24 +3,22 @@ from typing import List
 
 from transformers import AutoTokenizer
 import os
-from tokenization.pipeline.pipeline import (
+from tokenization.pipeline.pipelines import (
     DamuelDescriptionContextPipeline,
     DamuelLinkContextPipeline,
     DamuelLinkContextPipelineOld,
     MewsliMentionContextPipeline,
-    TokenizationPipeline,
+    Pipeline,
     DamuelDescriptionMentionPipeline,
     MewsliMentionPipeline,
 )
 
 
-def run_pipeline(pipeline: TokenizationPipeline) -> None:
+def run_pipeline(pipeline: Pipeline) -> None:
     pipeline.run()
 
 
-def run_pipelines(
-    pipelines: List[TokenizationPipeline], num_processes: int = None
-) -> None:
+def run_pipelines(pipelines: List[Pipeline], num_processes: int = None) -> None:
     if num_processes is None:
         num_processes = multiprocessing.cpu_count()
 

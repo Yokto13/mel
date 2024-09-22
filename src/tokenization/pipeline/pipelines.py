@@ -1,11 +1,11 @@
-from .base import TokenizationPipeline
+from .base import Pipeline
 
 from loaders import MewsliLoader, DaMuELDescriptionLoader, DaMuELLinkLoader
 from tokenizers import CuttingTokenizer, SimpleTokenizer
 from savers import NPZSaver
 
 
-class MewsliMentionPipeline(TokenizationPipeline):
+class MewsliMentionPipeline(Pipeline):
     def __init__(
         self,
         mewsli_tsv_path: str,
@@ -20,7 +20,7 @@ class MewsliMentionPipeline(TokenizationPipeline):
         self.add(NPZSaver(output_filename, compress))
 
 
-class MewsliMentionContextPipeline(TokenizationPipeline):
+class MewsliMentionContextPipeline(Pipeline):
     def __init__(
         self,
         mewsli_tsv_path: str,
@@ -35,7 +35,7 @@ class MewsliMentionContextPipeline(TokenizationPipeline):
         self.add(NPZSaver(output_filename, compress))
 
 
-class DamuelDescriptionMentionPipeline(TokenizationPipeline):
+class DamuelDescriptionMentionPipeline(Pipeline):
     def __init__(
         self,
         damuel_path: str,
@@ -61,7 +61,7 @@ class DamuelDescriptionMentionPipeline(TokenizationPipeline):
         self.add(NPZSaver(output_filename, compress))
 
 
-class DamuelDescriptionContextPipeline(TokenizationPipeline):
+class DamuelDescriptionContextPipeline(Pipeline):
     def __init__(
         self,
         damuel_path: str,
@@ -88,7 +88,7 @@ class DamuelDescriptionContextPipeline(TokenizationPipeline):
         self.add(NPZSaver(output_filename, compress))
 
 
-class DamuelLinkContextPipeline(TokenizationPipeline):
+class DamuelLinkContextPipeline(Pipeline):
     def __init__(
         self,
         damuel_path: str,

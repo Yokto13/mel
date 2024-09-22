@@ -10,7 +10,7 @@ class PipelineStep(ABC):
         pass
 
 
-class TokenizationPipeline(PipelineStep):
+class Pipeline(PipelineStep):
     def __init__(self):
         self.steps: list[PipelineStep] = []
 

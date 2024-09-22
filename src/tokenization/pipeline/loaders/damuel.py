@@ -5,7 +5,7 @@ from collections.abc import Generator
 import orjson
 from tqdm.auto import tqdm
 
-from ..base import PipelineStep, TokenizationPipeline
+from ..base import PipelineStep, Pipeline
 from .base import LoaderStep
 from ..filters import WikiKeyFilter
 from .qid_parsing import parse_qid
@@ -192,7 +192,7 @@ class DaMuELDescriptionProcessor(PipelineStep):
         return f"{title}\n{description}"
 
 
-class DaMuELDescriptionLoader(TokenizationPipeline):
+class DaMuELDescriptionLoader(Pipeline):
     def __init__(
         self,
         path: str,
@@ -209,7 +209,7 @@ class DaMuELDescriptionLoader(TokenizationPipeline):
         self.add(DaMuELDescriptionProcessor(use_context, label_token))
 
 
-class DaMuELLinkLoader(TokenizationPipeline):
+class DaMuELLinkLoader(Pipeline):
     def __init__(
         self,
         path: str,
