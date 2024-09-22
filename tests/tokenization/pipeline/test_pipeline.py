@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from unittest.mock import patch, mock_open
-from tokenization.pipeline.pipeline import (
+from tokenization.pipeline.pipelines import (
     PipelineStep,
     TokenizationPipeline,
     DaMuELLoader,
@@ -170,7 +170,7 @@ class TestFilter:
     )
     def test_filter(self, filter_func, input_data, expected_output):
         filter_step = Filter(filter_func)
-        output = list(filter_step.process(iter(input_data)))
+        output = list(filter_step.run(iter(input_data)))
         assert len(output) == len(expected_output)
         for output_item, expected_item in zip(output, expected_output):
             assert len(output_item) == len(expected_item)
@@ -190,7 +190,7 @@ class TestDaMuELLinkProcessor:
         ]
 
         processor = DaMuELLinkAndTokenization()
-        output = list(processor.process(iter(input_data)))
+        output = list(processor.run(iter(input_data)))
 
         assert output == expected_output
 
@@ -242,7 +242,7 @@ class TestContextTokenizer:
         input_gen = zip(mention_slices, texts, qids)
 
         tokenizer = ContextTokenizer(tokenizer_mock, expected_size=64)
-        output = list(tokenizer.process(input_gen))
+        output = list(tokenizer.run(input_gen))
 
         assert len(output) == len(mention_slices)
         print(output)
@@ -269,7 +269,7 @@ class TestMentionOnlyTokenizer:
         input_gen = zip(mentions, qids)
 
         tokenizer = SimpleTokenizer(tokenizer_mock, expected_size=64)
-        output = list(tokenizer.process(input_gen))
+        output = list(tokenizer.run(input_gen))
 
         assert len(output) == len(mentions)
         for (tokens, qid), expected_qid in zip(output, qids):
@@ -290,7 +290,7 @@ class TestNPZSaver:
         input_gen = zip(tokens, qids)
 
         saver = NPZSaver(filename)
-        list(saver.process(input_gen))
+        list(saver.run(input_gen))
 
         assert os.path.exists(filename)
         loaded_data = np.load(filename)
@@ -305,7 +305,7 @@ class TestNPZSaver:
         input_gen = zip(tokens, qids)
 
         saver = NPZSaver(filename, compress=True)
-        list(saver.process(input_gen))
+        list(saver.run(input_gen))
 
         assert os.path.exists(filename)
         loaded_data = np.load(filename)
@@ -320,6 +320,6 @@ class TestNPZSaver:
         input_gen = zip(tokens, qids)
 
         saver = NPZSaver(expected_filename)
-        list(saver.process(input_gen))
+        list(saver.run(input_gen))
 
         assert os.path.exists(expected_filename)
