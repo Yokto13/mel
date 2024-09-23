@@ -19,7 +19,7 @@ class DaMuELStartLoader(LoaderStep):
         self.remainder = remainder
         self.mod = mod
 
-    def run(self) -> Generator[str, None, None]:
+    def process(self) -> Generator[str, None, None]:
         file_list = [
             filename
             for filename in os.listdir(self.path)

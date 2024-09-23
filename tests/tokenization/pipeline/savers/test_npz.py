@@ -19,7 +19,7 @@ class TestNPZSaver:
         input_gen = zip(tokens, qids)
 
         saver = NPZSaver(filename)
-        list(saver.run(input_gen))
+        list(saver.process(input_gen))
 
         assert os.path.exists(filename)
         loaded_data = np.load(filename)
@@ -34,7 +34,7 @@ class TestNPZSaver:
         input_gen = zip(tokens, qids)
 
         saver = NPZSaver(filename, compress=True)
-        list(saver.run(input_gen))
+        list(saver.process(input_gen))
 
         assert os.path.exists(filename)
         loaded_data = np.load(filename)
@@ -49,6 +49,6 @@ class TestNPZSaver:
         input_gen = zip(tokens, qids)
 
         saver = NPZSaver(expected_filename)
-        list(saver.run(input_gen))
+        list(saver.process(input_gen))
 
         assert os.path.exists(expected_filename)

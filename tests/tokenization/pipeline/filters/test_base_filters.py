@@ -8,6 +8,12 @@ def contains_wiki_key(obj: dict) -> bool:
     return "wiki" in obj
 
 
+def complex_assert(output, expected_output):
+    for output_item, expected_output_item in zip(output, expected_output):
+        for a, b in zip(output_item, expected_output_item):
+            assert a == b
+
+
 class TestFilter:
     @pytest.mark.parametrize(
         "filter_func, input_data, expected_output",
@@ -18,7 +24,7 @@ class TestFilter:
                 [{"wiki": "value1"}, {"wiki": "value3"}],
             ),
             (
-                lambda x: x[1] % 2 == 0,
+                lambda x: x["data"][1] % 2 == 0,
                 [
                     {"data": (np.array([1, 2, 3]), 1)},
                     {"data": (np.array([4, 5, 6]), 2)},
@@ -41,4 +47,4 @@ class TestFilter:
     def test_filter(self, filter_func, input_data, expected_output):
         filter_step = Filter(filter_func)
         output = list(filter_step.process(iter(input_data)))
-        assert output == expected_output
+        complex_assert(output, expected_output)

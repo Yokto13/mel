@@ -9,7 +9,7 @@ class TestSimpleTokenizer:
         tokenizer_mock.tokenize.side_effect = lambda x: np.array([1, 2, 3])
 
         tokenizer_wrapper_mock = mocker.patch(
-            "tokenization.pipeline.tokenizers.simple.TokenizerWrapper"
+            "tokenization.pipeline.tokenizers.base.TokenizerWrapper"
         )
         tokenizer_wrapper_mock.return_value = tokenizer_mock
 
@@ -18,7 +18,7 @@ class TestSimpleTokenizer:
         input_gen = zip(mentions, qids)
 
         tokenizer = SimpleTokenizer(tokenizer_mock, expected_size=64)
-        output = list(tokenizer.run(input_gen))
+        output = list(tokenizer.process(input_gen))
 
         assert len(output) == len(mentions)
         for (tokens, qid), expected_qid in zip(output, qids):

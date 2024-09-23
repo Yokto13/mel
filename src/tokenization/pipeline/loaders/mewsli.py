@@ -13,7 +13,7 @@ class MewsliLoader(LoaderStep):
         self.use_context = use_context
         self.data_df = pd.read_csv(mewsli_tsv_path, sep="\t")
 
-    def run(self) -> Generator[tuple, None, None]:
+    def process(self) -> Generator[tuple, None, None]:
         for row in tqdm(
             self.data_df.itertuples(),
             total=len(self.data_df),

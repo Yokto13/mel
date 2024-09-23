@@ -22,8 +22,7 @@ class Pipeline(PipelineStep):
     ) -> Generator[str, None, None]:
         if input_gen is None:
             input_gen = self.steps[0].process()
-        steps_to_process = self.steps[1:] if input_gen is None else self.steps
-        for step in steps_to_process:
+        for step in self.steps[1:]:
             input_gen = step.process(input_gen)
         yield from input_gen
 
