@@ -6,7 +6,6 @@ import os
 from tokenization.pipeline.pipelines import (
     DamuelDescriptionContextPipeline,
     DamuelLinkContextPipeline,
-    DamuelLinkContextPipelineOld,
     MewsliMentionContextPipeline,
     Pipeline,
     DamuelDescriptionMentionPipeline,
@@ -156,7 +155,7 @@ def run_damuel_link_context() -> None:
         os.makedirs(os.path.join(output_base_dir, lang), exist_ok=True)
 
     pipelines = [
-        DamuelLinkContextPipelineOld(
+        DamuelLinkContextPipeline(
             damuel_path=f"/lnet/work/home-students-external/farhan/damuel/1.0-xz/damuel_1.0_{lang}",
             tokenizer=tokenizer,
             expected_size=expected_size,
