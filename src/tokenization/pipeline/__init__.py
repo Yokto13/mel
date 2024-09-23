@@ -4,7 +4,6 @@ from .pipelines import (
     DamuelDescriptionMentionPipeline,
     DamuelDescriptionContextPipeline,
     DamuelLinkContextPipeline,
-    DamuelLinkContextPipelineOld,
 )
 
 __all__ = [
@@ -13,5 +12,4 @@ __all__ = [
     "DamuelDescriptionMentionPipeline",
     "DamuelDescriptionContextPipeline",
     "DamuelLinkContextPipeline",
-    "DamuelLinkContextPipelineOld",
 ]

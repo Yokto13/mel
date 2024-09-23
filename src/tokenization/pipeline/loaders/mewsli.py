@@ -3,7 +3,7 @@ from pathlib import Path
 from collections.abc import Generator
 from tqdm.auto import tqdm
 
-from ..base import LoaderStep
+from .base import LoaderStep
 from .qid_parsing import parse_qid
 
 

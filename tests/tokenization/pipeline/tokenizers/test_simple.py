@@ -9,7 +9,7 @@ class TestSimpleTokenizer:
         tokenizer_mock.tokenize.side_effect = lambda x: np.array([1, 2, 3])
 
         tokenizer_wrapper_mock = mocker.patch(
-            "tokenization.pipeline.pipeline.TokenizerWrapper"
+            "tokenization.pipeline.tokenizers.simple.TokenizerWrapper"
         )
         tokenizer_wrapper_mock.return_value = tokenizer_mock
 

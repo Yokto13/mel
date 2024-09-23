@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 
-from ..pipelines import PipelineStep
+from ..base import PipelineStep
 
 
 class LoaderStep(PipelineStep, ABC):

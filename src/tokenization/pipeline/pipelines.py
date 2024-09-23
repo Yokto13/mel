@@ -1,8 +1,8 @@
 from .base import Pipeline
 
-from loaders import MewsliLoader, DaMuELDescriptionLoader, DaMuELLinkLoader
-from tokenizers import CuttingTokenizer, SimpleTokenizer
-from savers import NPZSaver
+from .loaders import MewsliLoader, DaMuELDescriptionLoader, DaMuELLinkLoader
+from .tokenizers import CuttingTokenizer, SimpleTokenizer
+from .savers import NPZSaver
 
 
 class MewsliMentionPipeline(Pipeline):

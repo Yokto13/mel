@@ -1,11 +1,11 @@
 from unittest.mock import patch, mock_open
-from tokenization.pipeline.pipelines import (
+
+from tokenization.pipeline.base import (
     PipelineStep,
     Pipeline,
-    SimpleTokenizer,
-    NPZSaver,
 )
-import lzma  # Added import for lzma
+from tokenization.pipeline.tokenizers import SimpleTokenizer
+from tokenization.pipeline.savers import NPZSaver
 
 
 class TestTokenizationPipeline:
