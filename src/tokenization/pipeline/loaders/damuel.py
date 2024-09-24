@@ -72,7 +72,7 @@ class DaMuELLinkProcessor(PipelineStep):
         self.use_context = use_context
         self.require_wiki_origin = require_wiki_origin
 
-    def run(
+    def process(
         self, input_gen: Generator[dict, None, None]
     ) -> Generator[tuple, None, None]:
         for damuel_entry in input_gen:
@@ -133,7 +133,7 @@ class DaMuELDescriptionProcessor(PipelineStep):
         if use_context and label_token is None:
             raise ValueError("Label token must be provided for context mode")
 
-    def run(
+    def process(
         self, input_gen: Generator[dict, None, None]
     ) -> Generator[tuple, None, None]:
         if self.use_context:
