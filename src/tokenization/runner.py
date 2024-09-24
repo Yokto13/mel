@@ -69,6 +69,7 @@ def run_mewsli_context() -> None:
         MewsliMentionContextPipeline(
             mewsli_tsv_path=f"/lnet/work/home-students-external/farhan/mewsli/mewsli-9/output/dataset/{lang}/mentions.tsv",
             tokenizer=tokenizer,
+            label_token="[M]",
             expected_size=expected_size,
             output_filename=f"{output_base_dir}/{lang}/tokens_qids.npz",
             compress=True,

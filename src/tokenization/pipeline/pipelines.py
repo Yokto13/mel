@@ -25,13 +25,14 @@ class MewsliMentionContextPipeline(Pipeline):
         self,
         mewsli_tsv_path: str,
         tokenizer,
+        label_token: str,
         expected_size: int,
         output_filename: str,
         compress: bool = True,
     ):
         super().__init__()
         self.add(MewsliLoader(mewsli_tsv_path, use_context=True))
-        self.add(CuttingTokenizer(tokenizer, expected_size))
+        self.add(CuttingTokenizer(tokenizer, expected_size, label_token))
         self.add(NPZSaver(output_filename, compress))
 
 
