@@ -1,46 +1,79 @@
-from unittest.mock import patch, mock_open
+import os
+import tempfile
+from typing import List
+import numpy as np
+import pytest
+from transformers import AutoTokenizer
 
-from tokenization.pipeline.base import (
-    PipelineStep,
-    Pipeline,
+from tokenization.pipeline.pipelines import MewsliMentionPipeline
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+@pytest.mark.parametrize(
+    "expected_size, compress",
+    [
+        (64, False),
+        (16, True),
+    ],
 )
-from tokenization.pipeline.tokenizers import SimpleTokenizer
-from tokenization.pipeline.savers import NPZSaver
+def test_run_mewsli_mention(expected_size: int, compress: bool) -> None:
+    # Use the actual Mewsli file
+    mewsli_tsv_path = os.path.join(THIS_DIR, "data", "mentions.tsv")
 
+    # Ensure the file exists
+    assert os.path.exists(
+        mewsli_tsv_path
+    ), f"Mewsli file not found at {mewsli_tsv_path}"
 
-class TestTokenizationPipeline:
-    def test_add_step(self):
-        pipeline = Pipeline()
-        step1 = SimpleTokenizer(None, 64)
-        step2 = NPZSaver("test.npz")
-        pipeline.add(step1)
-        pipeline.add(step2)
-        assert len(pipeline.steps) == 2
-        assert pipeline.steps[0] == step1
-        assert pipeline.steps[1] == step2
+    # Use the same tokenizer as in runner.py
+    tokenizer = AutoTokenizer.from_pretrained("setu4993/LEALLA-base")
 
-    def test_run_pipeline(self, mocker):
-        pipeline = Pipeline()
-        step1 = mocker.Mock(spec=PipelineStep)
-        step1.process.return_value = ["step1_output1", "step1_output2"]
-        step2 = mocker.Mock(spec=PipelineStep)
-        step2.process.return_value = ["step2_output1", "step2_output2"]
-        pipeline.add(step1)
-        pipeline.add(step2)
-
+    # Create a temporary directory for the output
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Run the pipeline with the real data
+        pipeline = MewsliMentionPipeline(
+            mewsli_tsv_path=mewsli_tsv_path,
+            tokenizer=tokenizer,
+            expected_size=expected_size,
+            output_filename=os.path.join(temp_dir, "tokens_qids.npz"),
+            compress=compress,
+        )
         pipeline.run()
 
-        step1.process.assert_called_once_with()
-        step2.process.assert_called_once_with(["step1_output1", "step1_output2"])
+        # Check if the output file was created
+        output_file = os.path.join(temp_dir, "tokens_qids.npz")
+        assert os.path.exists(output_file)
 
-    def test_pipeline_str_representation(self):
-        pipeline = Pipeline()
-        step1 = SimpleTokenizer(None, 64)
-        step2 = NPZSaver("test.npz")
-        pipeline.add(step1)
-        pipeline.add(step2)
+        # Load the output data and check its contents
+        data = np.load(output_file, allow_pickle=True)
+        assert "tokens" in data
+        assert "qids" in data
 
-        expected_str = (
-            "Tokenization Pipeline Steps:\n" "1. SimpleTokenizer\n" "2. NPZSaver"
-        )
-        assert str(pipeline) == expected_str
+        tokens = data["tokens"]
+        qids = data["qids"]
+
+        # Check the shape and data type of tokens
+        assert (
+            tokens.ndim == 2
+        ), f"Expected tokens to be 2-dimensional, but got {tokens.ndim} dimensions"
+        assert (
+            tokens.shape[1] == expected_size
+        ), f"Expected tokens to have shape (n, {expected_size}), but got {tokens.shape}"
+        assert np.issubdtype(
+            tokens.dtype, np.integer
+        ), f"Expected tokens to be integer type, but got {tokens.dtype}"
+
+        # Check the shape and data type of qids
+        assert (
+            qids.ndim == 1
+        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert (
+            qids.shape[0] == tokens.shape[0]
+        ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"
+        assert np.issubdtype(
+            qids.dtype, np.integer
+        ), f"Expected qids to be integer type, but got {qids.dtype}"
+
+        # You may want to add more specific checks based on the content of your Mewsli file
+        # For example, checking for specific QID values or token patterns you expect to see
