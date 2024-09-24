@@ -20,7 +20,7 @@ class MewsliMentionPipeline(Pipeline):
         self.add(NPZSaver(output_filename, compress))
 
 
-class MewsliMentionContextPipeline(Pipeline):
+class MewsliContextPipeline(Pipeline):
     def __init__(
         self,
         mewsli_tsv_path: str,

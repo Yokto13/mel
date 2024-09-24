@@ -6,7 +6,7 @@ import os
 from tokenization.pipeline.pipelines import (
     DamuelDescriptionContextPipeline,
     DamuelLinkContextPipeline,
-    MewsliMentionContextPipeline,
+    MewsliContextPipeline,
     Pipeline,
     DamuelDescriptionMentionPipeline,
     MewsliMentionPipeline,
@@ -66,7 +66,7 @@ def run_mewsli_context() -> None:
         os.makedirs(os.path.join(output_base_dir, lang), exist_ok=True)
 
     pipelines = [
-        MewsliMentionContextPipeline(
+        MewsliContextPipeline(
             mewsli_tsv_path=f"/lnet/work/home-students-external/farhan/mewsli/mewsli-9/output/dataset/{lang}/mentions.tsv",
             tokenizer=tokenizer,
             label_token="[M]",

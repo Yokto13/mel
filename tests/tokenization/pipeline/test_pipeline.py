@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 from tokenization.pipeline.pipelines import (
     MewsliMentionPipeline,
-    MewsliMentionContextPipeline,
+    MewsliContextPipeline,
 )
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -105,7 +105,7 @@ def test_run_mewsli_mention_context(expected_size: int, compress: bool) -> None:
     # Create a temporary directory for the output
     with tempfile.TemporaryDirectory() as temp_dir:
         # Run the pipeline with the real data
-        pipeline = MewsliMentionContextPipeline(
+        pipeline = MewsliContextPipeline(
             mewsli_tsv_path=mewsli_tsv_path,
             tokenizer=tokenizer,
             label_token=label_token,
