@@ -79,43 +79,25 @@ class DaMuELLinkProcessor(PipelineStep):
             if "wiki" not in damuel_entry:
                 continue
             wiki = damuel_entry["wiki"]
-            links = [link for link in wiki["links"] if not self._should_skip_link(link)]
-            if self.use_context:
-                yield from self._process_with_context(wiki, links)
-            else:
-                yield from self._process_without_context(wiki, links)
+            links = (link for link in wiki["links"] if not self._should_skip_link(link))
+            for link in links:
+                yield from self._process_link(wiki, link)
 
-    def _process_with_context(
-        self, wiki: dict, links: list[dict]
-    ) -> Generator[tuple, None, None]:
-        for link in links:
-            qid = parse_qid(link["qid"])
-            start = link["start"]
-            end = link["end"] - 1
-            try:
-                mention_slice_chars = slice(
-                    wiki["tokens"][start]["start"], wiki["tokens"][end]["end"]
-                )
-            except IndexError:
-                print("Index Error, skipping")
-                continue
+    def _process_link(self, wiki: dict, link: dict) -> Generator[tuple, None, None]:
+        qid = parse_qid(link["qid"])
+        start = link["start"]
+        end = link["end"] - 1
+        try:
+            mention_slice_chars = slice(
+                wiki["tokens"][start]["start"], wiki["tokens"][end]["end"]
+            )
+        except IndexError:
+            print("Index Error, skipping")
+            return
+        if self.use_context:
             yield mention_slice_chars, wiki["text"], qid
-
-    def _process_without_context(
-        self, wiki: dict, links: list[dict]
-    ) -> Generator[tuple, None, None]:
-        for link in links:
-            qid = parse_qid(link["qid"])
-            start = link["start"]
-            end = link["end"] - 1
-            try:
-                mention_slice_chars = slice(
-                    wiki["tokens"][start]["start"], wiki["tokens"][end]["end"]
-                )
-            except IndexError:
-                print("Index Error, skipping")
-                continue
-            yield link["text"][mention_slice_chars], qid
+        else:
+            yield wiki["text"][mention_slice_chars], qid
 
     def _should_skip_link(self, link: dict) -> bool:
         if "qid" not in link:

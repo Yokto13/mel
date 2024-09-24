@@ -7,8 +7,8 @@
 *.csv 
 *.pth
 *.json
-*.xz
 throttle.*
+*.npz
 apicache
 
 wandb/

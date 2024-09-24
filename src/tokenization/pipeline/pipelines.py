@@ -85,7 +85,7 @@ class DamuelDescriptionContextPipeline(Pipeline):
                 label_token=label_token,
             )
         )
-        self.add(CuttingTokenizer(tokenizer, expected_size))
+        self.add(SimpleTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))
 
 
@@ -113,4 +113,30 @@ class DamuelLinkContextPipeline(Pipeline):
             )
         )
         self.add(CuttingTokenizer(tokenizer, expected_size, label_token))
+        self.add(NPZSaver(output_filename, compress))
+
+
+class DamuelLinkMentionPipeline(Pipeline):
+    def __init__(
+        self,
+        damuel_path: str,
+        tokenizer,
+        expected_size: int,
+        output_filename: str,
+        compress: bool = True,
+        remainder: int = None,
+        mod: int = None,
+        require_link_wiki_origin: bool = True,
+    ):
+        super().__init__()
+        self.add(
+            DaMuELLinkLoader(
+                path=damuel_path,
+                remainder=remainder,
+                mod=mod,
+                use_context=False,
+                require_link_wiki_origin=require_link_wiki_origin,
+            )
+        )
+        self.add(SimpleTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))
