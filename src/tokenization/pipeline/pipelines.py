@@ -99,7 +99,7 @@ class DamuelLinkContextPipeline(Pipeline):
         compress: bool = True,
         remainder: int = None,
         mod: int = None,
-        require_wiki_origin: bool = True,
+        require_link_wiki_origin: bool = True,
     ):
         super().__init__()
         self.add(
@@ -108,7 +108,7 @@ class DamuelLinkContextPipeline(Pipeline):
                 remainder=remainder,
                 mod=mod,
                 use_context=True,
-                require_wiki_origin=require_wiki_origin,
+                require_link_wiki_origin=require_link_wiki_origin,
             )
         )
         self.add(CuttingTokenizer(tokenizer, expected_size, label_token))
