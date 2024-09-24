@@ -17,10 +17,9 @@ def run_pipeline(pipeline: Pipeline) -> None:
     pipeline.run()
 
 
-def run_pipelines(pipelines: List[Pipeline], num_processes: int = None) -> None:
-    if num_processes is None:
-        num_processes = multiprocessing.cpu_count()
-
+def run_pipelines(
+    pipelines: List[Pipeline], num_processes: int = multiprocessing.cpu_count()
+) -> None:
     with multiprocessing.Pool(processes=num_processes) as pool:
         pool.map(run_pipeline, pipelines)
 
