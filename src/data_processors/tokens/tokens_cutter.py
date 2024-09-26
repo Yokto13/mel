@@ -1,8 +1,10 @@
+import logging
 from functools import partial
-from itertools import zip_longest
 
 import numba as nb
 import numpy as np
+
+_logger = logging.getLogger(__name__)
 
 
 def fast_token_mention_span(all_tokens, label_token_id):
@@ -26,11 +28,15 @@ def fast_token_mention_span(all_tokens, label_token_id):
 
 
 class TokensCutter:
-    def __init__(self, text, tokenizer_wrapper, expected_size, label_token):
+    def __init__(
+        self, text, tokenizer_wrapper, expected_size, label_token, padding_token_id=0
+    ):
         self.text = text
         # self.tokenizer = tokenizer
         self.tokenizer_wrapper = tokenizer_wrapper
         self.expected_size = expected_size
+
+        self.padding_token_id = padding_token_id
 
         # Sometimes sidestepping the wrapper is necessery unless we want to rewrite old code.
         self.be_of_all = self.tokenizer_wrapper.tokenizer(
@@ -39,6 +45,8 @@ class TokensCutter:
             add_special_tokens=False,
             return_offsets_mapping=True,
         )
+        if self._contains_padding(self.be_of_all["input_ids"][0]):
+            self._warn_about_padding()
         self.all_tokens = self.be_of_all["input_ids"][0]
         self.offset_mapping = self.be_of_all["offset_mapping"][0]
         self.label_token_id = self.tokenizer_wrapper.tokenizer.encode(
@@ -49,11 +57,22 @@ class TokensCutter:
         entity_name_slice_in_tokens = fast_token_mention_span(
             self.all_tokens, self.label_token_id
         )
+        if self._is_entity_name_too_large(entity_name_slice_in_tokens):
+            entity_name_slice_in_tokens = slice(
+                entity_name_slice_in_tokens.start,
+                min(
+                    entity_name_slice_in_tokens.stop,
+                    entity_name_slice_in_tokens.start + self.size_no_special_tokens,
+                ),
+            )
         return self._cut(entity_name_slice_in_tokens)
 
     @property
     def size_no_special_tokens(self):
         return self.expected_size - 2
+
+    def _contains_padding(self, tokens):
+        return np.sum(tokens == self.padding_token_id) > 0
 
     def _is_entity_name_too_large(
         self, entity_name_slice_in_tokens, max_entity_name_tokens
@@ -121,4 +140,9 @@ class TokensCutter:
         return self.tokenizer_wrapper.tokenize(
             self.text[char_start.start :],
             max_length=self.expected_size,
+        )
+
+    def _warn_about_padding(self):
+        _logger.warning(
+            "Padding tokens are present in the input text. This means that input text is shorter than expected."
         )
