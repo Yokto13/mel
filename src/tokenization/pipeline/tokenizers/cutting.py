@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from data_processors.tokens.tokens_cutter import TokensCutterV3
+from data_processors.tokens.tokens_cutter import TokensCutter
 
 from .base import TokenizerStep
 
@@ -21,10 +21,10 @@ class CuttingTokenizer(TokenizerStep):
             text, mention_slice_chars = self._add_token_around_mention(
                 text, mention_slice_chars, self.label_token
             )
-            tokens_cutter = TokensCutterV3(
+            tokens_cutter = TokensCutter(
                 text, self.tokenizer_wrapper, self.expected_size, self.label_token
             )
-            yield tokens_cutter.cut_mention_with_context(mention_slice_chars), qid
+            yield tokens_cutter.cut_mention_with_context(), qid
 
     def _apply_char_window(self, text, mention_slice_chars):
         """Cuts char_window chars around mention from the text and recalculates the slice.
@@ -35,6 +35,10 @@ class CuttingTokenizer(TokenizerStep):
         """
         start = max(0, mention_slice_chars.start - self.char_window // 2)
         end = min(len(text), mention_slice_chars.stop + self.char_window // 2)
+        if start == 0:
+            end = min(end + self.char_window // 2, len(text))
+        elif end == len(text):
+            start = max(start - self.char_window // 2, 0)
         new_text = text[start:end]
         new_slice_chars = slice(
             mention_slice_chars.start - start, mention_slice_chars.stop - start

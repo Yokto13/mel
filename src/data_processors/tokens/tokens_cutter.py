@@ -45,7 +45,7 @@ class TokensCutter:
             add_special_tokens=False,
             return_offsets_mapping=True,
         )
-        if self._contains_padding(self.be_of_all["input_ids"][0]):
+        if len(self.be_of_all["input_ids"]) < self.size_without_special_tokens:
             self._warn_about_padding()
         self.all_tokens = self.be_of_all["input_ids"][0]
         self.offset_mapping = self.be_of_all["offset_mapping"][0]
@@ -57,22 +57,34 @@ class TokensCutter:
         entity_name_slice_in_tokens = fast_token_mention_span(
             self.all_tokens, self.label_token_id
         )
-        if self._is_entity_name_too_large(entity_name_slice_in_tokens):
-            entity_name_slice_in_tokens = slice(
-                entity_name_slice_in_tokens.start,
-                min(
-                    entity_name_slice_in_tokens.stop,
-                    entity_name_slice_in_tokens.start + self.size_no_special_tokens,
-                ),
-            )
+        if self._is_entity_name_too_large(
+            entity_name_slice_in_tokens, self.size_without_special_tokens - 2
+        ):
+            return self._cut_only_mention(entity_name_slice_in_tokens)
         return self._cut(entity_name_slice_in_tokens)
 
-    @property
-    def size_no_special_tokens(self):
-        return self.expected_size - 2
+    def _cut_only_mention(self, entity_name_slice_in_tokens):
+        entity_name_slice_in_tokens = slice(
+            entity_name_slice_in_tokens.start,
+            min(
+                entity_name_slice_in_tokens.stop,
+                entity_name_slice_in_tokens.start
+                + self.size_without_special_tokens
+                - 2,
+            ),
+        )
+        print(self.offset_mapping[entity_name_slice_in_tokens.start])
+        text = self.text[
+            self.offset_mapping[entity_name_slice_in_tokens.start][
+                0
+            ] : self.offset_mapping[entity_name_slice_in_tokens.stop - 1][1]
+        ]
+        text += self.tokenizer_wrapper.tokenizer.decode([self.label_token_id])
+        return self.tokenizer_wrapper.tokenize(text, max_length=self.expected_size)
 
-    def _contains_padding(self, tokens):
-        return np.sum(tokens == self.padding_token_id) > 0
+    @property
+    def size_without_special_tokens(self):
+        return self.expected_size - 2
 
     def _is_entity_name_too_large(
         self, entity_name_slice_in_tokens, max_entity_name_tokens
@@ -87,7 +99,7 @@ class TokensCutter:
         return cut_f()
 
     def _count_remaining_for_context(self, entity_name_slice_in_tokens):
-        return self.size_no_special_tokens - (
+        return self.size_without_special_tokens - (
             entity_name_slice_in_tokens.stop - entity_name_slice_in_tokens.start
         )
 
@@ -126,7 +138,7 @@ class TokensCutter:
 
     def _more_on_right_cut(self):
         end_tok_candidate = min(
-            self.size_no_special_tokens - 1, len(self.all_tokens) - 1
+            self.size_without_special_tokens - 1, len(self.all_tokens) - 1
         )
         char_end = self.be_of_all.token_to_chars(end_tok_candidate)
         return self.tokenizer_wrapper.tokenize(
@@ -135,7 +147,9 @@ class TokensCutter:
         )
 
     def _more_on_left_cut(self):
-        start_tok_candidate = max(0, len(self.all_tokens) - self.size_no_special_tokens)
+        start_tok_candidate = max(
+            0, len(self.all_tokens) - self.size_without_special_tokens
+        )
         char_start = self.be_of_all.token_to_chars(start_tok_candidate)
         return self.tokenizer_wrapper.tokenize(
             self.text[char_start.start :],
@@ -143,6 +157,7 @@ class TokensCutter:
         )
 
     def _warn_about_padding(self):
+        print("warning...")
         _logger.warning(
             "Padding tokens are present in the input text. This means that input text is shorter than expected."
         )
