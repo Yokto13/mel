@@ -22,8 +22,6 @@ from utils.embeddings import (
     embs_from_tokens_model_name_and_state_dict,
 )
 
-from data_processors.tokens.duplicates_filter_script import run_duplicates_filter_script
-
 from finetunings.generate_epochs.generate import generate
 from finetunings.generate_epochs.embed_links_for_generation import (
     embed_links_for_generation,
@@ -36,39 +34,19 @@ from finetunings.file_processing.gathers import move_tokens, rename, remove_dupl
 from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
 from multilingual_dataset.combine_embs import combine_embs_by_qid
 
-from tokenization.generate_tokens import (
-    tokens_for_finetuning_mewsli,
-    tokens_for_finetuning_damuel_descriptions,
-    tokens_for_finetuning_damuel_links,
-    tokens_for_at_descriptions,
-    tokens_for_at_links,
-    tokens_for_at_mewsli,
-)
 
-from tokenization.tokenize_mewsli import tokens_for_all_mewsli
-from tokenization.tokenize_damuel import tokens_for_all_damuel
+from utils.arg_names import get_args_names
+from utils.validate_tokens import validate_tokens
+
 from tokenization.runner import (
     run_damuel_description_context,
     run_damuel_description_mention,
     run_damuel_link_context,
+    run_damuel_link_mention,
     run_mewsli_mention,
     run_mewsli_context,
+    run_damuel_mention,
 )
-
-
-tokens_for_all_mewsli_at = partial(tokens_for_all_mewsli, ignore_context=True)
-tokens_for_all_damuel_at = partial(tokens_for_all_damuel, ignore_context=True)
-tokens_for_all_damuel_at_pages = partial(
-    tokens_for_all_damuel, ignore_context=True, only_pages=True
-)
-tokens_for_all_mewsli_finetuning = partial(tokens_for_all_mewsli, ignore_context=False)
-tokens_for_all_damuel_finetuning = partial(tokens_for_all_damuel, ignore_context=False)
-tokens_for_all_damuel_finetuning_pages = partial(
-    tokens_for_all_damuel, ignore_context=False, only_pages=True
-)
-
-from utils.arg_names import get_args_names
-from utils.validate_tokens import validate_tokens
 
 print("Imports finished")
 
@@ -101,32 +79,6 @@ def choose_action(action):
             return rename
         case "remove_duplicates":
             return remove_duplicates
-        case "filter_duplicates_script":
-            return run_duplicates_filter_script
-        case "tokens_mewsli":
-            return tokens_for_finetuning_mewsli
-        case "tokens_descriptions":
-            return tokens_for_finetuning_damuel_descriptions
-        case "tokens_links":
-            return tokens_for_finetuning_damuel_links
-        case "tokens_descriptions_at":
-            return tokens_for_at_descriptions
-        case "tokens_links_at":
-            return tokens_for_at_links
-        case "tokens_mewsli_at":
-            return tokens_for_at_mewsli
-        case "tokens_for_all_mewsli_at":
-            return tokens_for_all_mewsli_at
-        case "tokens_for_all_damuel_at":
-            return tokens_for_all_damuel_at
-        case "tokens_for_all_damuel_at_pages":
-            return tokens_for_all_damuel_at_pages
-        case "tokens_for_all_mewsli_finetuning":
-            return tokens_for_all_mewsli_finetuning
-        case "tokens_for_all_damuel_finetuning":
-            return tokens_for_all_damuel_finetuning
-        case "tokens_for_all_damuel_finetuning_pages":
-            return tokens_for_all_damuel_finetuning_pages
         case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
         case "meludr_olpeat":
