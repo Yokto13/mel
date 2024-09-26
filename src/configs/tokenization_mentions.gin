@@ -1,0 +1,33 @@
+model_path="setu4993/LEALLA-base"
+expected_size=64
+output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/st_at_damuel/"
+output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/st_at_mewsli/"
+languages = [
+    "af", "be", "ca", "da", "el", "es", "eu", "fi", "ga", "gl", "hi", "hu", "id", 
+    "ja", "la", "lv", "mt", "nn", "pt", "ru", "sk", "sr", "ta", "tr", "uk", "vi", 
+    "zh", "ar", "bg", "cs", "de", "en", "et", "fa", "fr", "gd", "he", "hr", "hy", 
+    "it", "ko", "lt", "mr", "nl", "pl", "ro", "se", "sl", "sv", "te", "ug", "ur", 
+    "wo"
+]
+damuel_base_path="/lnet/work/home-students-external/farhan/damuel/1.0-xz"
+compress=True
+remainder_mod=128
+num_processes=90
+
+run_damuel_mention.model_path=%model_path
+run_damuel_mention.expected_size=%expected_size
+run_damuel_mention.output_base_dir=%output_base_dir
+run_damuel_mention.languages=%languages
+run_damuel_mention.damuel_base_path=%damuel_base_path
+run_damuel_mention.compress=%compress
+run_damuel_mention.remainder_mod=%remainder_mod
+run_damuel_mention.num_processes=%num_processes
+run_damuel_mention.require_link_wiki_origin=True
+
+run_mewsli_mention.model_path=%model_path
+run_mewsli_mention.expected_size=%expected_size
+run_mewsli_mention.output_base_dir=%output_base_dir_mewsli
+run_mewsli_mention.languages = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]
+run_mewsli_mention.mewsli_dataset_path="/lnet/work/home-students-external/farhan/mewsli/mewsli-9/output/dataset/"
+run_mewsli_mention.compress=%compress
+run_mewsli_mention.num_processes=%num_processes
