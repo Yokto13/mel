@@ -6,12 +6,12 @@ from .base import TokenizerStep
 
 class CuttingTokenizer(TokenizerStep):
     def __init__(
-        self, tokenizer, expected_size, label_token, expected_chars_per_token=5
+        self, tokenizer, expected_size, label_token, expected_chars_per_token=11
     ):
         super().__init__(tokenizer, expected_size)
         self.label_token = label_token
         self.expected_chars_per_token = expected_chars_per_token
-        self.char_window = expected_chars_per_token * expected_size * 2
+        self.char_window = expected_chars_per_token * expected_size
 
     def process(
         self, input_gen: Generator[tuple, None, None]

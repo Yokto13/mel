@@ -1,7 +1,7 @@
 import logging
 import pytest
 from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
-from data_processors.tokens.tokens_cutter import TokensCutterV3
+from data_processors.tokens.tokens_cutter import TokensCutterV3, fast_token_mention_span
 from transformers import BertTokenizerFast
 
 
@@ -115,3 +115,20 @@ class TestTokensCutterV3:
         assert len(result) == expected_size
         assert tokenizer.decode([tokenizer.vocab[label_token]]) == label_token
         assert result.count(tokenizer.vocab[label_token]) == 2
+
+
+class TestFastTokenMentionSpan:
+    @pytest.fixture(scope="class")
+    def label_token_id(self) -> int:
+        return 3
+
+    @pytest.mark.parametrize(
+        "all_tokens, expected_output",
+        [
+            ([0, 1, 2, 3, 4, 3, 5, 6], slice(3, 6)),  # Mention found
+            ([3, 3, 1, 2, 4, 5, 6], slice(0, 2)),  # Mention at the start
+            ([0, 1, 2, 4, 5, 3, 3], slice(5, 7)),  # Mention at the end
+        ],
+    )
+    def test_fast_token_mention_span(self, all_tokens, label_token_id, expected_output):
+        assert fast_token_mention_span(all_tokens, label_token_id) == expected_output
