@@ -14,7 +14,7 @@ class TestCuttingTokenizer:
         tokenizer_wrapper_mock.return_value = tokenizer_mock
 
         tokens_cutter_mock = mocker.patch(
-            "tokenization.pipeline.tokenizers.cutting.TokensCutterV3"
+            "tokenization.pipeline.tokenizers.cutting.TokensCutter"
         )
         tokens_cutter_mock.return_value.cut_mention_with_context.return_value = (
             np.array([1, 2, 3])
