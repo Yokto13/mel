@@ -42,7 +42,7 @@ class StatisticsLogger(LoggerStep):
     """
 
     def __init__(
-        self, item_accessor: Callable[[Any], Any] = _identity, most_common: int = 10
+        self, item_accessor: Callable[[Any], Any] = _identity, most_common: int = 3
     ) -> None:
         super().__init__()
         self.item_accessor = item_accessor
