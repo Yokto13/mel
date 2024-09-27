@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 
 
 def fast_token_mention_span(all_tokens, label_token_id):
-    # @nb.njit
+    @nb.njit
     def _fast_token_mention_span(all_tokens, label_token_id):
         mention_start_idx, mention_end_idx = None, None
         for i, token in enumerate(all_tokens):
@@ -47,7 +47,7 @@ class TokensCutter:
         )
         if len(self.be_of_all["input_ids"]) < self.size_without_special_tokens:
             self._warn_about_padding()
-        self.all_tokens = self.be_of_all["input_ids"][0]
+        self.all_tokens = np.array(self.be_of_all["input_ids"][0])
         self.offset_mapping = self.be_of_all["offset_mapping"][0]
         self.label_token_id = self.tokenizer_wrapper.tokenizer.encode(
             label_token, add_special_tokens=False

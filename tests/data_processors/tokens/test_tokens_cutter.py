@@ -3,6 +3,7 @@ import pytest
 from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
 from data_processors.tokens.tokens_cutter import TokensCutter, fast_token_mention_span
 from transformers import BertTokenizerFast
+import numpy as np
 
 
 class TestTokensCutter:
@@ -125,9 +126,9 @@ class TestFastTokenMentionSpan:
     @pytest.mark.parametrize(
         "all_tokens, expected_output",
         [
-            ([0, 1, 2, 3, 4, 3, 5, 6], slice(3, 6)),  # Mention found
-            ([3, 3, 1, 2, 4, 5, 6], slice(0, 2)),  # Mention at the start
-            ([0, 1, 2, 4, 5, 3, 3], slice(5, 7)),  # Mention at the end
+            (np.array([0, 1, 2, 3, 4, 3, 5, 6]), slice(3, 6)),  # Mention found
+            (np.array([3, 3, 1, 2, 4, 5, 6]), slice(0, 2)),  # Mention at the start
+            (np.array([0, 1, 2, 4, 5, 3, 3]), slice(5, 7)),  # Mention at the end
         ],
     )
     def test_fast_token_mention_span(self, all_tokens, label_token_id, expected_output):
