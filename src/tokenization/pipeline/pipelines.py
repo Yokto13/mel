@@ -1,8 +1,9 @@
 from .base import Pipeline
 
-from .loaders import MewsliLoader, DaMuELDescriptionLoader, DaMuELLinkLoader
-from .tokenizers import CuttingTokenizer, SimpleTokenizer
+from .loaders import DaMuELDescriptionLoader, DaMuELLinkLoader, MewsliLoader
+from .loggers import LoggerStep, StatisticsLogger
 from .savers import NPZSaver
+from .tokenizers import CuttingTokenizer, SimpleTokenizer
 
 
 class MewsliMentionPipeline(Pipeline):
@@ -127,6 +128,7 @@ class DamuelLinkMentionPipeline(Pipeline):
         remainder: int = None,
         mod: int = None,
         require_link_wiki_origin: bool = True,
+        logger: LoggerStep | None = StatisticsLogger(),
     ):
         super().__init__()
         self.add(
@@ -138,5 +140,7 @@ class DamuelLinkMentionPipeline(Pipeline):
                 require_link_wiki_origin=require_link_wiki_origin,
             )
         )
+        if logger is not None:
+            self.add(logger)
         self.add(SimpleTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))

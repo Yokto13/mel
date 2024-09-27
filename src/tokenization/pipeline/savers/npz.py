@@ -1,5 +1,6 @@
-import numpy as np
 from collections.abc import Generator
+
+import numpy as np
 
 from ..base import PipelineStep
 

@@ -1,9 +1,9 @@
 import torch
-from transformers import AutoTokenizer
 
 from models.searchers.brute_force_searcher import BruteForceSearcher
-from utils.model_factory import ModelFactory
+from transformers import AutoTokenizer
 from utils.loaders import load_embs_and_qids
+from utils.model_factory import ModelFactory
 
 model_path = "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 state_dict_path = "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/models_2/final.pth"

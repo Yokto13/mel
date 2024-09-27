@@ -1,4 +1,5 @@
 import lzma
+
 import pytest
 
 from tokenization.pipeline.loaders import DaMuELStartLoader

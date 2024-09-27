@@ -1,13 +1,14 @@
 import functools
 import json
-import numpy as np
-import pandas as pd
-from pathlib import Path
 
 import lzma
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import torch
 
 from parsivar import Normalizer
-import torch
 
 
 def load_mewsli(tsv_path: Path, lowercase=False) -> tuple[list[str], list[str]]:

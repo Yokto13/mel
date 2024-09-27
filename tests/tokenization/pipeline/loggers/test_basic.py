@@ -1,7 +1,7 @@
 from tokenization.pipeline.loggers.basic import (
+    _identity,
     CountingLogger,
     StatisticsLogger,
-    _identity,
 )
 
 

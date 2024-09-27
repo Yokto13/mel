@@ -1,15 +1,16 @@
 from enum import Enum
-import pytest
-import numpy as np
 from unittest.mock import Mock
-from models.searchers.scann_searcher import ScaNNSearcher
+
+import numpy as np
+import pytest
 from models.negative_sampler import (
-    NegativeSampler,
-    NegativeSamplingType,
     _get_sampler,
     _sample_shuffling_numba,
     _sample_top_numba,
+    NegativeSampler,
+    NegativeSamplingType,
 )
+from models.searchers.scann_searcher import ScaNNSearcher
 
 
 class MockSearcher(ScaNNSearcher):

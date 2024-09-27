@@ -1,9 +1,9 @@
 from .pipelines import (
-    MewsliMentionPipeline,
-    MewsliContextPipeline,
-    DamuelDescriptionMentionPipeline,
     DamuelDescriptionContextPipeline,
+    DamuelDescriptionMentionPipeline,
     DamuelLinkContextPipeline,
+    MewsliContextPipeline,
+    MewsliMentionPipeline,
 )
 
 __all__ = [

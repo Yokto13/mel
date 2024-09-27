@@ -1,7 +1,7 @@
+import sys
 from collections import Counter, defaultdict
 from hashlib import sha1
 from pathlib import Path
-import sys
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 

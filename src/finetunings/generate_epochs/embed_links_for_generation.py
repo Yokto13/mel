@@ -2,12 +2,12 @@ import logging
 from pathlib import Path
 
 import numpy as np
-from torch.utils.data import IterableDataset
 import torch.nn as nn
+from torch.utils.data import IterableDataset
+from utils.embeddings import embed
+from utils.multifile_dataset import MultiFileDataset
 
 from finetunings.finetune_model.train import load_model
-from utils.multifile_dataset import MultiFileDataset
-from utils.embeddings import embed
 
 _logger = logging.getLogger("generate_epochs.embed_links_for_generation")
 

@@ -1,19 +1,20 @@
 import json
-import pytest
-import numpy as np
 from unittest.mock import patch
 
+import numpy as np
+import pytest
+
 from finetunings.evaluation.find_recall import (
-    load_embs_and_qids_with_normalization,
-    get_scann_searcher,
     get_brute_force_searcher,
     get_faiss_searcher,
+    get_scann_searcher,
+    load_embs_and_qids_with_normalization,
     load_qids_remap,
     qids_remap,
 )
-from models.searchers.scann_searcher import ScaNNSearcher
 from models.searchers.brute_force_searcher import BruteForceSearcher
 from models.searchers.faiss_searcher import FaissSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
 
 
 @pytest.fixture

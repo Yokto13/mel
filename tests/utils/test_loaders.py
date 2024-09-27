@@ -1,13 +1,10 @@
-import numpy as np
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
+import numpy as np
 
 import pytest
-from utils.loaders import (
-    load_embs_and_qids,
-    load_embs_qids_tokens,
-    load_mentions,
-)
+from utils.loaders import load_embs_and_qids, load_embs_qids_tokens, load_mentions
 
 
 def test_load_mentions_with_path_object():

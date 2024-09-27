@@ -1,6 +1,6 @@
 from functools import wraps
-from pathlib import Path
 from itertools import zip_longest
+from pathlib import Path
 
 
 def paths_exist(path_arg_ids: list):

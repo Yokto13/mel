@@ -1,7 +1,7 @@
-from collections import defaultdict
 import logging
-from pathlib import Path
 import sys
+from collections import defaultdict
+from pathlib import Path
 
 from models.batch_sampler import BatchSampler
 

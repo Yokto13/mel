@@ -1,17 +1,17 @@
 import json
 from pathlib import Path
-from models.searchers.brute_force_searcher import BruteForceSearcher
-from utils.loaders import load_embs_and_qids
 
 import fire
 import numpy as np
 import wandb
 
 from data_processors.index.index import Index
-from utils.argument_wrappers import paths_exist
 from models.recall_calculator import RecallCalculator
-from models.searchers.scann_searcher import ScaNNSearcher
+from models.searchers.brute_force_searcher import BruteForceSearcher
 from models.searchers.faiss_searcher import FaissSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
+from utils.argument_wrappers import paths_exist
+from utils.loaders import load_embs_and_qids
 
 
 def load_embs_and_qids_with_normalization(

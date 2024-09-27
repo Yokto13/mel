@@ -4,9 +4,9 @@ from typing import Any
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 import torch.nn as nn
 import wandb
+from torch.utils.data import Dataset
 
 
 @dataclass

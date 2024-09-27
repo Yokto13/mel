@@ -1,5 +1,6 @@
-import numpy as np
 import timeit
+
+import numpy as np
 
 # Create a sample array
 arr = np.random.rand(1000, 800, 100)

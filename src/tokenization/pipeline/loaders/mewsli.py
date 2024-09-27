@@ -1,6 +1,7 @@
-import pandas as pd
-from pathlib import Path
 from collections.abc import Generator
+from pathlib import Path
+
+import pandas as pd
 from tqdm.auto import tqdm
 
 from .base import LoaderStep

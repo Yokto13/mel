@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 from models.searchers.faiss_searcher import FaissSearcher
 from models.searchers.scann_searcher import ScaNNSearcher
 

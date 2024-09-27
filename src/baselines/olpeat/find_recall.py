@@ -1,20 +1,21 @@
-from collections import Counter, defaultdict
 import itertools
 import logging
-from pathlib import Path
 import sys
+from collections import Counter, defaultdict
+from pathlib import Path
 from typing import Optional
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 from collections.abc import Iterable
+
 import numpy as np
 import wandb
 
 from data_processors.index.index import Index
-from utils.multifile_dataset import MultiFileDataset
 
 from utils.argument_wrappers import paths_exist
+from utils.multifile_dataset import MultiFileDataset
 
 _logger = logging.getLogger("baselines.olpeat.find_recall")
 

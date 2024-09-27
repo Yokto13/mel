@@ -1,6 +1,7 @@
-import numpy as np
-import numba as nb
 import timeit
+
+import numba as nb
+import numpy as np
 
 @nb.njit(parallel=True)
 def custom_isin(matrix, index_to_remove, set_arr):

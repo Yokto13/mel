@@ -1,13 +1,13 @@
 """ Utils for embedding tokens.
 """
 
-import logging
 import itertools
+import logging
 from pathlib import Path
-from tqdm import tqdm
 
 import numpy as np
 import torch
+from tqdm import tqdm
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -17,8 +17,8 @@ from torch.utils.data import DataLoader
 from transformers import BertModel
 
 from utils.model_builder import ModelBuilder, ModelOutputType
-from utils.multifile_dataset import MultiFileDataset
 from utils.model_factory import ModelFactory
+from utils.multifile_dataset import MultiFileDataset
 
 _logger = logging.getLogger("utils.embeddings")
 

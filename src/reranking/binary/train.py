@@ -1,13 +1,13 @@
+import sys
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from transformers import AutoModel, AutoTokenizer
 from tqdm import tqdm
-from pathlib import Path
-
-import sys
+from transformers import AutoModel, AutoTokenizer
 
 sys.path.append("../../")
 

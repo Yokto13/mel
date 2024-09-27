@@ -1,9 +1,9 @@
 import numpy as np
-from pytest import fixture
+from models.batch_sampler import BatchSampler
 
 from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import BruteForceSearcher
-from models.batch_sampler import BatchSampler
+from pytest import fixture
 
 
 @fixture

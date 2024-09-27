@@ -5,10 +5,10 @@ from typing import Callable
 sys.path.append("../")
 
 import numpy as np
+from models.searchers.faiss_searcher import FaissSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
 
 from models.searchers.searcher import Searcher
-from models.searchers.scann_searcher import ScaNNSearcher
-from models.searchers.faiss_searcher import FaissSearcher
 
 
 class Profiler:

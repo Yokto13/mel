@@ -1,7 +1,8 @@
-import os
-import numpy as np
 import concurrent.futures
+import os
 import timeit
+
+import numpy as np
 
 
 def read_qids_sequential(directory):

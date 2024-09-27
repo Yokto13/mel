@@ -1,40 +1,40 @@
-from functools import partial
 import logging
+from functools import partial
 
 logging.basicConfig(level=logging.INFO)
 
-# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
-from fire import Fire
 import wandb
 
 from baselines.alias_table.all_languages import all_languages
-from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.from_tokens import one_language
+from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
-from baselines.olpeat.meludr_olpeat import meludr_olpeat
-from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
+from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
+from baselines.olpeat.meludr_olpeat import meludr_olpeat
+from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
+from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
+from finetunings.finetune_model.train import train
+from finetunings.finetune_model.train_ddp import train_ddp
+from finetunings.generate_epochs.embed_links_for_generation import (
+    embed_links_for_generation,
+)
+
+from finetunings.generate_epochs.generate import generate
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+from fire import Fire
+from multilingual_dataset.combine_embs import combine_embs_by_qid
+
+from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
+
+from utils.arg_names import get_args_names
 
 from utils.embeddings import (
     embs_from_tokens_and_model_name,
     embs_from_tokens_model_name_and_state_dict,
 )
-
-from finetunings.generate_epochs.generate import generate
-from finetunings.generate_epochs.embed_links_for_generation import (
-    embed_links_for_generation,
-)
-from finetunings.finetune_model.train import train
-from finetunings.finetune_model.train_ddp import train_ddp
-from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
-from finetunings.file_processing.gathers import move_tokens, rename, remove_duplicates
-
-from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
-from multilingual_dataset.combine_embs import combine_embs_by_qid
-
-from utils.arg_names import get_args_names
 from utils.validate_tokens import validate_tokens
 
 print("Imports finished")

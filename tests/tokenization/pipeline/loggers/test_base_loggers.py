@@ -1,4 +1,4 @@
-from typing import List, Generator
+from typing import Generator, List
 
 from tokenization.pipeline.loggers.base import LoggerStep
 

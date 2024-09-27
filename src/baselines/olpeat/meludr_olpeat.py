@@ -1,14 +1,14 @@
 """ Original MELUDR implementation with a few tweaks that make it work with current paths."""
+import sys
 from collections import Counter, defaultdict
 from hashlib import sha1
-import sys
 from pathlib import Path
-import numpy as np
 
 import fire
+import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
 import wandb
+from torch.utils.data import DataLoader, Dataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
