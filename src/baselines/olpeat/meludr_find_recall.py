@@ -3,6 +3,8 @@ from collections import Counter, defaultdict
 from hashlib import sha1
 from pathlib import Path
 
+from utils.loaders import load_embs_and_qids
+
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import fire
@@ -58,23 +60,13 @@ class RecallCalculator:
         return qid_was_present
 
 
-def load_embs(dir_path):
-    if isinstance(dir_path, str):
-        dir_path = Path(dir_path)
-
-    data = np.load(dir_path / "embs_qids.npz")
-    embs_all = data["embs"]
-    qids_all = data["qids"]
-    return embs_all, qids_all
-
-
 def load_damuel(damuel_entities, damuel_links):
     if damuel_links is not None:
         print("Loading DAMUEL links...")
-        damuel_embs, damuel_qids = load_embs(damuel_links)
+        damuel_embs, damuel_qids = load_embs_and_qids(damuel_links)
 
         print("Loading DAMUEL entities...")
-        damuel_embs_entities, damuel_qids_entities = load_embs(damuel_entities)
+        damuel_embs_entities, damuel_qids_entities = load_embs_and_qids(damuel_entities)
 
         damuel_qids = np.concatenate([damuel_qids, damuel_qids_entities])
         del damuel_qids_entities
@@ -83,7 +75,7 @@ def load_damuel(damuel_entities, damuel_links):
 
     else:
         print("Loading DAMUEL entities...")
-        damuel_embs, damuel_qids = load_embs(damuel_entities)
+        damuel_embs, damuel_qids = load_embs_and_qids(damuel_entities)
 
     damuel_embs = damuel_embs / np.linalg.norm(damuel_embs, axis=1, keepdims=True)
     return damuel_embs, damuel_qids
@@ -91,7 +83,7 @@ def load_damuel(damuel_entities, damuel_links):
 
 def load_mewsli(mewsli):
     print("Loading MEWSLI entities...")
-    mewsli_embs, mewsli_qids = load_embs(mewsli)
+    mewsli_embs, mewsli_qids = load_embs_and_qids(mewsli)
     mewsli_embs = np.array(mewsli_embs)
 
     mewsli_embs = mewsli_embs / np.linalg.norm(mewsli_embs, axis=1, keepdims=True)
@@ -146,7 +138,7 @@ def find_recall(
     damuel_entities: str,
     mewsli: str,
     R,
-    damuel_links: str = None,
+    damuel_links: str | None = None,
 ):
     damuel_embs, damuel_qids = load_damuel(damuel_entities, damuel_links)
     R = min(R, len(damuel_qids))

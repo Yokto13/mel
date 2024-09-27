@@ -12,7 +12,6 @@ from models.searchers.faiss_searcher import FaissSearcher
 from models.searchers.scann_searcher import ScaNNSearcher
 from utils.argument_wrappers import paths_exist
 from utils.loaders import load_embs_and_qids
-from utils.qids_remap import qids_remap
 
 
 def load_embs_and_qids_with_normalization(
@@ -61,16 +60,9 @@ def find_recall(
     damuel_entities: str,
     mewsli: str,
     recalls: list[int],
-    old_to_new_qids_path: (
-        str | Path | None
-    ) = "/net/projects/damuel/dev/damuel_1.1-dev_qid_redirects.json",
 ) -> None:
     damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_entities)
     mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
-
-    if old_to_new_qids_path is not None:
-        damuel_qids = qids_remap(damuel_qids, old_to_new_qids_path)
-        mewsli_qids = qids_remap(mewsli_qids, old_to_new_qids_path)
 
     print(damuel_embs.shape, damuel_qids.shape)
     # searcher = get_scann_searcher(damuel_embs, damuel_qids)

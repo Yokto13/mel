@@ -44,6 +44,8 @@ from utils.validate_tokens import validate_tokens
 
 print("Imports finished")
 
+gin.parse_config_file("configs/general.gin")
+
 
 def choose_action(action):
     match action:
