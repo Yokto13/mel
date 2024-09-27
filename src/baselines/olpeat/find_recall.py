@@ -167,7 +167,7 @@ class OLPEAT:
         _logger.debug(f"len(damuel_embs) {len(damuel_embs)}")
 
         searcher = BruteForceSearcher(damuel_embs, damuel_qids)
-        rc = RecallCalculator(searcher)
+        rc = RecallCalculator(searcher, mode="multiple")
 
         _logger.debug("Calculating recall...")
         recall = rc.recall(self.mewsli_embs, self.mewsli_qids, R)
