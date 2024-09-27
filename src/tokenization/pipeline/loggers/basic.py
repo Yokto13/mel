@@ -1,5 +1,5 @@
-from collections.abc import Callable
 from collections import Counter
+from collections.abc import Callable
 from typing import Any
 
 from .base import LoggerStep

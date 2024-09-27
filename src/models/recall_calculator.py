@@ -1,5 +1,5 @@
-from collections.abc import Iterable
 import logging
+from collections.abc import Iterable
 
 import numpy as np
 import numpy.typing as npt

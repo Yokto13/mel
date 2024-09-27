@@ -1,12 +1,11 @@
-import pytest
-import numpy as np
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+from pathlib import Path
 
-from multilingual_dataset.mixer import (
-    Mixer,
-)
+import numpy as np
+import pytest
+
+from multilingual_dataset.mixer import Mixer
 
 
 @pytest.fixture

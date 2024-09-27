@@ -26,13 +26,12 @@ def _sample_shuffling_numba(batch_qids, negative_cnts, neighbors, neighbors_mask
     return res
 
 
-
 # currently too complicated without any real performance gain
 # @nb.njit(parallel=True)
 # def _sample_shuffling_numba(batch_qids, negative_cnts, neighbors, neighbors_mask):
 #     res = np.empty((len(batch_qids), negative_cnts), dtype=np.int32)
 #     max_neighbors = neighbors.shape[1]
-    
+
 #     for i in nb.prange(len(batch_qids)):
 #         ns = np.empty(max_neighbors, dtype=np.int32)
 #         valid_count = 0
@@ -40,14 +39,14 @@ def _sample_shuffling_numba(batch_qids, negative_cnts, neighbors, neighbors_mask
 #             if neighbors_mask[i, j]:
 #                 ns[valid_count] = neighbors[i, j]
 #                 valid_count += 1
-        
+
 #         # Fisher-Yates shuffle implementation
 #         for k in range(valid_count - 1, 0, -1):
 #             j = np.random.randint(0, k + 1)
 #             ns[k], ns[j] = ns[j], ns[k]
-        
+
 #         res[i] = ns[:negative_cnts]
-    
+
 #     return res
 
 
@@ -58,6 +57,7 @@ def _sample_top_numba(batch_qids, negative_cnts, neighbors, neighbors_mask):
         ns = neighbors[i][neighbors_mask[i]]
         res[i] = ns[:negative_cnts]
     return res
+
 
 @nb.njit(parallel=True)
 def _get_neighbors_mask_set_arr(batch_qids, neighbors_qids, set_arr):
@@ -70,20 +70,20 @@ def _get_neighbors_mask_set_arr(batch_qids, neighbors_qids, set_arr):
 
     Note: this is a linear numba implementation of the isin operation.
     The use of set_arr that is randomly accessed looks painful, and benchmarks shows
-    that the size of it is crucial for the performance. 
+    that the size of it is crucial for the performance.
     For qids upto a few millions it should fit into L3 cache, for larger the performance
     drops significantly.
     """
-    set_arr[batch_qids] = True # these are prohibited to sample
+    set_arr[batch_qids] = True  # these are prohibited to sample
     out = np.empty(neighbors_qids.shape, dtype=np.bool_)
-    
+
     for i in nb.prange(neighbors_qids.shape[0]):
         for j in nb.prange(neighbors_qids.shape[1]):
             if set_arr[neighbors_qids[i][j]]:
                 out[i][j] = False
             else:
                 out[i][j] = True
-    
+
     # reset the set_arr for the next batch
     set_arr[batch_qids] = False
     return out
@@ -99,8 +99,9 @@ def _get_neighbors_mask_set(batch_qids, neighbors_qids):
                 out[i][j] = False
             else:
                 out[i][j] = True
-                
+
     return out
+
 
 def _get_sampler(sampler_type: NegativeSamplingType) -> callable:
     if sampler_type == NegativeSamplingType.Shuffling:
@@ -136,7 +137,9 @@ class NegativeSampler:
 
         # performance seems comparable with _get_neighbors_mask_set_arr
         # by the Occams razor _get_neighbors_mask_set is better.
-        wanted_neighbors_mask = _get_neighbors_mask_set(batch_qids, self.qids[neighbors])
+        wanted_neighbors_mask = _get_neighbors_mask_set(
+            batch_qids, self.qids[neighbors]
+        )
         return self.sample_f(
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )

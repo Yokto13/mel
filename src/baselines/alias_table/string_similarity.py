@@ -1,17 +1,17 @@
 import sys
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from math import inf
 from pathlib import Path
-import wandb
 
 import fire
 import numpy as np
-from rapidfuzz import process, fuzz
+import wandb
+from rapidfuzz import fuzz, process
 from tqdm import tqdm
 
-from utils.loaders import load_mewsli, load_damuel
+from utils.loaders import load_damuel, load_mewsli
 
 
 def get_batch_gen(aliases, qids, batch_size):

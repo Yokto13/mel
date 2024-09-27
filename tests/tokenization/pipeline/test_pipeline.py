@@ -1,18 +1,19 @@
 import os
 import tempfile
 from typing import List
+
 import numpy as np
 import pytest
-from transformers import AutoTokenizer
 
 from tokenization.pipeline.pipelines import (
-    MewsliMentionPipeline,
-    MewsliContextPipeline,
-    DamuelLinkMentionPipeline,
-    DamuelLinkContextPipeline,
-    DamuelDescriptionMentionPipeline,
     DamuelDescriptionContextPipeline,
+    DamuelDescriptionMentionPipeline,
+    DamuelLinkContextPipeline,
+    DamuelLinkMentionPipeline,
+    MewsliContextPipeline,
+    MewsliMentionPipeline,
 )
+from transformers import AutoTokenizer
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 

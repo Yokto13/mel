@@ -1,20 +1,20 @@
-import numpy as np
-import numba as nb
+import sys
 from pathlib import Path
+
+import numba as nb
+import numpy as np
 
 import torch
 import torch.utils.data
-
-import sys
 
 from tqdm import tqdm
 
 sys.path.append("/lnet/work/home-students-external/farhan/mel-reborn/src")
 
 from models.searchers.brute_force_searcher import BruteForceSearcher
-from utils.model_factory import ModelFactory
-from utils.loaders import load_embs_and_qids, load_mentions_from_dir
 from utils.embeddings import create_attention_mask
+from utils.loaders import load_embs_and_qids, load_mentions_from_dir
+from utils.model_factory import ModelFactory
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

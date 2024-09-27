@@ -1,12 +1,12 @@
+import numpy as np
 import pytest
 import torch
+from models.pooling_wrappers import PoolerOutputWrapper
 from torch.utils.data import Dataset
-import numpy as np
 from transformers import AutoTokenizer
 
 from utils.embeddings import embed
 from utils.model_factory import ModelFactory
-from models.pooling_wrappers import PoolerOutputWrapper
 
 
 class SimpleDataset(Dataset):

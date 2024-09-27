@@ -1,14 +1,15 @@
 from collections import Counter, defaultdict
-import numpy as np
-import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import numpy as np
+import pytest
+
 from multilingual_dataset.creator import (
-    _LinksCreator,
     _KBCreator,
-    MultilingualDatasetCreator,
+    _LinksCreator,
     DamuelPaths,
+    MultilingualDatasetCreator,
 )
 
 

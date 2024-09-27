@@ -1,9 +1,9 @@
 """ Calculates number of occurrencies of QIDs as mentions in the DaMuEL language given as argument. """
 
 import argparse
+import json
 from collections import defaultdict
 from functools import partial
-import json
 from operator import add
 from pathlib import Path
 

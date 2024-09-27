@@ -1,4 +1,5 @@
 from collections.abc import Generator
+
 from data_processors.tokens.tokens_cutter import TokensCutter
 
 from .base import TokenizerStep

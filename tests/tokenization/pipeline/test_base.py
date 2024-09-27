@@ -1,9 +1,6 @@
-from tokenization.pipeline.base import (
-    PipelineStep,
-    Pipeline,
-)
-from tokenization.pipeline.tokenizers import SimpleTokenizer
+from tokenization.pipeline.base import Pipeline, PipelineStep
 from tokenization.pipeline.savers import NPZSaver
+from tokenization.pipeline.tokenizers import SimpleTokenizer
 
 
 class TestTokenizationPipeline:

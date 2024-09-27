@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 
-from fire import Fire
 import pandas as pd
+
+from fire import Fire
 
 mewsli_dir = Path("/home/farhand/bc/data/mewsli/mewsli-9/output/dataset/")
 

@@ -1,13 +1,13 @@
 import sys
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from math import inf
 from pathlib import Path
-import wandb
 
 import fire
-from utils.loaders import load_mewsli, load_damuel
+import wandb
+from utils.loaders import load_damuel, load_mewsli
 
 damuels = [
     "de",

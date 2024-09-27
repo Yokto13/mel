@@ -1,12 +1,12 @@
 import pytest
 import torch
-from transformers import AutoModel, AutoTokenizer
 
 from src.models.pooling_wrappers import (
     CLSWrapper,
     PoolerOutputWrapper,
     SentenceTransformerWrapper,
 )
+from transformers import AutoModel, AutoTokenizer
 
 
 @pytest.fixture(

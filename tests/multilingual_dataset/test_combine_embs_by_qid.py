@@ -1,7 +1,8 @@
-import pytest
-import numpy as np
 import os
 import tempfile
+
+import numpy as np
+import pytest
 from src.multilingual_dataset.combine_embs import combine_embs_by_qid
 
 

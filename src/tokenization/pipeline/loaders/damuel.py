@@ -1,13 +1,13 @@
-import os
 import lzma
+import os
 from collections.abc import Generator
 
 import orjson
 from tqdm.auto import tqdm
 
-from ..base import PipelineStep, Pipeline
-from .base import LoaderStep
+from ..base import Pipeline, PipelineStep
 from ..filters import WikiKeyFilter
+from .base import LoaderStep
 from .qid_parsing import parse_qid
 
 

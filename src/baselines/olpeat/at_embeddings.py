@@ -18,12 +18,13 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import torch
 import torch.nn as nn
-from transformers import BertModel
 
 from models.data.only_once_dataset import OnlyOnceDataset
+from models.pooling_wrappers import PoolerOutputWrapper
+from transformers import BertModel
 from utils.embeddings import embed
+from utils.model_builder import ModelBuilder, ModelOutputType
 from utils.multifile_dataset import MultiFileDataset
 
 
@@ -49,6 +50,12 @@ def embed_for_at_to(
     np.savez_compressed(output_dir / "embs_tokens.npz", embs=embs, tokens=tokens)
 
 
-def embs_from_tokens_and_model_name_at(source, model_name, batch_size, dest):
-    model = BertModel.from_pretrained(model_name)
+def embs_from_tokens_and_model_name_at(
+    source, model_name, batch_size, dest, output_type: str
+):
+    output_type = ModelOutputType(output_type)
+    builder = ModelBuilder(model_name)
+    builder.set_output_type(output_type)
+    model = builder.build()
+
     embed_for_at_to(source, model, dest, batch_size)

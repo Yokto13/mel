@@ -1,22 +1,21 @@
-import os
 import glob
-import multiprocessing
-from typing import List
 import logging
+import multiprocessing
+import os
+from typing import List
 
 import gin
-
-from transformers import AutoTokenizer
-import os
 from tokenization.pipeline.pipelines import (
     DamuelDescriptionContextPipeline,
-    DamuelLinkContextPipeline,
-    MewsliContextPipeline,
-    Pipeline,
     DamuelDescriptionMentionPipeline,
-    MewsliMentionPipeline,
+    DamuelLinkContextPipeline,
     DamuelLinkMentionPipeline,
+    MewsliContextPipeline,
+    MewsliMentionPipeline,
+    Pipeline,
 )
+
+from transformers import AutoTokenizer
 
 logging.basicConfig(level=logging.INFO)
 
