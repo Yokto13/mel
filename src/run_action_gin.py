@@ -14,6 +14,7 @@ from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
 from baselines.olpeat.meludr_olpeat import meludr_olpeat
+from baselines.olpeat.olpeat import olpeat
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
 from finetunings.finetune_model.train import train
@@ -106,11 +107,13 @@ def choose_action(action):
             return run_damuel_link_mention
         case "run_damuel_mention":
             return run_damuel_mention
+        case "olpeat":
+            return olpeat
         case _:
             raise ValueError(f"Unknown action: {action}")
 
 
-def main(*args):
+def main(*args, **kwargs):
     action_descriptor = args[0]
     action = choose_action(action_descriptor)
     arg_names = get_args_names(action)
@@ -122,7 +125,7 @@ def main(*args):
     )
     print(f"Running {action_descriptor} with args {args[1:]}")
     gin.parse_config_file(args[1])
-    action()
+    action(**kwargs)
 
 
 if __name__ == "__main__":

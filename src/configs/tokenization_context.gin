@@ -1,4 +1,4 @@
-model_path="/lnet/work/home-students-external/farhan/troja/outputs/models/multi-qa-MiniLM-L6-cos-v1"
+model_path="/lnet/work/home-students-external/farhan/troja/outputs/models/paraphrase-multilingual-MiniLM-L12-v2""
 expected_size=64
 output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/st_finetuning_damuel/"
 output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/st_finetuning_mewsli/"

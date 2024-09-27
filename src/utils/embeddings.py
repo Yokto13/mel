@@ -5,6 +5,7 @@ import itertools
 import logging
 from pathlib import Path
 
+import gin
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -134,6 +135,7 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
     return embs, qids
 
 
+@gin.configurable
 def embs_from_tokens_and_model_name(
     source, model_name, batch_size, dest, output_type: str | None = None
 ):

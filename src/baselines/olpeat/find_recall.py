@@ -3,7 +3,7 @@ import logging
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
@@ -86,31 +86,36 @@ class _MewsliLoader:
 
 
 class _DamuelLoader:
-    def __init__(self, descs_embs_path, links_embs_path, damuel_tokens_path) -> None:
+    def __init__(
+        self,
+        descs_embs_path: str,
+        links_embs_path: Optional[str],
+        damuel_tokens_path: str,
+    ) -> None:
         self.descs_embs_path = descs_embs_path
         self.links_embs_path = links_embs_path
         self.damuel_tokens_path = damuel_tokens_path
 
-    def get_data(self, R) -> tuple[np.ndarray, np.ndarray]:
+    def get_data(self, R: int) -> tuple[np.ndarray, np.ndarray]:
         tokens_qids = self._get_wanted_qids_per_tokens(R)
         embs, qids = self._get_data_for_searcher(tokens_qids)
         _logger.debug(f"Damuel embs shape {embs.shape}")
         _logger.debug(f"Damuel qids shape {qids.shape}")
         return embs, qids
 
-    def _construct_tokens_dataset(self):
+    def _construct_tokens_dataset(self) -> MultiFileDataset:
         return MultiFileDataset(self.damuel_tokens_path)
 
     def _get_wanted_qids_per_tokens(self, R: int) -> dict[int, list[int]]:
         tokens_dataset = self._construct_tokens_dataset()
 
-        def load_data():
+        def load_data() -> defaultdict[tuple[int], Counter[int]]:
             data = defaultdict(Counter)
             for toks, qid in tokens_dataset:
                 data[tuple(toks)][qid] += 1
             return data
 
-        def choose_top_R(tokens_qids: dict[int, Counter]):
+        def choose_top_R(tokens_qids: dict[int, Counter[int]]) -> dict[int, list[int]]:
             for k in tokens_qids:
                 tokens_qids[k] = [x[0] for x in tokens_qids[k].most_common(R)]
             return tokens_qids
@@ -120,12 +125,12 @@ class _DamuelLoader:
 
     def _get_data_for_searcher(
         self,
-        tokens_qids: dict,
+        tokens_qids: dict[int, list[int]],
     ) -> tuple[np.ndarray, np.ndarray]:
-        def get_cnt_of_searcher_items():
+        def get_cnt_of_searcher_items() -> int:
             return sum((len(v) for v in tokens_qids.values()))
 
-        def first(x):
+        def first(x: Iterable[Any]) -> Any:
             return next(iter(x))
 
         tokens_embs = self._get_tokens_embs_mapping()
@@ -146,7 +151,7 @@ class _DamuelLoader:
         return embs, qids
 
     def _get_tokens_embs_mapping(self) -> dict[tuple[int], np.ndarray]:
-        def load(path: Optional[Path] = None):
+        def load(path: Optional[Path] = None) -> tuple[list[Any], list[Any]]:
             if path is None:
                 return [], []
             d = np.load(path)
@@ -154,18 +159,19 @@ class _DamuelLoader:
 
         mapping = {}
         for toks, embs in itertools.chain(
-            zip(*load(self.descs_embs_path)), zip(*load(self.links_embs_path))
+            zip(*load(self.descs_embs_path)),
+            zip(*load(self.links_embs_path)) if self.links_embs_path else [],
         ):
             mapping[tuple(toks)] = embs
         return mapping
 
 
 class OLPEAT:
-    @paths_exist(path_arg_ids=[1, 2, 3, 4])
+    @paths_exist(path_arg_ids=[1, 3, 4])
     def __init__(
         self,
         descs_embs_path: str,
-        links_embs_path: str,
+        links_embs_path: str | None,
         mewsli_embs_path: str,
         damuel_tokens_path: str,
     ) -> None:
@@ -210,10 +216,10 @@ class OLPEAT:
         _logger.debug("Calculating recall...")
         recall = rc.recall(self.mewsli_embs, self.mewsli_qids, R)
         wandb.log({f"recall_at_{R}": recall})
-        _logger.debug(f"Recall at {R}: {recall}")
+        _logger.info(f"Recall at {R}: {recall}")
         return recall
 
 
-def find_recall(descs, tokens, mewsli, R, links) -> float:
+def find_recall(descs, tokens, mewsli, R, links=None) -> float:
     olpeat = OLPEAT(descs, links, mewsli, tokens)
     return olpeat.find_recall(R)

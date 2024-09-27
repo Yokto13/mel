@@ -88,7 +88,7 @@ def meludr_olpeat(
     mewsli: str,
     R,
     use_scann=False,
-    damuel_links: str = None,
+    damuel_links: str | None = None,
     bs=32,
 ):
 
