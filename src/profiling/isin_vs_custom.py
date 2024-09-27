@@ -3,6 +3,7 @@ import timeit
 import numba as nb
 import numpy as np
 
+
 @nb.njit(parallel=True)
 def custom_isin(matrix, index_to_remove, set_arr):
     set_arr[index_to_remove] = True
@@ -17,6 +18,7 @@ def custom_isin(matrix, index_to_remove, set_arr):
     set_arr[index_to_remove] = False
     return out
 
+
 @nb.njit(parallel=True)
 def custom_isin_set(matrix, index_to_remove):
     index_to_remove_set = set(index_to_remove)
@@ -30,24 +32,30 @@ def custom_isin_set(matrix, index_to_remove):
                 out[i][j] = True
     return out
 
+
 # Set up the data
 matrix = np.random.randint(0, 100000000, size=(800, 1000))
 index_to_remove = np.random.randint(0, 100000000, size=800)
+
 
 # Benchmark np.isin
 def bench_np_isin():
     return ~np.isin(matrix, index_to_remove)
 
+
 set_arr = np.empty(200000000, dtype=np.bool_)
 for i in range(len(set_arr)):
     set_arr[i] = False
+
 
 # Benchmark in1d_vec_nb
 def bench_in1d_vec_nb():
     return custom_isin(matrix, index_to_remove, set_arr)
 
+
 def bench_custom_isin_set():
     return custom_isin_set(matrix, index_to_remove)
+
 
 # Run the benchmarks
 number = 2000
@@ -65,4 +73,6 @@ np_isin_result = bench_np_isin()
 in1d_vec_nb_result = bench_in1d_vec_nb()
 custom_isin_set_result = bench_custom_isin_set()
 print(f"Results are identical: {np.array_equal(np_isin_result, in1d_vec_nb_result)}")
-print(f"Results are identical: {np.array_equal(np_isin_result, custom_isin_set_result)}")
+print(
+    f"Results are identical: {np.array_equal(np_isin_result, custom_isin_set_result)}"
+)

@@ -1,4 +1,5 @@
 """ Original MELUDR implementation with a few tweaks that make it work with current paths."""
+
 import sys
 from collections import Counter, defaultdict
 from hashlib import sha1

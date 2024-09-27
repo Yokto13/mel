@@ -8,4 +8,3 @@ def meludr_run_recall_calculation(damuel_descs, mewsli_dir, damuel_links, recall
     for recall in recalls:
         print(f"Running evaluation_scann with recall: {recall}")
         find_recall(damuel_descs, mewsli_dir, recall, damuel_links=damuel_links)
-
