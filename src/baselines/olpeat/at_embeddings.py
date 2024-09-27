@@ -14,15 +14,13 @@ There are 3 values per line:
             which entity to consider.
 """
 
-from collections import defaultdict
 from pathlib import Path
 
+import gin
 import numpy as np
 import torch.nn as nn
 
 from models.data.only_once_dataset import OnlyOnceDataset
-from models.pooling_wrappers import PoolerOutputWrapper
-from transformers import BertModel
 from utils.embeddings import embed
 from utils.model_builder import ModelBuilder, ModelOutputType
 from utils.multifile_dataset import MultiFileDataset
@@ -50,9 +48,11 @@ def embed_for_at_to(
     np.savez_compressed(output_dir / "embs_tokens.npz", embs=embs, tokens=tokens)
 
 
+@gin.configurable
 def embs_from_tokens_and_model_name_at(
     source, model_name, batch_size, dest, output_type: str
 ):
+    print("Building model...")
     output_type = ModelOutputType(output_type)
     builder = ModelBuilder(model_name)
     builder.set_output_type(output_type)

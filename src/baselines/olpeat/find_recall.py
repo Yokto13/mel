@@ -12,10 +12,10 @@ from collections.abc import Iterable
 import numpy as np
 import wandb
 
-from data_processors.index.index import Index
-
 from utils.argument_wrappers import paths_exist
 from utils.multifile_dataset import MultiFileDataset
+from models.recall_calculator import RecallCalculator
+from models.searchers.brute_force_searcher import BruteForceSearcher
 
 _logger = logging.getLogger("baselines.olpeat.find_recall")
 
@@ -28,39 +28,6 @@ def get_unique_n(iterable: Iterable, n: int):
             yield i
         if len(seen) == n:
             break
-
-
-class RecallCalculator:
-    def __init__(self, scann_index, qids_in_index) -> None:
-        self.scann_index = scann_index
-        self.qids_in_index = qids_in_index
-
-    def recall(self, mewsli_embs, mewsli_qids, k: int):
-        qid_was_present = self._process_for_recall(mewsli_embs, mewsli_qids, k)
-        return self._calculate_recall(qid_was_present)
-
-    def _calculate_recall(self, qid_was_present):
-        return sum(qid_was_present) / len(qid_was_present)
-
-    def _get_neighboring_qids(self, queries_embs, k):
-        qids_per_query = []
-        neighbors, _ = self.scann_index.search_batched(
-            queries_embs, final_num_neighbors=max(100000, k)
-        )
-        for ns in neighbors:
-            ns_qids = self.qids_in_index[ns]
-            unique_ns_qids = list(get_unique_n(ns_qids, k))
-            qids_per_query.append(unique_ns_qids)
-        return qids_per_query
-
-    def _process_for_recall(self, mewsli_embs, mewsli_qids, k):
-        qid_was_present = []
-
-        for emb, qid in zip(mewsli_embs, mewsli_qids):
-            negihboring_qids = self._get_neighboring_qids([emb], k)
-            qid_was_present.append(qid in negihboring_qids[0])
-
-        return qid_was_present
 
 
 class _MewsliLoader:
@@ -195,23 +162,12 @@ class OLPEAT:
             descs_embs_path, links_embs_path, damuel_tokens_path
         )
 
-    def _get_scann_index(self, embs: np.ndarray, qids: np.ndarray) -> "Scann":
-        _logger.debug("Building SCANN index...")
-        index = Index(embs, qids, default_index_build=False)
-        index.build_index(
-            num_leaves=5 * int(np.sqrt(len(qids))),
-            num_leaves_to_search=800,
-            training_sample_size=len(qids),
-            reordering_size=1000,
-        )
-        return index.scann_index
-
     def find_recall(self, R: int) -> float:
         damuel_embs, damuel_qids = self._damuel_loader.get_data(R)
         _logger.debug(f"len(damuel_embs) {len(damuel_embs)}")
 
-        scann_index = self._get_scann_index(damuel_embs, damuel_qids)
-        rc = RecallCalculator(scann_index, damuel_qids)
+        searcher = BruteForceSearcher(damuel_embs, damuel_qids)
+        rc = RecallCalculator(searcher)
 
         _logger.debug("Calculating recall...")
         recall = rc.recall(self.mewsli_embs, self.mewsli_qids, R)

@@ -15,14 +15,16 @@ def create_embeddings(damuel_tokens, mewsli_tokens, workdir, language):
     """
     Create embeddings for the given language.
     """
-    embs_from_tokens_and_model_name_at(
-        source=damuel_tokens / language,
-        dest=workdir / language / "damuel",
-    )
-    embs_from_tokens_and_model_name(
-        source=mewsli_tokens / language,
-        dest=workdir / language / "mewsli",
-    )
+    if not (workdir / language / "damuel" / "embs_tokens.npz").exists():
+        embs_from_tokens_and_model_name_at(
+            source=damuel_tokens / language,
+            dest=workdir / language / "damuel",
+        )
+    if not (workdir / language / "mewsli" / "embs_qids.npz").exists():
+        embs_from_tokens_and_model_name(
+            source=mewsli_tokens / language,
+            dest=workdir / language / "mewsli",
+        )
 
 
 def evaluate_olpeat(damuel_tokens, workdir, language, recalls):
