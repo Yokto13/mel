@@ -21,6 +21,7 @@ def load_qids_remap(filepath: str | Path) -> dict[int, int]:
     return _convert_qid_keys_to_int(qid_map)
 
 
+@gin.configurable
 def qids_remap(qids: np.array, old_to_new_qids_path: str | Path) -> np.array:
     old_to_new_qids = load_qids_remap(old_to_new_qids_path)
     return np.array(

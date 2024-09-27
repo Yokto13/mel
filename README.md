@@ -5,8 +5,8 @@
 ### OLPEAT
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
-| Arabic   |   90.0   |    93.2   |     94.3   |
-| German   |          |           |            |
+| Arabic   |   90.0   |   93.2    |    94.3    |
+| German   |   88.9   |   93.2    |    94.2    |
 | English  |          |           |            |
 | Spanish  |          |           |            |
 | Persian  |          |           |            |

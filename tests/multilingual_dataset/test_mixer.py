@@ -4,15 +4,18 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
+import gin
 from multilingual_dataset.mixer import Mixer
+from utils.qids_remap import remap_qids_decorator, qids_remap
+
+gin.add_config_file_search_path("configs/general.gin")
 
 
 @pytest.fixture
 def create_dummy_npz_files():
     with tempfile.TemporaryDirectory() as temp_dir:
         file_paths = []
-        for i in range(50):
+        for i in range(10):
             file_path = Path(temp_dir) / f"mentions_{i}.npz"
             tokens = np.random.randint(
                 1, 1000, size=(10000, 10)
@@ -23,6 +26,7 @@ def create_dummy_npz_files():
         yield file_paths
 
 
+@remap_qids_decorator(1)
 def load_npz_content(file_path):
     with np.load(file_path) as data:
         return data["tokens"], data["qids"]
@@ -100,6 +104,9 @@ def test_mix_single_file(tmp_path):
     file_path = tmp_path / "mentions_0.npz"
     tokens = np.random.randint(1, 1000, size=(100, 10))
     qids = np.random.randint(1, 1000, size=(100,))
+    qids = qids_remap(
+        qids,
+    )
     np.savez_compressed(file_path, tokens=tokens, qids=qids)
 
     mixer = Mixer(buffer_size=1000)

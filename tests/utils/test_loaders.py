@@ -3,7 +3,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import gin
 
 
 from utils.loaders import load_embs_and_qids, load_embs_qids_tokens, load_mentions

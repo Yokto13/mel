@@ -3,10 +3,16 @@ import tempfile
 
 import numpy as np
 import pytest
+import gin
+
 from src.multilingual_dataset.combine_embs import combine_embs_by_qid
+from utils.qids_remap import remap_qids_decorator
+
+gin.add_config_file_search_path("configs/general.gin")
 
 
 @pytest.fixture
+@remap_qids_decorator(1)
 def random_embs_and_qids():
     num_embs = 10000
     emb_dim = 128
