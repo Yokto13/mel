@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import gin
 import numpy as np
 import torch.nn as nn
 from torch.utils.data import IterableDataset
@@ -25,6 +26,7 @@ def _save(dest_dir_path: str, embs, qids, tokens):
     )
 
 
+@gin.configurable
 def embed_links_for_generation(
     links_tokens_dir_path: str,
     model_path: str,
@@ -32,9 +34,10 @@ def embed_links_for_generation(
     dest_dir_path: str,
     state_dict_path: str,
     target_dim: int | None = None,
+    output_type: str | None = None,
 ) -> None:
     dataset = _get_dataset(links_tokens_dir_path)
-    model = load_model(model_path, state_dict_path, target_dim)
+    model = load_model(model_path, state_dict_path, target_dim, output_type)
 
     embs, qids, tokens = embed(
         dataset, model, batch_size, return_qids=True, return_tokens=True

@@ -1,5 +1,4 @@
 import logging
-from functools import partial
 
 logging.basicConfig(level=logging.INFO)
 
@@ -12,8 +11,6 @@ from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
-from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
-from baselines.olpeat.meludr_olpeat import meludr_olpeat
 from baselines.olpeat.olpeat import olpeat
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
@@ -69,8 +66,6 @@ def choose_action(action):
             return string_similarity
         case "recalls":
             return run_recall_calculation
-        case "meludr_recalls":
-            return meludr_run_recall_calculation
         case "rename":
             return rename
         case "remove_duplicates":
@@ -125,8 +120,9 @@ def main(*args, **kwargs):
         config={"action": args[0]}
         | {arg_name: arg_value for arg_name, arg_value in zip(arg_names, args[1:])},
     )
-    print(f"Running {action_descriptor} with args {args[1:]}")
-    gin.parse_config_file(args[1])
+    print(f"Running {action_descriptor} with args {args[1:]} and kwargs {kwargs}")
+    for arg in args[1:]:
+        gin.parse_config(arg)
     action(**kwargs)
 
 

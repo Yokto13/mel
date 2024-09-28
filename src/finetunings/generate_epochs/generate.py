@@ -1,6 +1,7 @@
 import logging
 import sys
 from pathlib import Path
+from tqdm import tqdm
 
 from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import (
@@ -13,11 +14,11 @@ sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import numpy as np
 import torch
+import gin
 
 # from data_processors.index.token_index import TokenIndex
 from models.batch_sampler import BatchSampler
 from models.searchers.scann_searcher import ScaNNSearcher
-from tqdm import tqdm
 from utils.loaders import load_embs_and_qids
 
 from finetunings.generate_epochs.datasets import Batcher, DamuelNeighborsIterator
@@ -49,6 +50,7 @@ SEED = 0
 torch.manual_seed(SEED)
 
 
+@gin.configurable
 def generate(
     LINKS_EMBS_DIR: Path,
     INDEX_TOKENS_DIR: Path,

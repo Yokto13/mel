@@ -2,23 +2,21 @@ import logging
 import os
 from pathlib import Path
 
+from tqdm import tqdm
 import numpy as np
 
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
-
 import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.optim as optim
-
 import wandb
-
+import gin
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
 
 from utils.argument_wrappers import ensure_datatypes
 from utils.running_averages import RunningAverages
@@ -207,29 +205,28 @@ def cleanup():
 
 
 # Training ===========================================
-@ensure_datatypes(
-    [
-        Path,
-        str,
-        int,
-        int,
-        float,
-        str,
-        str,
-    ],
-    {},
-)
+@gin.configurable
 def train_ddp(
-    DATASET_DIR: Path,
-    FOUNDATION_MODEL_PATH: str,
-    EPOCHS: int,
-    LOGIT_MULTIPLIER: int,
-    LR: float,
-    MODEL_SAVE_DIR: str = "models",
-    STATE_DICT_PATH: str | None = None,
-    TARGET_DIM: int | None = None,
-    WEIGHT_DECAY: float = 0.0,
+    DATASET_DIR,
+    FOUNDATION_MODEL_PATH,
+    EPOCHS,
+    LOGIT_MULTIPLIER,
+    LR,
+    MODEL_SAVE_DIR="models",
+    STATE_DICT_PATH=None,
+    TARGET_DIM=None,
+    WEIGHT_DECAY=0.0,
 ):
+    DATASET_DIR = Path(DATASET_DIR)
+    FOUNDATION_MODEL_PATH = str(FOUNDATION_MODEL_PATH)
+    EPOCHS = int(EPOCHS)
+    LOGIT_MULTIPLIER = int(LOGIT_MULTIPLIER)
+    LR = float(LR)
+    MODEL_SAVE_DIR = str(MODEL_SAVE_DIR)
+    STATE_DICT_PATH = str(STATE_DICT_PATH) if STATE_DICT_PATH is not None else None
+    TARGET_DIM = int(TARGET_DIM) if TARGET_DIM is not None else None
+    WEIGHT_DECAY = float(WEIGHT_DECAY)
+
     world_size = torch.cuda.device_count()
 
     mp.spawn(
