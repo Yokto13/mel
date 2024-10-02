@@ -103,6 +103,7 @@ def run_damuel_description_mention(
     compress: bool,
     num_processes: int,
     remainder_mod: int,
+    require_wiki_page: bool = True,
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
@@ -119,6 +120,7 @@ def run_damuel_description_mention(
                 compress=compress,
                 remainder=i,
                 mod=remainder_mod,
+                require_wiki_page=require_wiki_page,
             )
             for i in range(remainder_mod)
         ]
@@ -258,7 +260,34 @@ def run_damuel_mention(
     num_processes: int,
     remainder_mod: int,
     require_link_wiki_origin: bool,
+    require_wiki_page: bool,
 ) -> None:
+    """
+    Run the DaMuEL mention tokenization process.
+    Tokenizes only mentions (no context).
+    Usefull for baselines like OLPEAT.
+
+    We have two sources of mentions:
+    - titles and labels of wikipedia entities
+    - text corresponding to a link from one page to another
+
+    Args:
+        model_path (str): Path to the pre-trained model for tokenization.
+        expected_size (int): Expected size of the tokenized output.
+        output_base_dir (str): Base directory for output files.
+        languages (List[str]): List of languages to process.
+        damuel_base_path (str): Base path for DaMuEL dataset.
+        compress (bool): Whether to compress the output files.
+        num_processes (int): Number of processes to use for parallel processing.
+        remainder_mod (int): Modulo value for remainder-based processing.
+        require_link_wiki_origin (bool): Whether to require links to originate from Wikipedia.
+            DaMuEL adds some links that are not originally present in Wikipedia.
+            If True, the links should correspond to the original Wikipedia dump, if False
+            the result contains also added links. On one hand, the former gives us less mentions,
+            on the other hand, we avoid including links of lower quality that might be created by the addition.
+        require_wiki_page (bool): If True, only entities from language L that have a wikipedia page in L are considered.
+            if False, all entites of language L are considered.
+    """
 
     # Run description mention tokenization
     run_damuel_description_mention(
@@ -270,6 +299,7 @@ def run_damuel_mention(
         compress=compress,
         num_processes=num_processes,
         remainder_mod=remainder_mod,
+        require_wiki_page=require_wiki_page,
     )
 
     # Rename description mention files
