@@ -7,25 +7,13 @@
 
 set -ueo pipefail
 
-# What we need to do
-# Generate embs for index
-# Build token index
-# Generate batches
-# Train model for the first time
-# Run evaluation
-#   generate embs from the new model damuel desc
-#   generate embs from the new model mewsli
-#   evaluate
-# Build token index
-# Generate batches
-# Train model for the second time
-# Run evaluation
-#   generate embs from the new model damuel desc
-#   generate embs from the new model mewsli
-#   evaluate
-# ...
-GENERAL_CONFIG_PATH="../configs/general.gin"
-MODEL_CONFIG_PATH="../configs/lealla.gin"
+cd ../../
+
+echo "Running all_langs.sh"
+echo "Current directory: $(pwd)"
+
+# GENERAL_CONFIG_PATH="../configs/general.gin"
+MODEL_CONFIG_PATH="../configs/lealla_m.gin"
 TRAIN_CONFIG_PATH="../configs/train.gin"
 
 DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/all/descs_pages"
@@ -61,7 +49,7 @@ run_ml_finetuning_round() {
     local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 10))
     echo "LPR $LINKS_PER_ROUND"
 
-    local ACTION_SCRIPT="run_action_gin.py $GENERAL_CONFIG_PATH $MODEL_CONFIG_PATH $TRAIN_CONFIG_PATH"
+    local ACTION_SCRIPT="run_action_gin.py $MODEL_CONFIG_PATH $TRAIN_CONFIG_PATH"
 
     ENV="../venv/bin/activate"
     source $ENV
@@ -105,8 +93,8 @@ run_ml_finetuning_round() {
     if [ ! "$(ls -A $DAMUEL_LINKS_DIR)" ]; then
         echo "Running embs generating for damuel links"
         sbatch --wait -p "gpu-troja,gpu-ms" -G 8 -C "gpuram24G|gpuram16G" --nodes=1 --mem=150G run ../venv/bin/python $ACTION_SCRIPT "embed_links_for_generation" \
-            --source_path="$DAMUEL_LINKS_TOKENS" \
-            --dest_path="$DAMUEL_LINKS_DIR" \
+            --links_tokens_dir_path="$DAMUEL_LINKS_TOKENS" \
+            --dest_dir_path="$DAMUEL_LINKS_DIR" \
             --state_dict_path="$STATE_DICT"
     fi
 
