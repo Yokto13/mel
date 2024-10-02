@@ -24,6 +24,9 @@ run_damuel_mention.compress=%compress
 run_damuel_mention.remainder_mod=%remainder_mod
 run_damuel_mention.num_processes=%num_processes
 run_damuel_mention.require_link_wiki_origin=True
+# In most experiments we don't ant to have entities without a page included because Mewsli does not link to a non page
+# However, for OLPEAT and other alias based methods it makes sense because it increases the number of aliases we have.
+run_damuel_mention.require_wiki_page=True
 
 run_mewsli_mention.model_path=%model_path
 run_mewsli_mention.expected_size=%expected_size
