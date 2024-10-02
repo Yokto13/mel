@@ -26,8 +26,9 @@ def _wanted_fn(fn: str, m: int, r: int):
     return fn.endswith("npz") and _wanted_hash(_get_hash_from_fn(fn), m, r)
 
 
-@ensure_datatypes([Path, Path, int, int], {})
-def move_tokens(source, dest, m=1, r=0, max_to_copy: int = inf):
+def move_tokens(source, dest, m=1, r=0, max_to_copy=float("inf")):
+    source = Path(source)
+    dest = Path(dest)
     already_copied = 0
     for fn in sorted(os.listdir(source)):
         if not _wanted_fn(fn, m, r):

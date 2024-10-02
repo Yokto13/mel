@@ -72,8 +72,6 @@ def choose_action(action):
             return remove_duplicates
         case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
-        case "meludr_olpeat":
-            return meludr_olpeat
         case "embs_from_tokens_and_model_name_at":
             return embs_from_tokens_and_model_name_at
         case "find_recall_olpeat":
@@ -111,18 +109,19 @@ def choose_action(action):
 
 
 def main(*args, **kwargs):
-    action_descriptor = args[0]
+    action_descriptor = args[-1]
     action = choose_action(action_descriptor)
     arg_names = get_args_names(action)
     print(arg_names)
     wandb.init(
-        project=f"EL-{args[0]}",
-        config={"action": args[0]}
-        | {arg_name: arg_value for arg_name, arg_value in zip(arg_names, args[1:])},
+        project=f"EL-{args[-1]}",
+        config={"action": args[-1]}
+        | {arg_name: arg_value for arg_name, arg_value in zip(arg_names, args[:-1])},
     )
-    print(f"Running {action_descriptor} with args {args[1:]} and kwargs {kwargs}")
-    for arg in args[1:]:
-        gin.parse_config(arg)
+    print(f"Running {action_descriptor} with args {args[:-1]} and kwargs {kwargs}")
+    for arg in args[:-1]:
+        print("parsing arg", arg)
+        gin.parse_config_file(arg)
     action(**kwargs)
 
 

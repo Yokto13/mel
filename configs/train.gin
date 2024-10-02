@@ -1,22 +1,18 @@
-training_batch_size=
-epochs=
-logit_mutliplier=
-negative_sampling_type=
-learning_rate=
-negatives_per_link=
+training_batch_size=100
+epochs=20
+logit_mutliplier=20
+negative_sampling_type="shuffle"
+learning_rate=0.0001
+negatives_per_link=7
 context_size=64
 STEPS_PER_EPOCH=1000
-
-descriptions=
-links=
-mewsli=
 
 generate.BATCH_SIZE=%training_batch_size
 generate.EPOCHS=%epochs
 generate.STEPS_PER_EPOCH=%STEPS_PER_EPOCH
 generate.NEG=%negatives_per_link
 generate.CONTEXT_SIZE=%context_size
-generate.NEG_SAMPLING_TYPE=%negative_sampling_type
+generate.NEGATIVE_SAMPLING_TYPE=%negative_sampling_type
 
 train_ddp.EPOCHS=%epochs
 train_ddp.LR=%learning_rate

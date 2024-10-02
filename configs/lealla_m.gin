@@ -1,4 +1,4 @@
-model_path="setu4993/LEALLA-base"
+model_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 inference_batch_size=100000
 output_type="pooler_output"
 

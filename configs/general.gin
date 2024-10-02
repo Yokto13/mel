@@ -1,3 +1,4 @@
 qids_remap_json="/net/projects/damuel/dev/damuel_1.1-dev_qid_redirects.json"
+
 remap_qids_decorator.json_path=%qids_remap_json
 qids_remap.old_to_new_qids_path=%qids_remap_json

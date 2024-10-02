@@ -59,9 +59,14 @@ def forward_to_embeddings(toks: torch.tensor, model: nn.ModuleDict) -> torch.ten
 
 
 def load_model(
-    model_path: str, state_dict_path: str | None, target_dim: int | None
+    model_path: str,
+    state_dict_path: str | None,
+    target_dim: int | None,
+    output_type: str | None = None,
 ) -> nn.Module:
-    return ModelFactory.auto_load_from_file(model_path, state_dict_path, target_dim)
+    return ModelFactory.auto_load_from_file(
+        model_path, state_dict_path, target_dim, output_type
+    )
 
 
 # Training ===========================================

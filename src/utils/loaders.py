@@ -208,3 +208,9 @@ def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray
             tokens.extend(d["tokens"])
             qids.extend(d["qids"])
     return np.array(tokens), np.array(qids)
+
+
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
+def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    d = np.load(file_path)
+    return d["tokens"], d["qids"]
