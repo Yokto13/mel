@@ -60,6 +60,6 @@ class MultiFileDataset(IterableDataset):
 
 
 def _npz_loader(file_path):
-    data = load_tokens_and_qids(file_path)
-    for t, q in data:
-        yield t, q
+    tokens, qids = load_tokens_and_qids(file_path)
+    for token, qid in zip(tokens, qids):
+        yield token, qid
