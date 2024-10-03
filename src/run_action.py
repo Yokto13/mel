@@ -11,8 +11,6 @@ from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
 from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
-from baselines.olpeat.meludr_evaluate import meludr_run_recall_calculation
-from baselines.olpeat.meludr_olpeat import meludr_olpeat
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
 from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
 from finetunings.finetune_model.train import train
@@ -63,8 +61,6 @@ def choose_action(action):
             return string_similarity
         case "recalls":
             return run_recall_calculation
-        case "meludr_recalls":
-            return meludr_run_recall_calculation
         case "rename":
             return rename
         case "remove_duplicates":
@@ -73,8 +69,6 @@ def choose_action(action):
             return run_duplicates_filter_script
         case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
-        case "meludr_olpeat":
-            return meludr_olpeat
         case "embs_from_tokens_and_model_name_at":
             return embs_from_tokens_and_model_name_at
         case "find_recall_olpeat":
