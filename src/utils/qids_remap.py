@@ -24,9 +24,10 @@ def load_qids_remap(filepath: str | Path) -> dict[int, int]:
 @gin.configurable
 def qids_remap(qids: np.array, old_to_new_qids_path: str | Path) -> np.array:
     old_to_new_qids = load_qids_remap(old_to_new_qids_path)
-    return np.array(
-        [q if q not in old_to_new_qids else old_to_new_qids[q] for q in qids]
+    remapped_qids = np.array(
+        [old_to_new_qids.get(q, q) for q in qids], dtype=qids.dtype
     )
+    return remapped_qids
 
 
 @gin.configurable
