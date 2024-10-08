@@ -27,6 +27,7 @@ jobs:
       run: |
         export REDIRECTS=${{ github.workspace }}/configs/dummy_empty_redirects.json
         ls -l
+        cat $REDIRECTS
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
