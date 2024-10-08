@@ -15,7 +15,7 @@ def configure_redirects() -> None:
     remap_path = os.environ.get("REDIRECTS")
     if remap_path:
         print(f"Setting QID redirects path to {remap_path}")
-        append_qids_remap_json_config(config_path, remap_path)
+        set_qids_remap_json_config(config_path, remap_path)
 
 
 def is_qids_remap_json_configured(config_path: str) -> bool:
@@ -29,7 +29,7 @@ def is_qids_remap_json_configured(config_path: str) -> bool:
     return False
 
 
-def append_qids_remap_json_config(config_path: str, remap_path: str) -> None:
+def set_qids_remap_json_config(config_path: str, remap_path: str) -> None:
     with open(config_path, "r+") as f:
         content = f.read()
         f.seek(0)
