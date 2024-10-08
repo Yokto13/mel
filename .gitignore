@@ -1,12 +1,11 @@
 # ours
-*.json
+settings.json
 *slurm*
 .idea  
 *.zip
 *.parquet
 *.csv 
 *.pth
-*.json
 throttle.*
 *.npz
 apicache
