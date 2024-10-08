@@ -26,10 +26,10 @@ jobs:
     - name: Set up REDIRECTS
       run: |
         export REDIRECTS=${{ github.workspace }}/configs/dummy_empty_redirects.json
-        ls -l
-        cat $REDIRECTS
-        cat ${{ github.workspace }}/configs/general.gin
-        python conftest.py
+        # ls -l
+        # cat $REDIRECTS
+        # cat ${{ github.workspace }}/configs/general.gin
+        # python conftest.py
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -37,4 +37,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test with pytest
       run: |
-        pytest tests
+        pytest 
