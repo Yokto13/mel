@@ -31,7 +31,7 @@ def setup_teardown(tmpdir, sample_langs):
 
     # create links which are npz files. Each file contains multiple tokens and the same number of qids.
     for j, lang in enumerate(sample_langs):
-        for i in range(int(10**2)):
+        for i in range(int(20)):
             example_tokens = np.array([[i, 2], [i, 3], [i, 0]])
             example_qids = np.array([j, j, j])
 
@@ -43,10 +43,10 @@ def setup_teardown(tmpdir, sample_langs):
 
     # create descriptions which are npz files. Each file contains multiple lines and the same number of qids.
     for j, lang in enumerate(sample_langs):
-        for i in range(int(10**2)):
+        for i in range(int(20)):
             example_lines = np.array([1, 1, 1, 1])
             # each qid can appear at most once
-            start_qid = j * 100000 + i * 1000
+            start_qid = i * 1000
             example_qids = np.array(
                 [start_qid, start_qid + 1, start_qid + 2, start_qid + 3]
             )
