@@ -13,6 +13,10 @@ from multilingual_dataset.creator import (
 )
 
 
+def mock_remap_qids(qids, _):
+    return qids
+
+
 @pytest.fixture
 def sample_langs():
     return ["en", "fr", "de"]
@@ -27,7 +31,7 @@ def setup_teardown(tmpdir, sample_langs):
 
     # create links which are npz files. Each file contains multiple tokens and the same number of qids.
     for j, lang in enumerate(sample_langs):
-        for i in range(int(10**3)):
+        for i in range(int(10**2)):
             example_tokens = np.array([[i, 2], [i, 3], [i, 0]])
             example_qids = np.array([j, j, j])
 
@@ -39,7 +43,7 @@ def setup_teardown(tmpdir, sample_langs):
 
     # create descriptions which are npz files. Each file contains multiple lines and the same number of qids.
     for j, lang in enumerate(sample_langs):
-        for i in range(int(10**3)):
+        for i in range(int(10**2)):
             example_lines = np.array([1, 1, 1, 1])
             # each qid can appear at most once
             start_qid = j * 100000 + i * 1000
@@ -73,7 +77,8 @@ class Test_LinksCreator:
     def links_creator(self, damuel_paths, sample_langs, output_dir):
         return _LinksCreator(damuel_paths, sample_langs, Path(output_dir))
 
-    def test_run(self, links_creator, output_dir):
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    def test_run(self, mock_qids_remap, links_creator, output_dir):
         # test should
         # check that output path is empty
         # run
@@ -115,7 +120,8 @@ class Test_KBCreator:
     def kb_creator(self, damuel_paths, sample_langs, output_dir):
         return _KBCreator(damuel_paths, sample_langs, Path(output_dir))
 
-    def test_run(self, kb_creator, output_dir):
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    def test_run(self, mock_qids_remap, kb_creator, output_dir):
         output_dir = Path(output_dir) / "descs_pages"
 
         assert not any(output_dir.iterdir())
@@ -155,7 +161,10 @@ class Test_KBCreator:
 
         assert result == {1: ["en"], 2: ["fr"], 3: ["es"], 4: ["en"], 5: ["fr"]}
 
-    def test_run_with_langs_per_qid_2(self, damuel_paths, sample_langs, output_dir):
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    def test_run_with_langs_per_qid_2(
+        self, mock_qids_remap, damuel_paths, sample_langs, output_dir
+    ):
         kb_creator = _KBCreator(
             damuel_paths, sample_langs, Path(output_dir), langs_per_qid=2
         )

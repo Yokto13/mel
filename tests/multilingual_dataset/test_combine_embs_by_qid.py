@@ -1,5 +1,6 @@
 import os
 import tempfile
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -11,12 +12,15 @@ from utils.qids_remap import remap_qids_decorator
 gin.add_config_file_search_path("configs/general.gin")
 
 
+def mock_remap_qids(qids, _):
+    return qids
+
+
 @pytest.fixture
-@remap_qids_decorator(1)
 def random_embs_and_qids():
-    num_embs = 10000
-    emb_dim = 128
-    num_unique_qids = 2000
+    num_embs = 1000
+    emb_dim = 16
+    num_unique_qids = 200
 
     embs = np.random.rand(num_embs, emb_dim).astype(np.float32)
     qids = np.random.randint(0, num_unique_qids, num_embs)
@@ -40,7 +44,8 @@ def load_output(output_dir):
     return output_data["embs"], output_data["qids"]
 
 
-def test_output_matches_input(temp_dirs, random_embs_and_qids):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_output_matches_input(mock_qids_remap, temp_dirs, random_embs_and_qids):
     input_dir, output_dir = temp_dirs
     embs, qids = random_embs_and_qids
 
@@ -53,7 +58,8 @@ def test_output_matches_input(temp_dirs, random_embs_and_qids):
     ), "Number of output embeddings does not match number of unique QIDs"
 
 
-def test_embeddings_normalized(temp_dirs, random_embs_and_qids):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_embeddings_normalized(mock_qids_remap, temp_dirs, random_embs_and_qids):
     input_dir, output_dir = temp_dirs
     embs, qids = random_embs_and_qids
 
@@ -66,7 +72,8 @@ def test_embeddings_normalized(temp_dirs, random_embs_and_qids):
     ), "Output embeddings are not normalized"
 
 
-def test_all_qids_present(temp_dirs, random_embs_and_qids):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_all_qids_present(mock_qids_remap, temp_dirs, random_embs_and_qids):
     input_dir, output_dir = temp_dirs
     embs, qids = random_embs_and_qids
 

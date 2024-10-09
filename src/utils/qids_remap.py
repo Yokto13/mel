@@ -8,7 +8,7 @@ import gin
 
 
 def _load_json_file(filepath: str | Path) -> dict:
-    with open(filepath, "rb") as f:
+    with open(filepath, "r") as f:
         return orjson.loads(f.read())
 
 
