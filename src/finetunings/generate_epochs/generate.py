@@ -39,7 +39,25 @@ else:
 def reorder_data_to_match_qids(tokens, wrong_qids, correct_qids):
     # make sure that qids contain the same elements
     if not np.array_equal(np.unique(wrong_qids), np.unique(correct_qids)):
+        diff = np.setdiff1d(np.unique(wrong_qids), np.unique(correct_qids))
+        print(f"Size of difference: {len(diff)}")
+        print(
+            f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}"
+        )
+        print(
+            f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}"
+        )
+
+        diff = np.setdiff1d(np.unique(correct_qids), np.unique(wrong_qids))
+        print(f"Size of difference: {len(diff)}")
+        print(
+            f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}"
+        )
+        print(
+            f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}"
+        )
         raise ValueError("Qids contain different elements")
+
     # find the index of the correct qids in the wrong qids
     correct_indices = [np.where(wrong_qids == qid)[0][0] for qid in correct_qids]
     # reorder the tokens using the correct indices
@@ -96,6 +114,9 @@ def generate(
     tokens, qids = zip(*multifile_dataset)
     tokens = np.array(tokens)
     qids = np.array(qids)
+
+    print(qids[:10])
+    print(index_qids[:10])
 
     are_qids_same = np.array_equal(qids, batch_sampler.qids)
     if not are_qids_same:

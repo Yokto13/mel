@@ -26,7 +26,6 @@ class MultiFileDataset(IterableDataset):
                 if f.endswith(self.file_pattern[1:])
             ]
         )
-        _logger.debug(str(file_list))
         return file_list
 
     def _load_data(self, file_path):

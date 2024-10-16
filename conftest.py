@@ -46,7 +46,7 @@ def set_qids_remap_json_config(config_path: str, remap_path: str) -> None:
         f.truncate()
 
 
-configure_redirects()
+# configure_redirects()
 
 print(f"{os.path.dirname(os.path.realpath(__file__))}/src")
 sys.path.append(f"{os.path.dirname(os.path.realpath(__file__))}/src")

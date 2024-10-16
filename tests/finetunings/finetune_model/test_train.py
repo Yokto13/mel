@@ -179,8 +179,8 @@ class TestLinksAndDescriptionsTogetherDataset:
         assert mock_dataset.descriptions_cnt == 5
 
 
+@pytest.mark.slow
 class TestForwardToEmbeddings:
-
     @pytest.fixture(scope="module")
     def model_and_tokenizer(self):
         # Load the model and tokenizer
