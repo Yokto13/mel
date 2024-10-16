@@ -1,13 +1,15 @@
 from unittest.mock import patch
 
+import pytest
 import torch
+from transformers import AutoModel, AutoTokenizer
 
 from models.pooling_wrappers import PoolerOutputWrapper
 
-from transformers import AutoModel, AutoTokenizer
 from utils.model_factory import ModelFactory
 
 
+@pytest.mark.slow
 def test_auto_load_from_file_default():
     model = ModelFactory.auto_load_from_file("setu4993/LEALLA-base")
 
@@ -15,6 +17,7 @@ def test_auto_load_from_file_default():
     assert isinstance(model, PoolerOutputWrapper)
 
 
+@pytest.mark.slow
 def test_auto_load_from_file_smaller_dim():
     model = ModelFactory.auto_load_from_file("setu4993/LEALLA-base", target_dim=10)
 
@@ -22,6 +25,7 @@ def test_auto_load_from_file_smaller_dim():
     assert model.mapping.out_features == 10
 
 
+@pytest.mark.slow
 @patch("torch.load")
 def test_auto_load_from_file_state_dict_and_target_dim(mock_torch_load, tmp_path):
     model = ModelFactory.auto_load_from_file("setu4993/LEALLA-base", target_dim=10)
@@ -38,6 +42,7 @@ def test_auto_load_from_file_state_dict_and_target_dim(mock_torch_load, tmp_path
     mock_torch_load.assert_called_once_with(state_dict_path, map_location="cpu")
 
 
+@pytest.mark.slow
 @patch("torch.load")
 def test_auto_load_from_file_state_dict_and_not_target_dim(mock_torch_load, tmp_path):
     model = ModelFactory.auto_load_from_file("setu4993/LEALLA-base")
@@ -54,6 +59,7 @@ def test_auto_load_from_file_state_dict_and_not_target_dim(mock_torch_load, tmp_
     mock_torch_load.assert_called_once_with(state_dict_path, map_location="cpu")
 
 
+@pytest.mark.slow
 def test_auto_load_with_passthrough():
     model = ModelFactory.auto_load_from_file(
         "setu4993/LEALLA-base", output_type="sentence_transformer", target_dim=12
@@ -66,6 +72,7 @@ def test_auto_load_with_passthrough():
     assert output.shape == (1, 12)
 
 
+@pytest.mark.slow
 def test_auto_load_from_file_state_dict_old(tmp_path):
     original_model = AutoModel.from_pretrained("setu4993/LEALLA-base")
     state_dict_path = f"{tmp_path}/final.pth"

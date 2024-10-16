@@ -22,7 +22,7 @@ def test_load_qids_remap(tmp_path):
 def test_qids_remap():
     # Mock the load_qids_remap function
     mock_qid_map = {1: 10, 2: 20, 3: 30}
-    with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):
+    with patch("utils.qids_remap._qids_dict", mock_qid_map):
         # Test qids_remap function
         input_qids = np.array([1, 2, 3, 4, 5])
         expected_output = np.array([10, 20, 30, 4, 5])
@@ -38,7 +38,7 @@ def test_qids_remap():
 def test_qids_remap_preserve_dtype(dtype):
     # Mock the load_qids_remap function
     mock_qid_map = {1: 10, 2: 20, 3: 30}
-    with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):
+    with patch("utils.qids_remap._qids_dict", mock_qid_map):
         # Test qids_remap function
         input_qids = np.array([1, 2, 3, 4, 5], dtype=dtype)
 
