@@ -1,5 +1,5 @@
-training_batch_size=64
-epochs=20
+training_batch_size=896
+epochs=200
 logit_mutliplier=20
 negative_sampling_type="shuffle"
 learning_rate=0.0001
