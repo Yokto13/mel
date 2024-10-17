@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from models.searchers.scann_searcher import ScaNNSearcher
 from models.searchers.brute_force_searcher import BruteForceSearcher
+from models.searchers.scann_searcher import ScaNNSearcher
 
 
 @pytest.fixture

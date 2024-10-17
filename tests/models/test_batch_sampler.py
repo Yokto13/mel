@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
-from pytest import fixture
-
-from models.searchers import SimplifiedBruteForceSearcher
 from models.batch_sampler import BatchSampler
 from models.negative_sampler import NegativeSamplingType
+
+from models.searchers import SimplifiedBruteForceSearcher
+from pytest import fixture
 
 
 @fixture

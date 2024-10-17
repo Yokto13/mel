@@ -1,9 +1,10 @@
 import json
-import numpy as np
 from unittest.mock import patch
-from utils.qids_remap import load_qids_remap, qids_remap
+
+import numpy as np
 
 import pytest
+from utils.qids_remap import load_qids_remap, qids_remap
 
 
 def test_load_qids_remap(tmp_path):

@@ -5,7 +5,6 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-
 from utils.loaders import load_embs_and_qids, load_embs_qids_tokens, load_mentions
 
 

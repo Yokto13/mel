@@ -1,9 +1,10 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import gin
+
 import numpy as np
 import pytest
-import gin
 from multilingual_dataset.mixer import Mixer
 
 gin.add_config_file_search_path("configs/general.gin")

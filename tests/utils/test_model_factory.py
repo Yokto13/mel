@@ -2,9 +2,9 @@ from unittest.mock import patch
 
 import pytest
 import torch
-from transformers import AutoModel, AutoTokenizer
 
 from models.pooling_wrappers import PoolerOutputWrapper
+from transformers import AutoModel, AutoTokenizer
 
 from utils.model_factory import ModelFactory
 

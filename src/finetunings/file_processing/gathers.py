@@ -1,9 +1,10 @@
 import os
 import pickle
+import random
 import shutil
 from cmath import inf
 from pathlib import Path
-import random
+
 import numpy as np
 
 from utils.argument_wrappers import ensure_datatypes

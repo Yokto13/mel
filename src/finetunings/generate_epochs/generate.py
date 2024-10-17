@@ -1,19 +1,17 @@
 import logging
 import sys
 from pathlib import Path
-from tqdm import tqdm
 
 from models.negative_sampler import NegativeSamplingType
-from models.searchers.brute_force_searcher import (
-    DPBruteForceSearcher,
-)
+from models.searchers.brute_force_searcher import DPBruteForceSearcher
+from tqdm import tqdm
 from utils.multifile_dataset import MultiFileDataset
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
+import gin
 import numpy as np
 import torch
-import gin
 
 # from data_processors.index.token_index import TokenIndex
 from models.batch_sampler import BatchSampler

@@ -2,19 +2,20 @@ import logging
 import os
 from pathlib import Path
 
-from tqdm import tqdm
 import numpy as np
 
 import torch
 
+from tqdm import tqdm
+
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
+import gin
 import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.optim as optim
 import wandb
-import gin
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, Dataset
 

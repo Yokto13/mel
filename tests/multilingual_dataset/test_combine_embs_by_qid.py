@@ -2,9 +2,10 @@ import os
 import tempfile
 from unittest.mock import patch
 
+import gin
+
 import numpy as np
 import pytest
-import gin
 
 from src.multilingual_dataset.combine_embs import combine_embs_by_qid
 from utils.qids_remap import remap_qids_decorator

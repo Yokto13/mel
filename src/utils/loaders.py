@@ -4,9 +4,10 @@ import lzma
 import os
 from pathlib import Path
 
+import gin
+
 import numpy as np
 import pandas as pd
-import gin
 
 from utils.qids_remap import remap_qids_decorator
 
