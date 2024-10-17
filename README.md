@@ -46,6 +46,28 @@ Other improvements are:
 
 For the audacious ones and as a future reference for myself.
 
+
+### scr/scripts
+
+Contains scripts for running everything. The most important scripts are described below.
+
+#### damuel
+
+Downloading and extracting damuel.
+
+#### olpeat 
+
+It's best to use `olpeat_all.sh` which runs OLPEAT from start to finis on tokenized DaMuEL and Mewsli-9.
+
+#### train
+
+`all_langs_no_slurm.sh` is preferrable way to run the code.
+
+
+`all_langs.sh` requires slurm but does not provide any benefits. 
+Its downside is that it requires configuring every little call to slurm sbatch which makes in time consuming to maintain.
+
+
 ### source code
 
 #### baselines
@@ -130,3 +152,8 @@ Adding new pipeline steps can be done easily by extending `tokenization.pipeline
 #### utils
 
 Bunch of different utilities used in different parts of the codebase.
+
+### tests
+
+All tests are in tests directory. 
+Some slower/integration tests are marked with @pytest.mark.slow.
