@@ -19,7 +19,7 @@ TRAIN_CONFIG_PATH="../configs/train.gin"
 DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/all/descs_pages"
 DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/all/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning"
-WORKDIR="$OUTPUTS/workdirs/all"
+WORKDIR="$OUTPUTS/workdirs/all_new"
 N_OF_ROUNDS=10
 
 # copy params
@@ -45,7 +45,8 @@ run_ml_finetuning_round() {
     local STEPS_PER_EPOCH=1000
     local POS=1
 
-    local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 400000))
+    # Multiple by 2 to make sure that if a link contained something faulty we can skip it.
+    local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 10))
     echo "LPR $LINKS_PER_ROUND"
 
     local ACTION_SCRIPT="run_action_gin.py $MODEL_CONFIG_PATH $TRAIN_CONFIG_PATH"

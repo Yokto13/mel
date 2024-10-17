@@ -1,4 +1,15 @@
-# mel-reborn
+# Multilingual Entity Linking
+
+## What is this?
+
+This repository contains implementations of multiple approaches to multilingual entity linking.
+If you don't know what is entity linking or would like to know more about the methods used, take a look at 
+my thesis. Entity linking and its history is described [here](https://arxiv.org/pdf/2406.16892#chapter.2) and 
+training models in the following [chapters](https://arxiv.org/pdf/2406.16892#chapter.4).
+
+Right now, it is rather hard to run the repository locally.
+In the upcoming year, we plan to make this a part of [LinPipe](https://github.com/ufal/linpipe) so all the controlling
+will be done through it.
 
 ## Results
 
@@ -29,6 +40,93 @@ Most noticably:
 Other improvements are:
 - Completly rewritten tokenization pipeline. The previous version was pretty much impossible to extend or change and also inefficient
 - Support for different models 
+- gin-config
 
-Soon to be added:
-- gin
+## Repository structure
+
+For the audacious ones and as a future reference for myself.
+
+### source code
+
+#### baselines
+
+Contains various baselines inherited from the code of my thesis. 
+The most important one is OLPEAT.
+OLPEAT has now cap on the number of different entity representations in the index so we cannot evaluate it 
+with the same code as trained models.
+
+#### data_processors
+
+Some old code that is there for legacy reasons. 
+Should be either moved to models or deleted. 
+Implements wrappers over tokenizers and scann index.
+
+#### finetunings
+
+The complete finetuning logic.
+
+##### evaluation
+
+Most logic was already moved to `RecallCalculator` so here are some wrappers around it that make setting evaluation up easy.
+
+##### file_processing
+
+Utils that are needed during training. Mostly moving data around.
+
+##### finetune_model
+
+There are two possible entry points `train.py` and `train_ddp.py`. 
+The former implements single gpu training, the later does this with distributed data parallel.
+DDP is a strongly prefered way of running things -- it's much faster and data loading logic there is improved.
+`train.py` exists for legacy reasons or for times when I won't have access to multigpu cluster.
+
+##### generate_epochs
+
+The entry point is in `generate.py` but most of the logic is in `datasets.py` -- the code in it constructs batches which
+is probably the hardest thing to get right.
+For performance reasons and ease of implementation we are loading all links into RAM. 
+In case of OOM in generation part it is needed to make `datasets.Batcher` lazier.
+
+#### models
+
+- `batch_sampler.py` and `negative_sampler` implement neighbors sampling for batch and negatives respectively.
+- `recall_calculator.py` used for calculating recalls in evaluation.
+- `*_wrapper.py` different transformes produced the input embeddings differently (pooling, cls...). These can
+wrap a transformer model and extract the embedding.
+
+##### searchers
+
+Different searchers that can be used to implement the index for sampling negatives during training.
+- `brute_force_searcher.py` -- contains GPU based searcher (single and multi gpu). Very performant and precise.
+- `scann_searcher.py` -- Based on [ScaNN](https://github.com/google-research/google-research/tree/master/scann)
+performant but less precise. So far, we can put our index to a GPU so brute force is preferrable. 
+Properly understanding [SOAR](https://research.google/blog/soar-new-algorithms-for-even-faster-vector-search-with-scann/) could give additional performance boost.
+- `faiss_searcher.py` -- currently not working well (maybe params are set horribly).
+
+#### multilingual dataset
+
+Code for creating multilingual dataset in style of [Entity Linking in 100 Languages](https://aclanthology.org/2020.emnlp-main.630/). The scripts from here are used once to create a multilingual dataset.
+
+- `combine_embs.py` is a nice utility that allows us to use more than one language for entity description.
+This offers modest improvements in low resource languages.
+
+#### profiling
+
+Helpful profiling scripts I wrote to make the code efficient.
+
+#### reranking
+
+WIP code for reranking results retrieved by our model.
+
+#### scripts
+
+Scripts for running everything. Already described above.
+
+#### tokenization
+
+Simple pipelines that are used for tokenizing inputs.
+Adding new pipeline steps can be done easily by extending `tokenization.pipeline.base.PipelineStep`.
+
+#### utils
+
+Bunch of different utilities used in different parts of the codebase.
