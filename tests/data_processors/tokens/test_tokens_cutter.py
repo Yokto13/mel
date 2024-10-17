@@ -10,7 +10,9 @@ from transformers import BertTokenizerFast
 class TestTokensCutter:
     @pytest.fixture(scope="class")
     def tokenizer(self) -> BertTokenizerFast:
-        tokenizer = BertTokenizerFast.from_pretrained("setu4993/LEALLA-base")
+        tokenizer = BertTokenizerFast.from_pretrained(
+            "hf-internal-testing/tiny-random-BertModel"
+        )
         tokenizer.add_tokens(["[M]"])
         return tokenizer
 

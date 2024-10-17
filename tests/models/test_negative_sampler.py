@@ -71,6 +71,7 @@ def test_sample_basic(negative_sampler):
             assert x in set(expected)
 
 
+@pytest.mark.slow
 def test_sample_with_large_batch():
     negative_sampler = NegativeSampler(
         np.random.rand(10000, 128),
@@ -108,16 +109,16 @@ def test_sample_edge_case_all_same_qid(negative_sampler):
 
 def test_sample_randomness(negative_sampler):
     negative_sampler = NegativeSampler(
-        np.random.rand(10000, 128),
-        np.random.default_rng().choice(20000, size=10000),
+        np.random.rand(2000, 8),
+        np.random.default_rng().choice(20000, size=2000),
         MockSearcher,
         NegativeSamplingType("shuffle"),
     )
-    batch_embs = np.random.rand(1024, 128)
+    batch_embs = np.random.rand(1024, 8)
     batch_qids = np.random.randint(1, 1000, size=1024)
     negative_cnts = 7
 
-    mock_neighbors = np.random.randint(0, 10000, size=(1024, 8 + 1024))
+    mock_neighbors = np.random.randint(0, 2000, size=(1024, 8 + 1024))
     negative_sampler.searcher.find.return_value = mock_neighbors
 
     result1 = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)

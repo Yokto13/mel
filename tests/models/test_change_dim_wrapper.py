@@ -62,7 +62,19 @@ def test_smaller_dim_state_dict(mock_embedding_model):
     "model_name",
     ["setu4993/LEALLA-base", "sentence-transformers/multi-qa-MiniLM-L6-cos-v1"],
 )
-def test_smaller_dim_with_lealla_base(target_dim, model_name):
+@pytest.mark.slow
+def test_smaller_dim_with_real_model(target_dim, model_name):
+    _test_smaller_dim_with_real_model(target_dim, model_name)
+
+
+@pytest.mark.parametrize("target_dim", [16, 128, 256, 512])
+def test_smaller_dim_with_hf_simple_model(target_dim):
+    _test_smaller_dim_with_real_model(
+        target_dim, "hf-internal-testing/tiny-random-BertModel"
+    )
+
+
+def _test_smaller_dim_with_real_model(target_dim, model_name):
     from transformers import AutoModel, AutoTokenizer
 
     # Load the LEALLA-base model and tokenizer

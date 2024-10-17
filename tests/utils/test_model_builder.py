@@ -8,11 +8,11 @@ from transformers import AutoTokenizer
 
 @pytest.fixture
 def model_builder():
-    return ModelBuilder("setu4993/LEALLA-small")
+    return ModelBuilder("hf-internal-testing/tiny-random-BertModel")
 
 
 def test_init(model_builder):
-    assert model_builder.model_path == "setu4993/LEALLA-small"
+    assert model_builder.model_path == "hf-internal-testing/tiny-random-BertModel"
 
 
 def test_set_output_type_cls(model_builder):

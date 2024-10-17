@@ -9,18 +9,14 @@ from src.models.pooling_wrappers import (
 from transformers import AutoModel, AutoTokenizer
 
 
-@pytest.fixture(
-    params=[
-        ("setu4993/LEALLA-small", 128),
-        ("sentence-transformers/multi-qa-MiniLM-L6-cos-v1", 384),
-    ]
-)
+@pytest.fixture
 def model_setup(request):
-    model_path, output_dim = request.param
+    model_path = "hf-internal-testing/tiny-random-BertModel"
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModel.from_pretrained(model_path)
     input_ids = tokenizer.encode("Hello, world!", return_tensors="pt")
     attention_mask = torch.ones_like(input_ids)
+    output_dim = 32
     return model, input_ids, attention_mask, output_dim
 
 
@@ -40,7 +36,7 @@ def test_sentence_transformer_wrapper_forward(model_setup):
 
     output = sentence_transformer_wrapper(input_ids, attention_mask)
 
-    assert output.shape == (1, output_dim)
+    assert tuple(output.shape) == (1, output_dim)
     assert torch.is_tensor(output)
 
 

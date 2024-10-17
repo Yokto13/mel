@@ -184,8 +184,12 @@ class TestForwardToEmbeddings:
     @pytest.fixture(scope="module")
     def model_and_tokenizer(self):
         # Load the model and tokenizer
-        model = ModelFactory.auto_load_from_file("setu4993/LEALLA-small")
-        tokenizer = AutoTokenizer.from_pretrained("setu4993/LEALLA-small")
+        model = ModelFactory.auto_load_from_file(
+            "hf-internal-testing/tiny-random-BertModel"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            "hf-internal-testing/tiny-random-BertModel"
+        )
         return model, tokenizer
 
     @pytest.fixture(scope="module")

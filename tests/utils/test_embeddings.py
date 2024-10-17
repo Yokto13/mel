@@ -1,7 +1,5 @@
 import numpy as np
 import pytest
-import torch
-from models.pooling_wrappers import PoolerOutputWrapper
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
@@ -13,7 +11,9 @@ class SimpleDataset(Dataset):
     def __init__(self, texts, qids):
         self.texts = texts
         self.qids = qids
-        self.tokenizer = AutoTokenizer.from_pretrained("setu4993/LEALLA-base")
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "hf-internal-testing/tiny-random-BertModel"
+        )
 
     def __len__(self):
         return len(self.texts)
@@ -33,7 +33,7 @@ class SimpleDataset(Dataset):
 
 @pytest.fixture
 def model():
-    return ModelFactory.auto_load_from_file("setu4993/LEALLA-base")
+    return ModelFactory.auto_load_from_file("hf-internal-testing/tiny-random-BertModel")
 
 
 @pytest.fixture
