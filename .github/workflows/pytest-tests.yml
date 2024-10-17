@@ -35,6 +35,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Test with pytest
+    - name: Test with pytest fast
       run: |
-        pytest 
+        pytest -m "not slow"
+    - name: Test with pytest slow
+      run: |
+        pytest -m "slow"
