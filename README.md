@@ -4,11 +4,11 @@
 
 This repository contains implementations of multiple approaches to multilingual entity linking.
 If you don't know what entity linking is or would like to know more about the methods used, take a look at 
-my thesis. Entity linking and its history are described [here](https://arxiv.org/pdf/2406.16892#chapter.2) and 
+my thesis: entity linking and its history are described [here](https://arxiv.org/pdf/2406.16892#chapter.2) and 
 training models in the following [chapters](https://arxiv.org/pdf/2406.16892#chapter.4).
 
 Right now, it is rather hard to run the repository locally.
-In the upcoming year, we plan to make this a part of [LinPipe](https://github.com/ufal/linpipe) so all the controlling
+In the upcoming year, it should become a part of [LinPipe](https://github.com/ufal/linpipe) so all the controlling
 will be done through it.
 
 ## Results
@@ -36,13 +36,13 @@ For OLPEAT explanation click [here](https://arxiv.org/pdf/2406.16892#section.6.4
 
 This repository is based on my [thesis](https://arxiv.org/abs/2406.16892); however, it implements a plateau of different improvements which were not part of the original code.
 Most notably:
-- We now support multilingual entity linking in the style of [Entity Linking in 100 Languages](https://aclanthology.org/2020.emnlp-main.630/).
-- The code is significantly faster and more memory efficient.
+- supports multilingual entity linking in the style of [Entity Linking in 100 Languages](https://aclanthology.org/2020.emnlp-main.630/),
+- the code is significantly faster and more memory efficient.
 
 Other improvements are:
-- Completely rewritten tokenization pipeline. The previous version was pretty much impossible to extend or change and also inefficient.
-- Support for different models 
-- gin-config
+- completely rewritten tokenization pipeline. The previous version was pretty much impossible to extend or change and also inefficient.
+- Support for different models,
+- and gin-config.
 
 ## Repository structure
 
