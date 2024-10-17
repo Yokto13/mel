@@ -3,7 +3,7 @@ import pickle
 import shutil
 from cmath import inf
 from pathlib import Path
-
+import random
 import numpy as np
 
 from utils.argument_wrappers import ensure_datatypes
@@ -39,6 +39,18 @@ def move_tokens(source, dest, m=1, r=0, max_to_copy=float("inf")):
         tokens_cnt = _count_tokens(source / fn)
         already_copied += tokens_cnt
         shutil.copy(os.path.join(source, fn), dest)
+    if not is_enough_copied:
+        sources = os.listdir(source)
+        random.shuffle(sources)
+        for fn in sources:
+            if _wanted_fn(fn, m, r):  # already copied
+                continue
+            is_enough_copied = already_copied >= max_to_copy
+            if is_enough_copied:
+                break
+            tokens_cnt = _count_tokens(source / fn)
+            already_copied += tokens_cnt
+            shutil.copy(os.path.join(source, fn), dest)
 
 
 @ensure_datatypes([Path, str, str], {})
