@@ -3,8 +3,8 @@
 ## What is this?
 
 This repository contains implementations of multiple approaches to multilingual entity linking.
-If you don't know what is entity linking or would like to know more about the methods used, take a look at 
-my thesis. Entity linking and its history is described [here](https://arxiv.org/pdf/2406.16892#chapter.2) and 
+If you don't know what entity linking is or would like to know more about the methods used, take a look at 
+my thesis. Entity linking and its history are described [here](https://arxiv.org/pdf/2406.16892#chapter.2) and 
 training models in the following [chapters](https://arxiv.org/pdf/2406.16892#chapter.4).
 
 Right now, it is rather hard to run the repository locally.
@@ -12,6 +12,10 @@ In the upcoming year, we plan to make this a part of [LinPipe](https://github.co
 will be done through it.
 
 ## Results
+
+### Finetuning 
+
+TBA
 
 ### OLPEAT
 | Language | Recall@1 | Recall@10 | Recall@100 |
@@ -26,19 +30,17 @@ will be done through it.
 | Tamil    |   91.4   |   95.5    |    97.3    |
 | Turkish  |   86.4   |   93.9    |    94.6    |
 
-
-
 For OLPEAT explanation click [here](https://arxiv.org/pdf/2406.16892#section.6.4).
 
 ## History
 
-This repository is based on my [thesis](https://arxiv.org/abs/2406.16892), however it implements plateau of different improvements which were not part of the original code.
-Most noticably:
-- We now support multilingual entity linking in the style of [Entity Linkin in 100 Languages](https://aclanthology.org/2020.emnlp-main.630/).
+This repository is based on my [thesis](https://arxiv.org/abs/2406.16892); however, it implements a plateau of different improvements which were not part of the original code.
+Most notably:
+- We now support multilingual entity linking in the style of [Entity Linking in 100 Languages](https://aclanthology.org/2020.emnlp-main.630/).
 - The code is significantly faster and more memory efficient.
 
 Other improvements are:
-- Completly rewritten tokenization pipeline. The previous version was pretty much impossible to extend or change and also inefficient
+- Completely rewritten tokenization pipeline. The previous version was pretty much impossible to extend or change and also inefficient.
 - Support for different models 
 - gin-config
 
@@ -46,8 +48,7 @@ Other improvements are:
 
 For the audacious ones and as a future reference for myself.
 
-
-### scr/scripts
+### src/scripts
 
 Contains scripts for running everything. The most important scripts are described below.
 
@@ -57,16 +58,14 @@ Downloading and extracting damuel.
 
 #### olpeat 
 
-It's best to use `olpeat_all.sh` which runs OLPEAT from start to finis on tokenized DaMuEL and Mewsli-9.
+It's best to use `olpeat_all.sh` which runs OLPEAT from start to finish on tokenized DaMuEL and Mewsli-9.
 
 #### train
 
-`all_langs_no_slurm.sh` is preferrable way to run the code.
-
+`all_langs_no_slurm.sh` is the preferable way to run the code.
 
 `all_langs.sh` requires slurm but does not provide any benefits. 
-Its downside is that it requires configuring every little call to slurm sbatch which makes in time consuming to maintain.
-
+Its downside is that it requires configuring every little call to slurm sbatch which makes it time-consuming to maintain.
 
 ### source code
 
@@ -74,7 +73,7 @@ Its downside is that it requires configuring every little call to slurm sbatch w
 
 Contains various baselines inherited from the code of my thesis. 
 The most important one is OLPEAT.
-OLPEAT has now cap on the number of different entity representations in the index so we cannot evaluate it 
+OLPEAT now has a cap on the number of different entity representations in the index so we cannot evaluate it 
 with the same code as trained models.
 
 #### data_processors
@@ -98,9 +97,9 @@ Utils that are needed during training. Mostly moving data around.
 ##### finetune_model
 
 There are two possible entry points `train.py` and `train_ddp.py`. 
-The former implements single gpu training, the later does this with distributed data parallel.
-DDP is a strongly prefered way of running things -- it's much faster and data loading logic there is improved.
-`train.py` exists for legacy reasons or for times when I won't have access to multigpu cluster.
+The former implements single gpu training, the latter does this with distributed data parallel.
+DDP is a strongly preferred way of running things -- it's much faster and data loading logic there is improved.
+`train.py` exists for legacy reasons or for times when I won't have access to a multi-gpu cluster.
 
 ##### generate_epochs
 
@@ -113,7 +112,7 @@ In case of OOM in generation part it is needed to make `datasets.Batcher` lazier
 
 - `batch_sampler.py` and `negative_sampler` implement neighbors sampling for batch and negatives respectively.
 - `recall_calculator.py` used for calculating recalls in evaluation.
-- `*_wrapper.py` different transformes produced the input embeddings differently (pooling, cls...). These can
+- `*_wrapper.py` different transformers produce the input embeddings differently (pooling, cls...). These can
 wrap a transformer model and extract the embedding.
 
 ##### searchers
@@ -121,7 +120,7 @@ wrap a transformer model and extract the embedding.
 Different searchers that can be used to implement the index for sampling negatives during training.
 - `brute_force_searcher.py` -- contains GPU based searcher (single and multi gpu). Very performant and precise.
 - `scann_searcher.py` -- Based on [ScaNN](https://github.com/google-research/google-research/tree/master/scann)
-performant but less precise. So far, we can put our index to a GPU so brute force is preferrable. 
+performant but less precise. So far, we can put our index to a GPU so brute force is preferable. 
 Properly understanding [SOAR](https://research.google/blog/soar-new-algorithms-for-even-faster-vector-search-with-scann/) could give additional performance boost.
 - `faiss_searcher.py` -- currently not working well (maybe params are set horribly).
 
@@ -155,5 +154,5 @@ Bunch of different utilities used in different parts of the codebase.
 
 ### tests
 
-All tests are in tests directory. 
+All tests are in the tests directory. 
 Some slower/integration tests are marked with @pytest.mark.slow.
