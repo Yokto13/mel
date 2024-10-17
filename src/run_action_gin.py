@@ -41,8 +41,6 @@ from utils.validate_tokens import validate_tokens
 
 print("Imports finished")
 
-gin.parse_config_file("../configs/general.gin")
-
 
 def choose_action(action):
     match action:
@@ -109,6 +107,7 @@ def choose_action(action):
 
 
 def main(*args, **kwargs):
+    gin.parse_config_file("../configs/general.gin")
     action_descriptor = args[-1]
     action = choose_action(action_descriptor)
     arg_names = get_args_names(action)
