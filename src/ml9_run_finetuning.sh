@@ -25,7 +25,6 @@ set -ueo pipefail
 #   evaluate
 # ...
 
-LANG="es"
 DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/ml-9v2/descs_pages"
 # DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/tokens_damuel_finetuning/es/descs"
 # echo "RUNNING WITH DESCS NOT PAGES!!!"

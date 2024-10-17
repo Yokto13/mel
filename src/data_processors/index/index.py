@@ -1,16 +1,16 @@
-from collections import defaultdict
 import lzma
-from math import inf
-from pathlib import Path
 import pickle
 
 import sys
+from collections import defaultdict
+from math import inf
+from pathlib import Path
 
 sys.path.append("..")
 
 import numpy as np
-import torch
 import scann
+import torch
 
 
 class Index:

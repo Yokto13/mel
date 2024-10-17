@@ -1,15 +1,23 @@
 import functools
 import json
-import numpy as np
-import pandas as pd
+import lzma
+import os
 from pathlib import Path
 
-import lzma
+import numpy as np
+import pandas as pd
+import gin
 
-from parsivar import Normalizer
-import torch
+from utils.qids_remap import remap_qids_decorator
 
 
+current_file_path = os.path.abspath(__file__)
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+config_path = os.path.join(project_root, "configs", "general.gin")
+gin.parse_config_file(config_path)
+
+
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mewsli(tsv_path: Path, lowercase=False) -> tuple[list[str], list[str]]:
     df = pd.read_csv(tsv_path, sep="\t")
     if lowercase:
@@ -22,6 +30,7 @@ def load_mewsli(tsv_path: Path, lowercase=False) -> tuple[list[str], list[str]]:
     return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).tolist()
 
 
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_damuel(
     dir_path: Path, only_wiki: bool, use_xz=False, lowercase=False
 ) -> tuple[list[str], list[str]]:
@@ -68,6 +77,7 @@ def load_damuel(
     return mention_names, qids
 
 
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mewsli_from_files(tsv_path: Path) -> tuple[list[str], list[str]]:
     df = pd.read_csv(tsv_path, sep="\t")
     mentions, qids = [], []
@@ -79,6 +89,7 @@ def load_mewsli_from_files(tsv_path: Path) -> tuple[list[str], list[str]]:
     return mentions, qids
 
 
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_damuel_context(
     dir_path: Path, only_wiki: bool, context_char_size
 ) -> tuple[list[str], list[str]]:
@@ -111,6 +122,7 @@ def load_damuel_context(
     return contexts, qids
 
 
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mewsli_context_from_files(
     tsv_path: Path, context_char_size
 ) -> tuple[list[str], list[str]]:
@@ -140,6 +152,7 @@ def _sort_by_output(output_idx: int):
 
 
 # @_sort_by_output(1)
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings and qids from the directory.
 
@@ -158,6 +171,7 @@ def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
 
 
 # @_sort_by_output(1)
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings, qids, and tokens from the directory.
 
@@ -176,6 +190,7 @@ def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]
 
 
 # @_sort_by_output(1)
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     if type(file_path) == str:
         file_path = Path(file_path)
@@ -184,6 +199,7 @@ def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
 
 
 @_sort_by_output(1)
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     tokens, qids = [], []
     for file in dir_path.iterdir():
@@ -192,3 +208,9 @@ def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray
             tokens.extend(d["tokens"])
             qids.extend(d["qids"])
     return np.array(tokens), np.array(qids)
+
+
+@remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
+def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    d = np.load(file_path)
+    return d["tokens"], d["qids"]

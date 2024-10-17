@@ -1,5 +1,6 @@
-import pytest
 from collections import deque
+
+import pytest
 
 from utils.running_averages import RunningAverages
 

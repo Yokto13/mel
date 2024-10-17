@@ -1,10 +1,10 @@
 """ Filters embeddings and QIDs that should be in the final KB. """
 
-from collections import defaultdict
-
 import json
-import numpy as np
+from collections import defaultdict
 from pathlib import Path
+
+import numpy as np
 
 from fire import Fire
 from tqdm import tqdm

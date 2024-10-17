@@ -1,7 +1,7 @@
 import os
-from tqdm import tqdm
 
 import numpy as np
+from tqdm import tqdm
 
 from utils.loaders import load_embs_and_qids
 

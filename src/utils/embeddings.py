@@ -1,13 +1,14 @@
 """ Utils for embedding tokens.
 """
 
-import logging
 import itertools
+import logging
 from pathlib import Path
-from tqdm import tqdm
 
+import gin
 import numpy as np
 import torch
+from tqdm import tqdm
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -17,8 +18,8 @@ from torch.utils.data import DataLoader
 from transformers import BertModel
 
 from utils.model_builder import ModelBuilder, ModelOutputType
-from utils.multifile_dataset import MultiFileDataset
 from utils.model_factory import ModelFactory
+from utils.multifile_dataset import MultiFileDataset
 
 _logger = logging.getLogger("utils.embeddings")
 
@@ -134,6 +135,7 @@ def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
     return embs, qids
 
 
+@gin.configurable
 def embs_from_tokens_and_model_name(
     source, model_name, batch_size, dest, output_type: str | None = None
 ):
@@ -148,6 +150,7 @@ def embs_from_tokens_and_model_name(
     embs_from_tokens_and_model(source, model, batch_size, dest)
 
 
+@gin.configurable
 def embs_from_tokens_model_name_and_state_dict(
     source_path: str,
     model_name: str,
@@ -155,6 +158,7 @@ def embs_from_tokens_model_name_and_state_dict(
     dest_path: str,
     state_dict_path: str | None,
     target_dim: int | None = None,
+    output_type: str | None = None,
 ):
     model = ModelFactory.auto_load_from_file(model_name, state_dict_path, target_dim)
     embs_from_tokens_and_model(source_path, model, batch_size, dest_path)

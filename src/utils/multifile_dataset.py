@@ -1,10 +1,12 @@
-from copy import deepcopy
 import logging
 import os
+from copy import deepcopy
 
 import numpy as np
 import torch
 from torch.utils.data import IterableDataset
+
+from utils.loaders import load_tokens_and_qids
 
 _logger = logging.getLogger("utils.multifile_dataset")
 
@@ -24,7 +26,6 @@ class MultiFileDataset(IterableDataset):
                 if f.endswith(self.file_pattern[1:])
             ]
         )
-        _logger.debug(str(file_list))
         return file_list
 
     def _load_data(self, file_path):
@@ -58,6 +59,6 @@ class MultiFileDataset(IterableDataset):
 
 
 def _npz_loader(file_path):
-    d = np.load(file_path)
-    for t, q in zip(d["tokens"], d["qids"]):
-        yield t, q
+    tokens, qids = load_tokens_and_qids(file_path)
+    for token, qid in zip(tokens, qids):
+        yield token, qid

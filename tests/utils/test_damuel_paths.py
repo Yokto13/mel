@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
 from unittest.mock import patch
+
 import pytest
-from utils.damuel_paths import DamuelPaths, all_paths_must_exist, path_must_exist
+from utils.damuel_paths import all_paths_must_exist, DamuelPaths, path_must_exist
 
 
 def mock_path_exists_enforcer(path):

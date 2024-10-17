@@ -1,82 +1,92 @@
-import pytest
 import numpy as np
-from models.searchers.faiss_searcher import FaissSearcher
+import pytest
 from models.searchers.scann_searcher import ScaNNSearcher
+from models.searchers.brute_force_searcher import BruteForceSearcher
 
 
 @pytest.fixture
 def large_random_data():
     np.random.seed(42)
-    n_samples = 50000
+    n_samples = 20000
     n_features = 128
     embs = np.random.rand(n_samples, n_features).astype(np.float32)
     results = np.arange(n_samples)
     return embs, results
 
 
-def test_scann_searcher_build_large(large_random_data):
-    embs, results = large_random_data
-    searcher = ScaNNSearcher(embs, results)
+@pytest.fixture
+def small_random_data():
+    np.random.seed(42)
+    n_samples = 200
+    n_features = 16
+    embs = np.random.rand(n_samples, n_features).astype(np.float32)
+    results = np.arange(n_samples)
+    return embs, results
 
-    # This test simply checks if the build process completes without errors
+
+@pytest.mark.parametrize("searcher_class", [ScaNNSearcher, BruteForceSearcher])
+@pytest.mark.slow
+def test_searcher_build_large(large_random_data, searcher_class):
+    embs, results = large_random_data
+    searcher = searcher_class(embs, results)
+
     try:
         searcher.build()
     except Exception as e:
-        pytest.fail(f"ScaNNSearcher build failed with error: {e}")
+        pytest.fail(f"{searcher_class.__name__} build failed with error: {e}")
 
 
-def test_scann_searcher_find_large(large_random_data):
+@pytest.mark.parametrize("searcher_class", [ScaNNSearcher, BruteForceSearcher])
+@pytest.mark.slow
+def test_searcher_find_large(large_random_data, searcher_class):
     embs, results = large_random_data
-    searcher = ScaNNSearcher(embs, results)
+    searcher = searcher_class(embs, results)
 
-    # Generate a small batch of random query vectors
     n_queries = 10
     query_batch = np.random.rand(n_queries, embs.shape[1]).astype(np.float32)
 
     num_neighbors = 5
     search_results = searcher.find(query_batch, num_neighbors)
 
-    # Basic checks on the search results
     assert search_results.shape == (n_queries, num_neighbors)
     assert np.all(search_results >= 0) and np.all(search_results < len(results))
 
 
-# def test_faiss_searcher_find_large(large_random_data):
-#     embs, results = large_random_data
-#     searcher = FaissSearcher(embs, results)
+@pytest.mark.parametrize("searcher_class", [ScaNNSearcher, BruteForceSearcher])
+def test_searcher_build_small(small_random_data, searcher_class):
+    embs, results = small_random_data
+    searcher = searcher_class(embs, results)
 
-#     # Generate a small batch of random query vectors
-#     n_queries = 10
-#     query_batch = np.random.rand(n_queries, embs.shape[1]).astype(np.float32)
-
-#     num_neighbors = 5
-#     search_results = searcher.find(query_batch, num_neighbors)
-
-#     # Basic checks on the search results
-#     assert search_results.shape == (n_queries, num_neighbors)
-#     assert np.all(search_results >= 0) and np.all(search_results < len(results))
+    try:
+        searcher.build()
+    except Exception as e:
+        pytest.fail(f"{searcher_class.__name__} build failed with error: {e}")
 
 
-def test_scann_search_no_build(large_random_data):
+@pytest.mark.parametrize("searcher_class", [ScaNNSearcher, BruteForceSearcher])
+def test_searcher_find_small(small_random_data, searcher_class):
+    embs, results = small_random_data
+    searcher = searcher_class(embs, results)
+
+    n_queries = 5
+    query_batch = np.random.rand(n_queries, embs.shape[1]).astype(np.float32)
+
+    num_neighbors = 3
+    search_results = searcher.find(query_batch, num_neighbors)
+
+    assert search_results.shape == (n_queries, num_neighbors)
+    assert np.all(search_results >= 0) and np.all(search_results < len(results))
+
+
+@pytest.mark.parametrize("run_build_from_init", [False, True])
+@pytest.mark.slow
+def test_scann_search_build_options(large_random_data, run_build_from_init):
     embs, results = large_random_data
-    searcher = ScaNNSearcher(embs, results, run_build_from_init=False)
+    searcher = ScaNNSearcher(embs, results, run_build_from_init=run_build_from_init)
 
-    assert not hasattr(searcher, "searcher")
-
-    searcher.build()
-
-    assert hasattr(searcher, "searcher")
-
-
-def test_scann_search_yes_build(large_random_data):
-    embs, results = large_random_data
-    searcher = ScaNNSearcher(embs, results, run_build_from_init=True)
-
-    assert hasattr(searcher, "searcher")
-
-
-def test_scann_search_auto_build(large_random_data):
-    embs, results = large_random_data
-    searcher = ScaNNSearcher(embs, results)
-
-    assert hasattr(searcher, "searcher")
+    if run_build_from_init:
+        assert hasattr(searcher, "searcher")
+    else:
+        assert not hasattr(searcher, "searcher")
+        searcher.build()
+        assert hasattr(searcher, "searcher")

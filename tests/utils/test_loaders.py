@@ -1,16 +1,20 @@
-import numpy as np
-from pathlib import Path
 import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
+import numpy as np
 import pytest
-from utils.loaders import (
-    load_embs_and_qids,
-    load_embs_qids_tokens,
-    load_mentions,
-)
 
 
-def test_load_mentions_with_path_object():
+from utils.loaders import load_embs_and_qids, load_embs_qids_tokens, load_mentions
+
+
+def mock_remap_qids(qids, _):
+    return qids
+
+
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_load_mentions_with_path_object(mock_qids_remap):
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = Path(temp_dir) / "mentions_2.npz"
 
@@ -25,7 +29,8 @@ def test_load_mentions_with_path_object():
         assert np.array_equal(loaded_qids, test_qids)
 
 
-def test_load_mentions_with_string_path():
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_load_mentions_with_string_path(mock_qids_remap):
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = str(Path(temp_dir) / "mentions_1.npz")
 
@@ -63,7 +68,10 @@ def test_load_mentions_with_string_path():
     ],
 )
 @pytest.mark.parametrize("use_string_path", [True, False])
-def test_embs_qids_loaders(loader_func, file_name, test_data, use_string_path):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_embs_qids_loaders(
+    mock_qids_remap, loader_func, file_name, test_data, use_string_path
+):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:
@@ -107,7 +115,10 @@ def test_embs_qids_loaders(loader_func, file_name, test_data, use_string_path):
 @pytest.mark.skip(
     reason="Sorting is currently disabled because it interferes with MultifileDataset"
 )
-def test_loaders_sort(loader_func, file_name, test_data, use_string_path):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_loaders_sort(
+    mock_qids_remap, loader_func, file_name, test_data, use_string_path
+):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:
@@ -153,7 +164,10 @@ def test_loaders_sort(loader_func, file_name, test_data, use_string_path):
 @pytest.mark.skip(
     reason="Sorting is currently disabled because it interferes with MultifileDataset"
 )
-def test_loaders_sort_corresponding(loader_func, file_name, test_data, use_string_path):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_loaders_sort_corresponding(
+    mock_qids_remap, loader_func, file_name, test_data, use_string_path
+):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:
@@ -198,7 +212,10 @@ def test_loaders_sort_corresponding(loader_func, file_name, test_data, use_strin
 @pytest.mark.skip(
     reason="Sorting is currently disabled because it interferes with MultifileDataset"
 )
-def test_loaders_sort_stable(loader_func, file_name, test_data, use_string_path):
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_loaders_sort_stable(
+    mock_qids_remap, loader_func, file_name, test_data, use_string_path
+):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:

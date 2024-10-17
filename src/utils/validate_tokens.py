@@ -10,7 +10,9 @@
 """
 
 import os
+
 import numpy as np
+from tqdm import tqdm
 
 
 def validate_tokens(dir1, dir2):
@@ -65,7 +67,7 @@ def _are_leaf_directories(files1, files2):
     )
 
 
-def _compare_leaf_directories(dir1, dir2):
+def _compare_leaf_directories(dir1: str, dir2: str) -> bool:
     npz_files1 = [file for file in os.listdir(dir1) if file.endswith(".npz")]
     npz_files2 = [file for file in os.listdir(dir2) if file.endswith(".npz")]
 
@@ -100,19 +102,43 @@ def _compare_leaf_directories(dir1, dir2):
     sorted_indices1 = np.argsort(qids1)
     sorted_indices2 = np.argsort(qids2)
 
-    sorted_tokens1 = tokens1[sorted_indices1]
-    sorted_tokens2 = tokens2[sorted_indices2]
     sorted_qids1 = qids1[sorted_indices1]
     sorted_qids2 = qids2[sorted_indices2]
 
-    are_equal = np.array_equal(sorted_tokens1, sorted_tokens2) and np.array_equal(
-        sorted_qids1, sorted_qids2
+    are_equal = np.array_equal(sorted_qids1, sorted_qids2)
+
+    set_tokens1 = set(map(tuple, tokens1))
+    not_equal_tokens_cnt = 0
+    for token in tqdm(tokens2, desc="Checking tokens"):
+        if tuple(token) not in set_tokens1:
+            are_equal = False
+            not_equal_tokens_cnt += 1
+
+    print(
+        f"Ratio of not equal tokens: {not_equal_tokens_cnt / len(tokens2) * 100:.2f}%"
     )
+
     if not are_equal:
         print("Failing in the following directories:")
         print(dir1)
         print(dir2)
-        print(f"Tokens and qids are not equal")
+
+        # Calculate percentage of differing qids
+        differing_qids = np.sum(sorted_qids1 != sorted_qids2)
+        total_qids = len(sorted_qids1)
+        percentage_differing_qids = (differing_qids / total_qids) * 100
+        print(f"Percentage of differing qids: {percentage_differing_qids:.2f}%")
+
+        # Additional statistics: count of unique qids and tokens in each directory
+        unique_qids1 = np.unique(sorted_qids1).size
+        unique_qids2 = np.unique(sorted_qids2).size
+        unique_tokens1 = len(set(map(tuple, tokens1)))
+        unique_tokens2 = len(set(map(tuple, tokens2)))
+        print(f"Unique qids in {dir1}: {unique_qids1}")
+        print(f"Unique qids in {dir2}: {unique_qids2}")
+        print(f"Unique tokens in {dir1}: {unique_tokens1}")
+        print(f"Unique tokens in {dir2}: {unique_tokens2}")
+
     return are_equal
 
 

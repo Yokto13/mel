@@ -1,6 +1,6 @@
 import numpy as np
-import torch
 import pytest
+import torch
 
 from models.searchers.brute_force_searcher import (
     BruteForceSearcher,

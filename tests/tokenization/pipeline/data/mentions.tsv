@@ -1,0 +1,10 @@
+docid	position	length	mention	url	lang	qid	qid_in_refs	freq_bin
+es-55686	128	6	Lérida	http://es.wikipedia.org/wiki/L%C3%A9rida	es	Q15090	True	4
+es-55686	146	6	España	http://es.wikipedia.org/wiki/Espa%C3%B1a	es	Q29	True	5
+es-55686	211	6	Lérida	http://es.wikipedia.org/wiki/L%C3%A9rida	es	Q15090	True	4
+es-55686	310	14	antidisturbios	http://es.wikipedia.org/wiki/Polic%C3%ADa_antidisturbios	es	Q1825410	True	3
+es-55686	603	6	Públic	http://es.wikipedia.org/wiki/P%C3%BAblico_(Espa%C3%B1a)	es	Q1835391	True	3
+es-55686	1643	9	Barcelona	http://es.wikipedia.org/wiki/Barcelona	es	Q1492	True	5
+es-55692	103	15	misil balístico	http://es.wikipedia.org/wiki/Misil_bal%C3%ADstico	es	Q179348	True	4
+es-55692	313	9	Pyongsong	http://es.wikipedia.org/wiki/Pyongsong	es	Q514136	True	3
+es-55692	581	4	Seúl	http://es.wikipedia.org/wiki/Se%C3%BAl	es	Q8684	True	5

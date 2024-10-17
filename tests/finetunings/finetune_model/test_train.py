@@ -1,18 +1,19 @@
 from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pytest
 import torch
-from transformers import AutoTokenizer
 
 from finetunings.finetune_model.data import (
-    LinksAndDescriptionsTogetherDataset,
-    LightWeightDataset,
     _load_epoch_npz,
+    LightWeightDataset,
+    LinksAndDescriptionsTogetherDataset,
 )
-from finetunings.finetune_model.monitoring import get_wandb_logs, batch_recall
-from finetunings.finetune_model.train_ddp import construct_labels
+from finetunings.finetune_model.monitoring import batch_recall, get_wandb_logs
 from finetunings.finetune_model.train import forward_to_embeddings
+from finetunings.finetune_model.train_ddp import construct_labels
+from transformers import AutoTokenizer
 from utils.model_factory import ModelFactory
 from utils.running_averages import RunningAverages
 
@@ -178,8 +179,8 @@ class TestLinksAndDescriptionsTogetherDataset:
         assert mock_dataset.descriptions_cnt == 5
 
 
+@pytest.mark.slow
 class TestForwardToEmbeddings:
-
     @pytest.fixture(scope="module")
     def model_and_tokenizer(self):
         # Load the model and tokenizer

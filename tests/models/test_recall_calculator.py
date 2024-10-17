@@ -1,8 +1,9 @@
-import pytest
-import numpy as np
 from unittest.mock import MagicMock
 
-from models.recall_calculator import RecallCalculator, _get_unique_n
+import numpy as np
+import pytest
+
+from models.recall_calculator import _get_unique_n, RecallCalculator
 from models.searchers.scann_searcher import ScaNNSearcher
 
 

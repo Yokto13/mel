@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from finetunings.generate_epochs.embed_links_for_generation import (
     embed_links_for_generation,

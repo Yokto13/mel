@@ -1,6 +1,7 @@
 import logging
-from pathlib import Path
 import sys
+from pathlib import Path
+from tqdm import tqdm
 
 from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import (
@@ -13,16 +14,14 @@ sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import numpy as np
 import torch
-from tqdm import tqdm
+import gin
 
 # from data_processors.index.token_index import TokenIndex
 from models.batch_sampler import BatchSampler
 from models.searchers.scann_searcher import ScaNNSearcher
 from utils.loaders import load_embs_and_qids
-from finetunings.generate_epochs.datasets import (
-    Batcher,
-    DamuelNeighborsIterator,
-)
+
+from finetunings.generate_epochs.datasets import Batcher, DamuelNeighborsIterator
 
 _logger = logging.getLogger("finetunings.generate_epochs.generate")
 
@@ -40,7 +39,25 @@ else:
 def reorder_data_to_match_qids(tokens, wrong_qids, correct_qids):
     # make sure that qids contain the same elements
     if not np.array_equal(np.unique(wrong_qids), np.unique(correct_qids)):
+        diff = np.setdiff1d(np.unique(wrong_qids), np.unique(correct_qids))
+        print(f"Size of difference: {len(diff)}")
+        print(
+            f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}"
+        )
+        print(
+            f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}"
+        )
+
+        diff = np.setdiff1d(np.unique(correct_qids), np.unique(wrong_qids))
+        print(f"Size of difference: {len(diff)}")
+        print(
+            f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}"
+        )
+        print(
+            f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}"
+        )
         raise ValueError("Qids contain different elements")
+
     # find the index of the correct qids in the wrong qids
     correct_indices = [np.where(wrong_qids == qid)[0][0] for qid in correct_qids]
     # reorder the tokens using the correct indices
@@ -51,6 +68,7 @@ SEED = 0
 torch.manual_seed(SEED)
 
 
+@gin.configurable
 def generate(
     LINKS_EMBS_DIR: Path,
     INDEX_TOKENS_DIR: Path,
@@ -96,6 +114,9 @@ def generate(
     tokens, qids = zip(*multifile_dataset)
     tokens = np.array(tokens)
     qids = np.array(qids)
+
+    print(qids[:10])
+    print(index_qids[:10])
 
     are_qids_same = np.array_equal(qids, batch_sampler.qids)
     if not are_qids_same:

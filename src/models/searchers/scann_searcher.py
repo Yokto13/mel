@@ -1,5 +1,4 @@
 import numpy as np
-import scann
 
 from models.searchers.searcher import Searcher
 
@@ -27,6 +26,8 @@ class ScaNNSearcher(Searcher):
         reordering_size=2000,
         use_assymetric_hashing=True,
     ):
+        import scann
+
         training_sample_size = int(min(0.5 * len(self.embs), training_sample_size))
         num_leaves = min(num_leaves, training_sample_size)
         n_of_clusters = min(

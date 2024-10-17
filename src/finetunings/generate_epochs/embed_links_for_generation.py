@@ -1,13 +1,14 @@
 import logging
 from pathlib import Path
 
+import gin
 import numpy as np
-from torch.utils.data import IterableDataset
 import torch.nn as nn
+from torch.utils.data import IterableDataset
+from utils.embeddings import embed
+from utils.multifile_dataset import MultiFileDataset
 
 from finetunings.finetune_model.train import load_model
-from utils.multifile_dataset import MultiFileDataset
-from utils.embeddings import embed
 
 _logger = logging.getLogger("generate_epochs.embed_links_for_generation")
 
@@ -25,6 +26,7 @@ def _save(dest_dir_path: str, embs, qids, tokens):
     )
 
 
+@gin.configurable
 def embed_links_for_generation(
     links_tokens_dir_path: str,
     model_path: str,
@@ -32,9 +34,10 @@ def embed_links_for_generation(
     dest_dir_path: str,
     state_dict_path: str,
     target_dim: int | None = None,
+    output_type: str | None = None,
 ) -> None:
     dataset = _get_dataset(links_tokens_dir_path)
-    model = load_model(model_path, state_dict_path, target_dim)
+    model = load_model(model_path, state_dict_path, target_dim, output_type)
 
     embs, qids, tokens = embed(
         dataset, model, batch_size, return_qids=True, return_tokens=True

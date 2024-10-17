@@ -1,15 +1,13 @@
 # ours
-*.json
+settings.json
 *slurm*
 .idea  
 *.zip
 *.parquet
-*.tsv
 *.csv 
 *.pth
-*.json
-*.xz
 throttle.*
+*.npz
 apicache
 
 wandb/

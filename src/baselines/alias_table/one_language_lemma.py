@@ -1,15 +1,16 @@
 import sys
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from math import inf
 from pathlib import Path
 
-import wandb
 import fire
 import spacy
 
-from utils.loaders import load_mewsli, load_damuel
+import wandb
+
+from utils.loaders import load_damuel, load_mewsli
 
 lang_model = {
     "de": "de_core_news_sm",

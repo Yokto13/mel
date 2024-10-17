@@ -1,15 +1,15 @@
-from enum import StrEnum
 import logging
-
-from transformers import AutoModel
-from torch import nn
+from enum import StrEnum
 
 from models.change_dim_wrapper import ChangeDimWrapper
 from models.pooling_wrappers import (
+    CLSWrapper,
     PoolerOutputWrapper,
     SentenceTransformerWrapper,
-    CLSWrapper,
 )
+from torch import nn
+
+from transformers import AutoModel
 
 _logger = logging.getLogger("models.model_builder")
 
