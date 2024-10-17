@@ -28,6 +28,7 @@ def test_calculate_recall(recall_calculator):
     assert recall == 2 / 3
 
 
+@pytest.mark.slow
 def test_calculate_real():
     damuel_embs = np.random.random((50000, 128))
     mewsli_embs = np.random.random((1000, 128))

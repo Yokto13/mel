@@ -47,6 +47,9 @@ def set_qids_remap_json_config(config_path: str, remap_path: str) -> None:
 
 
 # configure_redirects()
+from numba import jit, config
+
+config.DISABLE_JIT = True
 
 print(f"{os.path.dirname(os.path.realpath(__file__))}/src")
 sys.path.append(f"{os.path.dirname(os.path.realpath(__file__))}/src")

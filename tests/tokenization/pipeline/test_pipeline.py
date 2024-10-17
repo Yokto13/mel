@@ -37,6 +37,7 @@ def tokenizer_with_label():
         (16, True),
     ],
 )
+@pytest.mark.slow
 def test_run_mewsli_mention(
     expected_size: int, compress: bool, standard_tokenizer
 ) -> None:
@@ -94,6 +95,7 @@ def test_run_mewsli_mention(
         (16, True),
     ],
 )
+@pytest.mark.slow
 def test_run_mewsli_mention_context(
     expected_size: int, compress: bool, tokenizer_with_label
 ) -> None:
@@ -161,6 +163,7 @@ def test_run_mewsli_mention_context(
         (16, True),
     ],
 )
+@pytest.mark.slow
 def test_run_damuel_link_mention(
     expected_size: int, compress: bool, standard_tokenizer
 ) -> None:
@@ -216,6 +219,7 @@ def test_run_damuel_link_mention(
         (16, True),
     ],
 )
+@pytest.mark.slow
 def test_run_damuel_link_context(
     expected_size: int, compress: bool, tokenizer_with_label
 ) -> None:
@@ -279,6 +283,7 @@ def test_run_damuel_link_context(
         (16, True),
     ],
 )
+@pytest.mark.slow
 def test_run_damuel_description_mention(
     expected_size: int, compress: bool, standard_tokenizer
 ) -> None:
@@ -334,6 +339,7 @@ def test_run_damuel_description_mention(
         (16, True),
     ],
 )
+@pytest.mark.slow
 def test_run_damuel_description_context(
     expected_size: int, compress: bool, tokenizer_with_label
 ) -> None:

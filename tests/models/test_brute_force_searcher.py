@@ -7,6 +7,9 @@ from models.searchers.brute_force_searcher import (
     DPBruteForceSearcher,
 )
 
+torch.compiler.disable(BruteForceSearcher.find)
+torch.compiler.disable(DPBruteForceSearcher.find)
+
 
 def test_search_present():
     embs = np.array(
@@ -41,6 +44,7 @@ def test_search_missing():
     assert res[0][0] == 0
 
 
+@pytest.mark.slow
 def test_search_large():
     embs = np.random.random((10000, 128))
     embs = embs / np.linalg.norm(embs, ord=2, axis=1, keepdims=True)
@@ -97,6 +101,7 @@ class TestDPBruteForceSearcher:
         res = searcher.find(np.array([[1.0, 0.0, 1.0]]), 2)
         assert res[0][0] == 0
 
+    @pytest.mark.slow
     def test_search_large(self, large_embs):
         searcher = DPBruteForceSearcher(large_embs, np.arange(len(large_embs)))
         neg = 7

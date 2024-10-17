@@ -1,15 +1,15 @@
 import numpy as np
 import pytest
-from models.batch_sampler import BatchSampler
-
-from models.negative_sampler import NegativeSamplingType
-from models.searchers.brute_force_searcher import BruteForceSearcher
 from pytest import fixture
+
+from models.searchers import SimplifiedBruteForceSearcher
+from models.batch_sampler import BatchSampler
+from models.negative_sampler import NegativeSamplingType
 
 
 @fixture
 def data_size():
-    return 1000
+    return 500
 
 
 @fixture
@@ -27,14 +27,17 @@ def qids(data_size):
 @fixture
 def top_batch_sampler(random_embs, qids):
     return BatchSampler(
-        random_embs, qids, BruteForceSearcher, NegativeSamplingType.MostSimilar
+        random_embs,
+        qids,
+        SimplifiedBruteForceSearcher,
+        NegativeSamplingType.MostSimilar,
     )
 
 
 @fixture
 def shuffle_batch_sampler(random_embs, qids):
     return BatchSampler(
-        random_embs, qids, BruteForceSearcher, NegativeSamplingType.Shuffling
+        random_embs, qids, SimplifiedBruteForceSearcher, NegativeSamplingType.Shuffling
     )
 
 

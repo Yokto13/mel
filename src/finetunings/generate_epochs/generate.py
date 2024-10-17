@@ -5,7 +5,6 @@ from tqdm import tqdm
 
 from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import (
-    BruteForceSearcher,
     DPBruteForceSearcher,
 )
 from utils.multifile_dataset import MultiFileDataset
