@@ -156,3 +156,14 @@ Bunch of different utilities used in different parts of the codebase.
 
 All tests are in the tests directory. 
 Some slower/integration tests are marked with @pytest.mark.slow.
+
+To run all tests just run
+```
+pytest
+```
+in the root.
+
+To exclude slow tests, run
+```
+pytest -m "not slow"
+```
