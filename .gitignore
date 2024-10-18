@@ -1,6 +1,7 @@
 # ours
 settings.json
 *slurm*
+!all_langs_no_slurm.sh
 .idea  
 *.zip
 *.parquet
