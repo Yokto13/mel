@@ -18,7 +18,10 @@ from models.batch_sampler import BatchSampler
 from models.searchers.scann_searcher import ScaNNSearcher
 from utils.loaders import load_embs_and_qids
 
-from finetunings.generate_epochs.datasets import Batcher, DamuelNeighborsIterator
+from finetunings.generate_epochs.datasets import (
+    BatcherDataset,
+    DamuelNeighborsIterator,
+)
 
 _logger = logging.getLogger("finetunings.generate_epochs.generate")
 
@@ -127,9 +130,9 @@ def generate(
     _logger.debug("Tokens created")
 
     # dataset = TokensIterableDataset(LINKS_EMBS_DIR, set(batch_sampler.qids))
-    batcher = Batcher(LINKS_EMBS_DIR, batch_sampler.qids, BATCH_SIZE)
+    batcher_dataset = BatcherDataset(LINKS_EMBS_DIR, batch_sampler.qids, BATCH_SIZE)
     damuel_neighbors_iterator = DamuelNeighborsIterator(
-        batcher,
+        batcher_dataset,
         BATCH_SIZE,
         NEG,
         batch_sampler,

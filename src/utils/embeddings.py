@@ -1,6 +1,7 @@
 """ Utils for embedding tokens.
 """
 
+from collections.abc import Generator
 import itertools
 import logging
 from pathlib import Path
@@ -123,6 +124,58 @@ def embed(
     if return_tokens:
         res.append(np.array(tokens))
     return res
+
+
+def embed_generator(
+    dataset,
+    model,
+    batch_size=262144,
+) -> Generator[tuple[np.ndarray, np.ndarray, np.ndarray], None, None]:
+    """embeds dataset and returns embeddings, qids tuple.
+
+    Note that all embeddings are held in memory at once which can consume a lot of RAM.
+    TODO: We could implement some incremental saving.
+
+    Args:
+        dataset (Dataset/IterableDataset):
+        model: Model for embedding the dataset, last pooling_layer is used
+        batch_size (int, optional): Defaults to (16384 * 4).
+        return_qids (bool, optional): Defaults to True.
+        return_tokens (bool, optional): Defaults to False.
+
+    Returns:
+        list[np.arr...]: First element corresponds to embeddings,
+            then qids then tokens follow (in this order) if requested.
+    """
+    model.eval()
+
+    # We usually work with IterableDataset subclass so no multiprocessing
+    data_loader = DataLoader(dataset, batch_size, num_workers=0)
+
+    if torch.cuda.is_available():
+        model = torch.nn.DataParallel(model).cuda()
+    else:
+        model = torch.nn.DataParallel(model)
+
+    log_processer = _Processer(each=10**6)
+
+    with torch.no_grad():
+        for batch_toks, batch_qids in data_loader:
+            batch_toks = batch_toks.to(torch.int64)
+            attention_mask = create_attention_mask(batch_toks)
+            if torch.cuda.is_available():
+                batch_toks = batch_toks.cuda()
+                attention_mask = attention_mask.cuda()
+
+            with torch.cuda.amp.autocast():
+                batch_embeddings = model(batch_toks, attention_mask)
+
+            batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
+            batch_embeddings = batch_embeddings / np.linalg.norm(
+                batch_embeddings, ord=2, axis=1, keepdims=True
+            )
+            yield batch_embeddings, batch_qids.cpu().numpy(), batch_toks.cpu().numpy()
+            log_processer.log(len(batch_qids))
 
 
 def get_embs_and_qids(source_dir: Path, model: nn.Module, batch_size=16384):
