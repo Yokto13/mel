@@ -34,7 +34,7 @@ def embed_links_for_generation(
     state_dict_path: str,
     target_dim: int | None = None,
     output_type: str | None = None,
-    per_save_size: int = 50,
+    per_save_size: int = 100,
 ) -> None:
     dataset = _get_dataset(links_tokens_dir_path)
     model = load_model(model_path, state_dict_path, target_dim, output_type)

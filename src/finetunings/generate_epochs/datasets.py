@@ -44,9 +44,9 @@ class BatcherDataset(IterableDataset):
         self.file_paths = cycle(dir_path.glob("*.npz"))
 
     def __iter__(self) -> Iterator[tuple[np.ndarray, np.ndarray, np.ndarray]]:
-        while True:
-            file_path = self.file_paths[self.current_file_index]
+        for file_path in self.file_paths:
             embs, qids, tokens = load_embs_qids_tokens(file_path)
+            # TODO add shuffling
             embs, qids, tokens = self._remove_when_qid_missing(
                 (embs, qids, tokens), self.known_qids
             )
@@ -63,8 +63,6 @@ class BatcherDataset(IterableDataset):
                 ]
                 batch = self._construct_batch((embs, qids, tokens), indices)
                 yield batch
-
-            self.current_file_index += 1
 
     @staticmethod
     @nb.njit
