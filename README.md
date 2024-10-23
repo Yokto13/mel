@@ -167,3 +167,8 @@ To exclude slow tests, run
 ```
 pytest -m "not slow"
 ```
+
+## Running locally
+
+Right now, `wandb` is used for tracking all experiments and there is no simple way to turn this off.
+We should make it optional in the future.
