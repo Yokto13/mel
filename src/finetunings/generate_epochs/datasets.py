@@ -46,10 +46,13 @@ class BatcherDataset(IterableDataset):
     def __iter__(self) -> Iterator[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         for file_path in self.file_paths:
             embs, qids, tokens = load_embs_qids_tokens(file_path)
-            # TODO add shuffling
+
             embs, qids, tokens = self._remove_when_qid_missing(
                 (embs, qids, tokens), self.known_qids
             )
+
+            p = np.random.permutation(len(embs))
+            embs, qids, tokens = embs[p], qids[p], tokens[p]
 
             base_index = np.arange(len(embs))
             data_index = self._create_unique_qid_index(
@@ -92,90 +95,6 @@ class BatcherDataset(IterableDataset):
     @staticmethod
     def _remove_when_qid_missing(
         data: tuple[np.ndarray, np.ndarray, np.ndarray], known_qids: npt.ArrayLike
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        embs, qids, tokens = data
-        mask = np.isin(qids, known_qids)
-        return embs[mask], qids[mask], tokens[mask]
-
-
-# If we can load all the data in RAM it might be better to side step Dataloader and implement the sampling ourselves.
-class Batcher:
-    def __init__(self, dir_path: Path, known_qids: npt.ArrayLike, batch_size: int):
-        self.dir_path = dir_path
-        embs, qids, tokens = load_embs_qids_tokens(dir_path)
-        self._embs, self._qids, self._tokens = self._remove_when_qid_missing(
-            (embs, qids, tokens), known_qids
-        )
-
-        self._base_index = np.arange(len(self._embs))
-        self._data_index = None
-        self._batch_size = batch_size
-        self._max_idx = None
-        self._batch_idx = 0
-
-        # Ensure data is shuffled from the start to avoid QID repetition in batches
-        self._reset_index()
-
-    def _shuffle(self) -> None:
-        _rng.shuffle(self._base_index)
-
-    def get_batch(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        indices = self._get_batch_indices()
-        batch = self._construct_batch(indices)
-        return batch
-
-    def _reset_index(self) -> None:
-        _logger.info("Resetting index")
-        self._shuffle()
-        self._data_index = self._create_unique_qid_index(
-            self._base_index, self._qids, self._batch_size
-        )
-        self._max_idx = len(self._data_index) // self._batch_size
-
-    @staticmethod
-    @nb.njit
-    def _create_unique_qid_index(
-        base_index: np.ndarray, qids: np.ndarray, batch_size: int
-    ) -> np.ndarray:
-        data_idx = np.empty(len(base_index), dtype=np.int64)
-        qids_in_batch = set()
-        idx_counter = 0
-        for idx in base_index:
-            qid = qids[idx]
-            if qid not in qids_in_batch:
-                data_idx[idx_counter] = idx
-                idx_counter += 1
-                qids_in_batch.add(qid)
-                if len(qids_in_batch) == batch_size:
-                    qids_in_batch.clear()
-        return data_idx[:idx_counter]
-
-    def _construct_batch(
-        self, indices: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        return (self._embs[indices], self._qids[indices], self._tokens[indices])
-
-    def _get_batch_indices(self) -> np.ndarray:
-        if self._batch_idx == self._max_idx - 1:
-            self._batch_idx = 0
-            self._reset_index()
-        indices = self._data_index[
-            self._batch_idx * self._batch_size : self._batch_idx * self._batch_size
-            + self._batch_size
-        ]
-        self._batch_idx += 1
-        return indices
-
-    def _qids_in_batch_are_unique(self, indices: np.ndarray) -> bool:
-        unique_qids = np.unique(self._qids[indices])
-        return len(unique_qids) == len(indices)
-
-    def __iter__(self):
-        while True:
-            yield self.get_batch()
-
-    def _remove_when_qid_missing(
-        self, data: tuple[np.ndarray, np.ndarray, np.ndarray], known_qids: npt.ArrayLike
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         embs, qids, tokens = data
         mask = np.isin(qids, known_qids)
