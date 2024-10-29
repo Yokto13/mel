@@ -68,10 +68,10 @@ class LinksAndDescriptionsTogetherDataset(Dataset):
 
 class LightWeightDataset(Dataset):
     def __init__(
-        self, dataset_dir: Path, epoch: int, rank: int = 1, word_size: int = 1
+        self, dataset_dir: Path, epoch: int, rank: int = 1, world_size: int = 1
     ) -> None:
         super().__init__()
-        self._word_size = word_size
+        self._world_size = world_size
         self._rank = rank
         self._dataset_dir = dataset_dir
         self._epoch = epoch
@@ -112,8 +112,8 @@ class LightWeightDataset(Dataset):
 
     def _get_share_bounds(self) -> tuple[int, int]:
         items_per_batch = self.links_cnt + self.descriptions_cnt
-        assert items_per_batch % self._word_size == 0
-        per_process = items_per_batch // self._word_size
+        assert items_per_batch % self._world_size == 0
+        per_process = items_per_batch // self._world_size
         this_share_start = self._rank * per_process
         this_share_end = (self._rank + 1) * per_process
         return this_share_start, this_share_end

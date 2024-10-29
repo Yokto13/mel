@@ -17,9 +17,8 @@ import torch.nn as nn
 import torch.optim as optim
 import wandb
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
-from utils.argument_wrappers import ensure_datatypes
 from utils.running_averages import RunningAverages
 
 from finetunings.finetune_model.data import (
@@ -138,7 +137,7 @@ def _ddp_train(
     optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     criterion = nn.CrossEntropyLoss()
 
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.amp.GradScaler("cuda")
 
     running_averages = None
     if is_the_main_process:
