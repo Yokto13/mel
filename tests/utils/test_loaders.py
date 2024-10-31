@@ -236,3 +236,38 @@ def test_loaders_sort_stable(
         for i in range(len(loaded_data)):
             assert np.array_equal(loaded_data[i], loaded_data2[i])
             assert np.array_equal(loaded_data[i], loaded_data3[i])
+
+
+@pytest.mark.parametrize("use_string_path", [True, False])
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "embs_qids_tokens.npz",
+        "embs_qids_tokens_10.npz",
+        "embs_qids_tokens_0.npz",
+        "blabla.npz",
+    ],
+)
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_embs_qids_tokens_from_file(mock_qids_remap, use_string_path, file_name):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dir_path = Path(temp_dir)
+        if use_string_path:
+            dir_path = str(dir_path)
+        file_path = Path(dir_path) / file_name
+
+        test_data = {
+            "embs": np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
+            "qids": np.array([300, 100, 200]),
+            "tokens": np.array([[1, 2], [3, 4], [5, 6]]),
+        }
+
+        np.savez_compressed(file_path, **test_data)
+
+        loaded_data = load_embs_qids_tokens(file_path)
+
+        for i, (loaded, original) in enumerate(zip(loaded_data, test_data.values())):
+            assert np.array_equal(loaded, original)
+            assert isinstance(loaded, np.ndarray)
+
+        assert len(loaded_data) == len(test_data)

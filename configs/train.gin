@@ -1,9 +1,9 @@
-training_batch_size=896
+training_batch_size=2688
 epochs=200
 logit_mutliplier=20
-negative_sampling_type="shuffle"
+negative_sampling_type="top"
 learning_rate=0.0001
-negatives_per_link=7
+negatives_per_link=3
 context_size=64
 STEPS_PER_EPOCH=1000
 

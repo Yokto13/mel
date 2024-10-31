@@ -3,7 +3,7 @@ import pytest
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
-from utils.embeddings import embed
+from utils.embeddings import embed, embed_generator
 from utils.model_factory import ModelFactory
 
 
@@ -161,4 +161,55 @@ def test_embed_normalization(model, dataset):
 
     # Check if embeddings are normalized (L2 norm should be close to 1)
     norms = np.linalg.norm(embeddings, axis=1)
+    assert np.allclose(norms, 1.0, atol=1e-3)
+
+
+def test_embed_generator_yields_correct_batches(model, dataset):
+    batch_size = 16
+    generator = embed_generator(dataset, model, batch_size=batch_size)
+
+    for embeddings, qids, tokens in generator:
+        assert isinstance(embeddings, np.ndarray)
+        assert isinstance(qids, np.ndarray)
+        assert isinstance(tokens, np.ndarray)
+        assert embeddings.shape[0] <= batch_size
+        assert embeddings.shape[1] == model.model.config.hidden_size
+        assert qids.shape[0] == embeddings.shape[0]
+        assert embeddings.dtype == np.float16
+
+
+def test_embed_generator_processes_all_data(model, dataset):
+    batch_size = 16
+    generator = embed_generator(dataset, model, batch_size=batch_size)
+
+    total_embeddings = []
+    total_qids = []
+    total_tokens = []
+    for embeddings, qids, tokens in generator:
+        total_embeddings.append(embeddings)
+        total_qids.append(qids)
+        total_tokens.append(tokens)
+
+    all_embeddings = np.concatenate(total_embeddings)
+    all_qids = np.concatenate(total_qids)
+    all_tokens = np.concatenate(total_tokens)
+    assert len(all_embeddings) == len(dataset)
+    assert len(all_qids) == len(dataset)
+    assert len(all_tokens) == len(dataset)
+
+
+def test_embed_generator_qids_order(model, dataset):
+    batch_size = 16
+    generator = embed_generator(dataset, model, batch_size=batch_size)
+
+    all_qids = np.concatenate([qids for _, qids, _ in generator])
+    assert np.array_equal(all_qids, np.arange(len(dataset)))
+
+
+def test_embed_generator_normalization(model, dataset):
+    batch_size = 16
+    generator = embed_generator(dataset, model, batch_size=batch_size)
+
+    all_embeddings = np.concatenate([embeddings for embeddings, _, _ in generator])
+    norms = np.linalg.norm(all_embeddings, axis=1)
     assert np.allclose(norms, 1.0, atol=1e-3)

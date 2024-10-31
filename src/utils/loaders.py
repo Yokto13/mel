@@ -173,20 +173,24 @@ def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
 
 # @_sort_by_output(1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
-def load_embs_qids_tokens(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+def load_embs_qids_tokens(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings, qids, and tokens from the directory.
 
     This should be the preferable than directly loading them to ensure that the logic of loading is just in one place.
 
     Args:
-        dir_path (str | Path)
+        path (str | Path)
 
     Returns:
         tuple[np.ndarray, np.ndarray]: embs, qids, tokens
     """
-    if type(dir_path) == str:
-        dir_path = Path(dir_path)
-    d = np.load(dir_path / "embs_qids_tokens.npz")
+    if type(path) == str:
+        path = Path(path)
+    is_dir = path.is_dir()
+    if is_dir:
+        d = np.load(path / "embs_qids_tokens.npz")
+    else:
+        d = np.load(path)
     return d["embs"], d["qids"], d["tokens"]
 
 

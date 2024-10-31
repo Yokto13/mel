@@ -14,115 +14,44 @@ torch.manual_seed(SEED)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(SEED)
 
-from finetunings.generate_epochs.datasets import Batcher
+from finetunings.generate_epochs.datasets import BatcherDataset
 
 # Sample data for testing
-sample_embs = np.random.rand(10000, 64)
-sample_qids = np.random.randint(0, 100, (10000,))
-sample_tokens = np.random.randint(0, 100, (10000, 20))
+sample_embs = np.random.rand(1000, 64)
+sample_qids = np.random.randint(0, 100, (1000,))
+sample_tokens = np.random.randint(0, 100, (1000, 20))
 
 
 def mock_load_embs_qids_tokens(dir_path):
     return sample_embs, sample_qids, sample_tokens
 
 
-@patch(
-    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
-    side_effect=mock_load_embs_qids_tokens,
-)
-def test_shuffling(mock_load_fn):
-    batch_size = 2
-    known_qids = np.arange(10000)
-    batcher = Batcher(Path("some/path"), known_qids, batch_size)
-
-    initial_index = batcher._base_index.copy()
-    batcher._shuffle()
-    shuffled_index = batcher._base_index
-
-    # Check that the indices are shuffled
-    assert not np.array_equal(initial_index, shuffled_index)
-    assert sorted(initial_index) == sorted(shuffled_index)
+@pytest.fixture
+def num_files():
+    return 10
 
 
-@patch(
-    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
-    side_effect=mock_load_embs_qids_tokens,
-)
-def test_reset_index(mock_load_fn):
-    batch_size = 2
-    known_qids = np.arange(10000)
-    batcher = Batcher(Path("some/path"), known_qids, batch_size)
-
-    initial_base_index = batcher._base_index.copy()
-    initial_data_index = batcher._data_index.copy()
-
-    batcher._reset_index()
-
-    # Check that the base index is shuffled
-    assert not np.array_equal(initial_base_index, batcher._base_index)
-    assert sorted(initial_base_index) == sorted(batcher._base_index)
-
-    # Check that the data index is updated
-    assert not np.array_equal(initial_data_index, batcher._data_index)
-
-    # Check that max_idx is updated
-    assert batcher._max_idx == len(batcher._data_index) // batch_size
-
-    # Check that all QIDs in each batch are unique
-    for i in range(0, len(batcher._data_index), batch_size):
-        batch_qids = batcher._qids[batcher._data_index[i : i + batch_size]]
-        assert len(np.unique(batch_qids)) == len(batch_qids)
+@pytest.fixture
+def dir_with_npz_files(tmpdir, num_files):
+    dir_path = Path(tmpdir)
+    for i in range(num_files):
+        np.savez(
+            dir_path / f"{i}.npz",
+            embs=sample_embs,
+            qids=sample_qids,
+            tokens=sample_tokens,
+        )
+    return dir_path
 
 
 @patch(
     "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
     side_effect=mock_load_embs_qids_tokens,
 )
-def test_get_batch(mock_load_fn):
-    known_qids = np.array([1, 2, 3, 4, 5])
-    batch_size = 2
-    batcher = Batcher(Path("some/path"), known_qids, batch_size)
-
-    batch1 = batcher.get_batch()
-    assert len(batch1) == 3  # (embs, qids, tokens)
-    assert batch1[0].shape == (batch_size, sample_embs.shape[1])
-    assert batch1[1].shape == (batch_size,)
-    assert batch1[2].shape == (batch_size, sample_tokens.shape[1])
-
-    # Make sure batcher resets and shuffles when the end is reached
-    batcher.get_batch()  # get the second batch
-    initial_index = batcher._data_index.copy()
-    for _ in range(5000):
-        batcher.get_batch()  # This should trigger a shuffle
-    new_index = batcher._data_index
-
-    # Check that a shuffle occurred
-    assert not np.array_equal(initial_index, new_index)
-
-
-@patch(
-    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
-    side_effect=mock_load_embs_qids_tokens,
-)
-def test_remove_when_qid_missing(mock_load_fn):
-    batcher = Batcher(Path("some/path"), [], 2)
-    known_qids = np.array([1, 3, 5, 7, 9])
-
-    embs, qids, tokens = batcher._remove_when_qid_missing(
-        (sample_embs, sample_qids, sample_tokens), known_qids
-    )
-
-    assert np.array_equal(list(set(qids)), known_qids)
-
-
-@patch(
-    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
-    side_effect=mock_load_embs_qids_tokens,
-)
-def test_iter_basic(mock_load_fn):
+def test_known_qids(mock_load_fn, dir_with_npz_files):
     batch_size = 2
     known_qids = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    batcher = Batcher(Path("some/path"), known_qids, batch_size)
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
 
     seen_qids = set()
 
@@ -143,20 +72,18 @@ def test_iter_basic(mock_load_fn):
     "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
     side_effect=mock_load_embs_qids_tokens,
 )
-def test_initial_shuffle(mock_load_fn):
+def test_initial_shuffle(mock_load_fn, dir_with_npz_files):
     batch_size = 2
     known_qids = np.arange(100)
-    batcher = Batcher(Path("some/path"), known_qids, batch_size)
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
 
-    first_batch = batcher.get_batch()
+    first_batch = next(iter(batcher))
 
-    batcher._index_idx = 0
-    batcher._data_index = np.arange(len(batcher._embs))
-
-    unshuffled_batch = batcher.get_batch()
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
+    second_batch = next(iter(batcher))
 
     assert not np.array_equal(
-        first_batch[0], unshuffled_batch[0]
+        first_batch[0], second_batch[0]
     ), "Initial shuffle did not occur"
 
 
@@ -164,13 +91,12 @@ def test_initial_shuffle(mock_load_fn):
     "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
     side_effect=mock_load_embs_qids_tokens,
 )
-def test_no_qid_repetition_in_batch(mock_load_fn):
+def test_no_qid_repetition_in_batch(mock_load_fn, dir_with_npz_files):
     batch_size = 20
     known_qids = np.arange(1000)
-    batcher = Batcher(Path("some/path"), known_qids, batch_size)
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
 
-    for _ in range(10):
-        batch = batcher.get_batch()
+    for i, batch in enumerate(batcher):
         qids_in_batch = batch[1]
         unique_qids = np.unique(qids_in_batch)
 
@@ -180,3 +106,41 @@ def test_no_qid_repetition_in_batch(mock_load_fn):
         assert (
             len(qids_in_batch) == batch_size
         ), "Batch size doesn't match expected size"
+
+        if i == 10:
+            break
+
+
+@patch(
+    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
+    side_effect=mock_load_embs_qids_tokens,
+)
+def test_known_qids(mock_load_fn, dir_with_npz_files):
+    batch_size = 2
+    known_qids = np.array([1, 2])
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
+
+    seen_qids = set()
+
+    for i, batch in enumerate(batcher):
+        seen_qids.add(batch[1][0])
+        seen_qids.add(batch[1][1])
+        if i == 100:
+            break
+    assert len(seen_qids) == len(known_qids)
+
+
+@patch(
+    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
+    side_effect=mock_load_embs_qids_tokens,
+)
+@pytest.mark.parametrize("batch_size", [1, 2, 10, 16, 32, 64, 100])
+def test_batch_sizes(mock_load_fn, dir_with_npz_files, batch_size):
+    known_qids = np.arange(100)
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
+
+    for i, batch in enumerate(batcher):
+        for j in range(3):
+            assert len(batch[j]) == batch_size
+        if i == 10:
+            break

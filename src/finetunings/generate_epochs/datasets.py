@@ -1,6 +1,7 @@
+from collections.abc import Iterator
+from itertools import cycle
 import logging
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 from models.batch_sampler import BatchSampler
@@ -15,58 +16,56 @@ from torch.utils.data import IterableDataset
 from utils.loaders import load_embs_qids_tokens
 
 _logger = logging.getLogger("finetunings.generate_epochs.datasets")
-
-
-# Might be usefull when we get to the point where Batcher cannot fit to memory.
-class TokensIterableDataset(IterableDataset):
-    def __init__(self, dir_path: Path, known_qids: set):
-        self.dir_path = dir_path
-        self.embs, self.qids, self.tokens = load_embs_qids_tokens(dir_path)
-        self.known_qids = known_qids
-
-    def __iter__(self):
-        for embs, qid, tok in zip(self.embs, self.qids, self.tokens):
-            if qid not in self.known_qids:
-                continue
-            yield embs, qid, tok
-
-
 _rng = np.random.default_rng(42)
 
 
-# If we can load all the data in RAM it might be better to side step Dataloader and implement the sampling ourselves.
-class Batcher:
+class BatcherDataset(IterableDataset):
+    """
+    Dataset that yields batches of data from a directory with npz link files.
+
+    TODO: The fact that we create batches like this might not be optimal.
+    Historically we were able to load all data into memory and not using DataLoader was fast.
+    Right now, I am not so sure about that and we should profile it.
+    DataLoader would give us also some features that are currently hard to implement here, like concurrent data loading.
+    My guess is that a lot of the time is spent just on decoding the compressed numpy files.
+
+    Args:
+        dir_path: Path to the directory with npz link files.
+        known_qids: Qids that should be present in the dataset. It might happen that some links does not
+        have a counterpart in the set of descriptions, these links are removed.
+        batch_size: The number of links in a batch.
+    """
+
     def __init__(self, dir_path: Path, known_qids: npt.ArrayLike, batch_size: int):
+
         self.dir_path = dir_path
-        embs, qids, tokens = load_embs_qids_tokens(dir_path)
-        self._embs, self._qids, self._tokens = self._remove_when_qid_missing(
-            (embs, qids, tokens), known_qids
-        )
+        self.known_qids = known_qids
+        self.batch_size = batch_size
+        self.file_paths = cycle(dir_path.glob("*.npz"))
 
-        self._base_index = np.arange(len(self._embs))
-        self._data_index = None
-        self._batch_size = batch_size
-        self._max_idx = None
-        self._batch_idx = 0
+    def __iter__(self) -> Iterator[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        for file_path in self.file_paths:
+            embs, qids, tokens = load_embs_qids_tokens(file_path)
 
-        # Ensure data is shuffled from the start to avoid QID repetition in batches
-        self._reset_index()
+            embs, qids, tokens = self._remove_when_qid_missing(
+                (embs, qids, tokens), self.known_qids
+            )
 
-    def _shuffle(self) -> None:
-        _rng.shuffle(self._base_index)
+            p = _rng.permutation(len(embs))
+            embs, qids, tokens = embs[p], qids[p], tokens[p]
 
-    def get_batch(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        indices = self._get_batch_indices()
-        batch = self._construct_batch(indices)
-        return batch
+            base_index = np.arange(len(embs))
+            data_index = self._create_unique_qid_index(
+                base_index, qids, self.batch_size
+            )
+            max_idx = len(data_index) // self.batch_size
 
-    def _reset_index(self) -> None:
-        _logger.info("Resetting index")
-        self._shuffle()
-        self._data_index = self._create_unique_qid_index(
-            self._base_index, self._qids, self._batch_size
-        )
-        self._max_idx = len(self._data_index) // self._batch_size
+            for batch_idx in range(max_idx):
+                indices = data_index[
+                    batch_idx * self.batch_size : (batch_idx + 1) * self.batch_size
+                ]
+                batch = self._construct_batch((embs, qids, tokens), indices)
+                yield batch
 
     @staticmethod
     @nb.njit
@@ -86,32 +85,16 @@ class Batcher:
                     qids_in_batch.clear()
         return data_idx[:idx_counter]
 
+    @staticmethod
     def _construct_batch(
-        self, indices: np.ndarray
+        data: tuple[np.ndarray, np.ndarray, np.ndarray], indices: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        return (self._embs[indices], self._qids[indices], self._tokens[indices])
+        embs, qids, tokens = data
+        return embs[indices], qids[indices], tokens[indices]
 
-    def _get_batch_indices(self) -> np.ndarray:
-        if self._batch_idx == self._max_idx - 1:
-            self._batch_idx = 0
-            self._reset_index()
-        indices = self._data_index[
-            self._batch_idx * self._batch_size : self._batch_idx * self._batch_size
-            + self._batch_size
-        ]
-        self._batch_idx += 1
-        return indices
-
-    def _qids_in_batch_are_unique(self, indices: np.ndarray) -> bool:
-        unique_qids = np.unique(self._qids[indices])
-        return len(unique_qids) == len(indices)
-
-    def __iter__(self):
-        while True:
-            yield self.get_batch()
-
+    @staticmethod
     def _remove_when_qid_missing(
-        self, data: tuple[np.ndarray, np.ndarray, np.ndarray], known_qids: npt.ArrayLike
+        data: tuple[np.ndarray, np.ndarray, np.ndarray], known_qids: npt.ArrayLike
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         embs, qids, tokens = data
         mask = np.isin(qids, known_qids)
@@ -172,7 +155,7 @@ def _prepare_batch(
 class DamuelNeighborsIterator:
     def __init__(
         self,
-        batcher: Batcher,
+        batcher_dataset: BatcherDataset,
         batch_size: int,
         neg_cnt: int,
         sampler: BatchSampler,
@@ -180,7 +163,7 @@ class DamuelNeighborsIterator:
         toks_size: int,
         return_Y: bool = True,
     ) -> None:
-        self.batcher = batcher
+        self.batcher_dataset = batcher_dataset
         self.batch_size = batch_size
         self.negative_cnt = neg_cnt
         self.batch_sampler = sampler
@@ -191,7 +174,7 @@ class DamuelNeighborsIterator:
     def __iter__(self):
         per_mention = 1 + self.negative_cnt
         line_size = per_mention * self.batch_size
-        for embs, qids, toks in self.batcher:
+        for embs, qids, toks in self.batcher_dataset:
             batch = toks
 
             positive, negative = self.batch_sampler.sample(
