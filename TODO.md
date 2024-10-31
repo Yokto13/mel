@@ -1,0 +1,4 @@
+- Optional wandb
+- Optional sqrt sampling for training
+- Explain how to create multilingual datasets
+- Merge batch creation and training
