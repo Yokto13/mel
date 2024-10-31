@@ -48,7 +48,7 @@ def dir_with_npz_files(tmpdir, num_files):
     "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
     side_effect=mock_load_embs_qids_tokens,
 )
-def test_iter_basic(mock_load_fn, dir_with_npz_files):
+def test_known_qids(mock_load_fn, dir_with_npz_files):
     batch_size = 2
     known_qids = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
@@ -107,5 +107,40 @@ def test_no_qid_repetition_in_batch(mock_load_fn, dir_with_npz_files):
             len(qids_in_batch) == batch_size
         ), "Batch size doesn't match expected size"
 
+        if i == 10:
+            break
+
+
+@patch(
+    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
+    side_effect=mock_load_embs_qids_tokens,
+)
+def test_known_qids(mock_load_fn, dir_with_npz_files):
+    batch_size = 2
+    known_qids = np.array([1, 2])
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
+
+    seen_qids = set()
+
+    for i, batch in enumerate(batcher):
+        seen_qids.add(batch[1][0])
+        seen_qids.add(batch[1][1])
+        if i == 100:
+            break
+    assert len(seen_qids) == len(known_qids)
+
+
+@patch(
+    "finetunings.generate_epochs.datasets.load_embs_qids_tokens",
+    side_effect=mock_load_embs_qids_tokens,
+)
+@pytest.mark.parametrize("batch_size", [1, 2, 10, 16, 32, 64, 100])
+def test_batch_sizes(mock_load_fn, dir_with_npz_files, batch_size):
+    known_qids = np.arange(100)
+    batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
+
+    for i, batch in enumerate(batcher):
+        for j in range(3):
+            assert len(batch[j]) == batch_size
         if i == 10:
             break
