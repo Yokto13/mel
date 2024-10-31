@@ -15,7 +15,19 @@ will be done through it.
 
 ### Finetuning 
 
-TBA
+**pre-limenary results**
+
+| Language | Recall@1 | Recall@10 | Recall@100 |
+|----------|----------|-----------|------------|
+| Arabic   |   90.4   |   94.0    |    TBA     |
+| German   |   90.2   |   94.6    |    TBA     |
+| English  |   85.3   |   91.2    |    TBA     |
+| Spanish  |   87.5   |   93.0    |    TBA     |
+| Persian  |   88.0   |   95.0    |    TBA     |
+| Japanese |   86.8   |   93.4    |    TBA     |
+| Serbian  |   90.5   |   95.5    |    TBA     |
+| Tamil    |   89.0   |   95.8    |    TBA     |
+| Turkish  |   86.7   |   93.2    |    TBA     |
 
 ### OLPEAT
 | Language | Recall@1 | Recall@10 | Recall@100 |
