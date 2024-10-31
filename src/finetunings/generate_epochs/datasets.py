@@ -16,26 +16,26 @@ from torch.utils.data import IterableDataset
 from utils.loaders import load_embs_qids_tokens
 
 _logger = logging.getLogger("finetunings.generate_epochs.datasets")
-
-
-# Might be usefull when we get to the point where Batcher cannot fit to memory.
-class TokensIterableDataset(IterableDataset):
-    def __init__(self, dir_path: Path, known_qids: set):
-        self.dir_path = dir_path
-        self.embs, self.qids, self.tokens = load_embs_qids_tokens(dir_path)
-        self.known_qids = known_qids
-
-    def __iter__(self):
-        for embs, qid, tok in zip(self.embs, self.qids, self.tokens):
-            if qid not in self.known_qids:
-                continue
-            yield embs, qid, tok
-
-
 _rng = np.random.default_rng(42)
 
 
 class BatcherDataset(IterableDataset):
+    """
+    Dataset that yields batches of data from a directory with npz link files.
+
+    TODO: The fact that we create batches like this might not be optimal.
+    Historically we were able to load all data into memory and not using DataLoader was fast.
+    Right now, I am not so sure about that and we should profile it.
+    DataLoader would give us also some features that are currently hard to implement here, like concurrent data loading.
+    My guess is that a lot of the time is spent just on decoding the compressed numpy files.
+
+    Args:
+        dir_path: Path to the directory with npz link files.
+        known_qids: Qids that should be present in the dataset. It might happen that some links does not
+        have a counterpart in the set of descriptions, these links are removed.
+        batch_size: The number of links in a batch.
+    """
+
     def __init__(self, dir_path: Path, known_qids: npt.ArrayLike, batch_size: int):
 
         self.dir_path = dir_path
@@ -51,7 +51,7 @@ class BatcherDataset(IterableDataset):
                 (embs, qids, tokens), self.known_qids
             )
 
-            p = np.random.permutation(len(embs))
+            p = _rng.permutation(len(embs))
             embs, qids, tokens = embs[p], qids[p], tokens[p]
 
             base_index = np.arange(len(embs))
