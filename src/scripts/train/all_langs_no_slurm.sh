@@ -151,7 +151,7 @@ run_ml_finetuning_round() {
         echo "----------------------------------------"
     done
 
-    rm -r $BATCH_DIR, $DAMUEL_LINKS_DIR, $DAMUEL_FOR_INDEX_DIR
+    rm -r $BATCH_DIR $DAMUEL_LINKS_DIR $DAMUEL_FOR_INDEX_DIR
 }
 
 if [ ! -L "$WORKDIR" ]; then
