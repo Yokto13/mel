@@ -15,6 +15,9 @@ will be done through it.
 
 ### Finetuning 
 
+
+#### Standard
+
 **pre-limenary results**
 
 | Language | Recall@1 | Recall@10 | Recall@100 |
@@ -29,7 +32,22 @@ will be done through it.
 | Tamil    |   89.0   |   95.8    |    TBA     |
 | Turkish  |   86.7   |   93.2    |    TBA     |
 
+#### Top 3 combined
+
+| Language | Recall@1 | Recall@10 | Recall@100 |
+|----------|----------|-----------|------------|
+| Arabic   |   90.2   |   94.0    |    94.8    |
+| German   |   90.0   |   94.6    |    95.6    |
+| English  |   84.1   |   90.8    |    93.0    |
+| Spanish  |   87.3   |   92.8    |    94.4    |
+| Persian  |   87.9   |   95.0    |    96.8    |
+| Japanese |   84.7   |   93.2    |    95.6    |
+| Serbian  |   90.1   |   95.4    |    96.8    |
+| Tamil    |   89.2   |   96.2    |    97.5    |
+| Turkish  |   86.0   |   92.8    |    94.6    |
+
 ### OLPEAT
+
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
 | Arabic   |   90.1   |   93.3    |    94.4    |

@@ -1,6 +1,6 @@
 from finetunings.evaluation.find_recall import find_recall
 
-_RECALLS = [1, 10]
+_RECALLS = [1, 10, 100]
 
 
 def run_recall_calculation(damuel_dir, mewsli_dir, recall=None):
