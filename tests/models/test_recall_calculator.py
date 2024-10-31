@@ -2,12 +2,9 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-import torch
 
 from models.recall_calculator import _get_unique_n, RecallCalculator
-from models.searchers import ScaNNSearcher, BruteForceSearcher
-
-torch.compiler.disable(BruteForceSearcher.find)
+from models.searchers import ScaNNSearcher, SimplifiedBruteForceSearcher
 
 
 class Searcher:
@@ -55,7 +52,7 @@ def test_calculate_real_small():
     damuel_qids = np.random.randint(1, 1000, size=50)
     mewsli_qids = np.random.randint(1, 1000, size=3)
 
-    searcher = BruteForceSearcher(damuel_embs, damuel_qids)
+    searcher = SimplifiedBruteForceSearcher(damuel_embs, damuel_qids)
 
     rc = RecallCalculator(searcher)
 
