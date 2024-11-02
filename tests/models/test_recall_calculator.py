@@ -82,4 +82,22 @@ def test_get_unique_n_more_n_than_unique():
     assert result == [1, 2, 3]
 
 
-# def test_recall_with_file_path(recall_calculator):
+@pytest.mark.parametrize("k", [1, 2, 5])
+def test_recall_with_verbose(k):
+    damuel_embs = np.random.random((50, 8))
+    mewsli_embs = np.random.random((3, 8))
+
+    damuel_qids = np.random.randint(1, 1000, size=50)
+    mewsli_qids = np.random.randint(1, 1000, size=3)
+
+    searcher = SimplifiedBruteForceSearcher(damuel_embs, damuel_qids)
+
+    rc = RecallCalculator(searcher)
+
+    k = 2
+
+    _, candidate_qids = rc.recall(mewsli_embs, mewsli_qids, k, verbose=True)
+
+    assert candidate_qids.shape == (len(mewsli_embs), k)
+    for i in range(candidate_qids.shape[0]):
+        assert len(np.unique(candidate_qids[i])) == k

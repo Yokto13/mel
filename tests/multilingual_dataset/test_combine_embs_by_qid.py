@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from src.multilingual_dataset.combine_embs import combine_embs_by_qid
-from utils.qids_remap import remap_qids_decorator
 
 gin.add_config_file_search_path("configs/general.gin")
 

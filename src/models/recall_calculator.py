@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -39,9 +40,30 @@ class RecallCalculator:
         else:
             raise ValueError(f"Invalid mode: {self.mode}")
 
-    def recall(self, mewsli_embs, mewsli_qids, k: int):
-        qid_was_present = self._process_for_recall(mewsli_embs, mewsli_qids, k)
-        return self._calculate_recall(qid_was_present)
+    def recall(
+        self,
+        mewsli_embs: npt.NDArray,
+        mewsli_qids: npt.NDArray,
+        k: int,
+        verbose: bool = False,
+    ) -> Union[float, tuple[float, npt.NDArray]]:
+        """Calculate recall@k for the given embeddings and QIDs.
+
+        Args:
+            mewsli_embs: Query embeddings to search for
+            mewsli_qids: Ground truth QIDs corresponding to the query embeddings
+            k: Number of neighbors to retrieve for each query
+            verbose: If True, returns a tuple of (recall@k, candidate_qids)
+        Returns:
+            Recall@k score between 0 and 1
+        """
+        qid_was_present, candidate_qids = self._process_for_recall(
+            mewsli_embs, mewsli_qids, k
+        )
+        recall = self._calculate_recall(qid_was_present)
+        if verbose:
+            return recall, np.array(candidate_qids)
+        return recall
 
     def _calculate_recall(self, qid_was_present):
         return sum(qid_was_present) / len(qid_was_present)
@@ -77,10 +99,12 @@ class RecallCalculator:
 
     def _process_for_recall(self, mewsli_embs, mewsli_qids, k):
         qid_was_present = []
+        candidate_qids = []
 
-        for emb, qid in zip(mewsli_embs, mewsli_qids):
+        for i, (emb, qid) in enumerate(zip(mewsli_embs, mewsli_qids)):
             # TODO: This should be reworked to batching solution
             negihboring_qids = self._get_neighboring_qids(np.array([emb]), k)
             qid_was_present.append(qid in negihboring_qids[0])
+            candidate_qids.append(negihboring_qids[0])
 
-        return qid_was_present
+        return qid_was_present, candidate_qids
