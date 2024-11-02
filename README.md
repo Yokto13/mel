@@ -1,7 +1,5 @@
 # Multilingual Entity Linking
 
-## What is this?
-
 This repository contains implementations of multiple approaches to multilingual entity linking.
 If you don't know what entity linking is or would like to know more about the methods used, take a look at 
 my thesis: entity linking and its history are described [here](https://arxiv.org/pdf/2406.16892#chapter.2) and 
