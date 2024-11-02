@@ -2,3 +2,4 @@
 - Optional sqrt sampling for training
 - Explain how to create multilingual datasets
 - Merge batch creation and training
+- Make running tokenization pipeline easier or explain it somewhere
