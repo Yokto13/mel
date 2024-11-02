@@ -224,9 +224,9 @@ class _KBCreator:
 
     def _get_file_paths(self, dir_paths: list[Path]) -> list[Path]:
         return [
-            dir_path / file_name
+            dir_path / file_path.name
             for dir_path in dir_paths
-            for file_name in dir_path.iterdir()
+            for file_path in dir_path.iterdir()
         ]
 
 
