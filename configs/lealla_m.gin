@@ -19,3 +19,9 @@ embed_links_for_generation.batch_size=%inference_batch_size
 embed_links_for_generation.output_type=%output_type
 
 train_ddp.FOUNDATION_MODEL_PATH=%model_path
+
+run_mewsli_mention.model_path=%model_path
+run_damuel_mention.model_path=%model_path
+run_damuel_description_context.model_path=%model_path
+run_damuel_link_context.model_path=%model_path
+run_mewsli_context.model_path=%model_path

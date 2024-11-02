@@ -1,7 +1,6 @@
-model_path="/lnet/work/home-students-external/farhan/troja/outputs/models/paraphrase-multilingual-MiniLM-L12-v2""
 expected_size=64
-output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/st_finetuning_damuel/"
-output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/st_finetuning_mewsli/"
+output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/paraphrase_finetuning_damuel/"
+output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/pipelines/paraphrase_finetuning_mewsli/"
 languages = [
     "af", "be", "ca", "da", "el", "es", "eu", "fi", "ga", "gl", "hi", "hu", "id", 
     "ja", "la", "lv", "mt", "nn", "pt", "ru", "sk", "sr", "ta", "tr", "uk", "vi", 
@@ -15,7 +14,6 @@ compress=True
 remainder_mod=128
 num_processes=90
 
-run_damuel_description_context.model_path=%model_path
 run_damuel_description_context.expected_size=%expected_size
 run_damuel_description_context.output_base_dir=%output_base_dir
 run_damuel_description_context.languages=%languages
@@ -25,7 +23,6 @@ run_damuel_description_context.compress=%compress
 run_damuel_description_context.remainder_mod=%remainder_mod
 run_damuel_description_context.num_processes=%num_processes
 
-run_damuel_link_context.model_path=%model_path
 run_damuel_link_context.expected_size=%expected_size
 run_damuel_link_context.output_base_dir=%output_base_dir
 run_damuel_link_context.languages=%languages
@@ -35,7 +32,6 @@ run_damuel_link_context.compress=%compress
 run_damuel_link_context.remainder_mod=%remainder_mod
 run_damuel_link_context.num_processes=%num_processes
 
-run_mewsli_context.model_path=%model_path
 run_mewsli_context.expected_size=%expected_size
 run_mewsli_context.output_base_dir=%output_base_dir_mewsli
 run_mewsli_context.languages = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]

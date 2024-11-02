@@ -2,13 +2,8 @@
 
 Scripts for data tokenization.
 
-## at (alias tables)
+`tokenize_mentions.sh` tokenizes for OLPEAT, `tokenize_context.sh` for finetuning.
+Both scripts are simple and only thing they do is that they run the tokenization for both the damuel and mewsli.
 
-These tokenize only labels/names (what exactly can be seen in data_processors.tokens).
-Usefull for alias tables, like OLPEAT.
-
-## finetuning
-
-Tokenize not only mentions but also their surrounding context. 
-The result looks like: [left context] [M] [mention] [M] [right context].
-[M] is a special token denoting the mention.
+If you need to change the model rewrite the name of the model config that is currently hard coded in the scripts.
+Additionally, it is highly advisable to check the config corresponding to the tokenization to make sure that it contains sensible values. 
