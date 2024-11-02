@@ -13,6 +13,7 @@ from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from baselines.olpeat.olpeat import olpeat
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
+from finetunings.evaluation.find_recall import find_candidates
 from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
 from finetunings.finetune_model.train import train
 from finetunings.finetune_model.train_ddp import train_ddp
@@ -102,6 +103,8 @@ def choose_action(action):
             return run_damuel_mention
         case "olpeat":
             return olpeat
+        case "find_candidates":
+            return find_candidates
         case _:
             raise ValueError(f"Unknown action: {action}")
 

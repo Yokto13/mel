@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import fire
@@ -13,6 +14,8 @@ from models.searchers.scann_searcher import ScaNNSearcher
 from utils.argument_wrappers import paths_exist
 from utils.loaders import load_embs_and_qids
 
+_logger = logging.getLogger("finetunings.evaluation.find_recall")
+
 
 def load_embs_and_qids_with_normalization(
     path: str | Path,
@@ -23,7 +26,7 @@ def load_embs_and_qids_with_normalization(
 
 
 def get_scann_index(embs, qids):
-    print("Building SCANN index...")
+    _logger.info("Building SCANN index...")
     index = Index(embs, qids, default_index_build=False)
     index.build_index(
         num_leaves=5 * int(np.sqrt(len(qids))),
@@ -64,17 +67,34 @@ def find_recall(
     damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_entities)
     mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
 
-    print(damuel_embs.shape, damuel_qids.shape)
+    _logger.info(
+        f"Shapes: damuel_embs={damuel_embs.shape}, damuel_qids={damuel_qids.shape}"
+    )
     # searcher = get_scann_searcher(damuel_embs, damuel_qids)
     # searcher = get_faiss_searcher(damuel_embs, damuel_qids)
     searcher = get_brute_force_searcher(damuel_embs, damuel_qids)
     rc = RecallCalculator(searcher)
 
     for R in recalls:
-        print("Calculating recall...")
+        _logger.info("Calculating recall...")
         recall = rc.recall(mewsli_embs, mewsli_qids, R)
         wandb.log({f"recall_at_{R}": recall})
-        print(f"Recall at {R}:", recall)
+        _logger.info(f"Recall at {R}: {recall}")
+
+
+def find_candidates(
+    damuel_entities: str, candidates_path: str, mewsli: str, recall: int
+) -> None:
+    damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_entities)
+    mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
+    searcher = get_brute_force_searcher(damuel_embs, damuel_qids)
+    rc = RecallCalculator(searcher)
+
+    r, candidate_qids = rc.recall(mewsli_embs, mewsli_qids, recall, verbose=True)
+
+    _logger.info(f"Recall at {recall}: {r}")
+
+    np.savez_compressed(candidates_path, candidate_qids=candidate_qids)
 
 
 if __name__ == "__main__":
