@@ -20,15 +20,15 @@ will be done through it.
 
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
-| Arabic   |   90.4   |   94.0    |    94.8    |
-| German   |   90.2   |   94.6    |    95.5    |
-| English  |   85.3   |   91.2    |    93.3    |
-| Spanish  |   87.5   |   93.0    |    94.5    |
-| Persian  |   88.0   |   95.0    |    96.8    |
-| Japanese |   86.8   |   93.4    |    95.7    |
-| Serbian  |   90.5   |   95.5    |    96.8    |
-| Tamil    |   89.0   |   95.8    |    97.6    |
-| Turkish  |   86.7   |   93.2    |    94.7    |
+| Arabic   |   90.4   |   94.5    |    95.1    |
+| German   |   90.8   |   95.0    |    95.7    |
+| English  |   85.6   |   92.2    |    93.6    |
+| Spanish  |   87.9   |   93.6    |    94.8    |
+| Persian  |   87.1   |   95.5    |    97.2    |
+| Japanese |   86.6   |   94.5    |    96.3    |
+| Serbian  |   92.0   |   96.4    |    97.1    |
+| Tamil    |   90.6   |   97.0    |    97.8    |
+| Turkish  |   87.1   |   94.1    |    95.0    |
 
 #### Top 3 combined
 
