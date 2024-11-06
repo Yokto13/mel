@@ -8,6 +8,7 @@ echo "Current directory: $(pwd)"
 MODEL_CONFIG_PATH="../configs/lealla_m.gin"
 TRAIN_CONFIG_PATH="../configs/train.gin"
 
+# DAMUEL_FOR_INDEX_NEW_DIR="$OUTPUTS/workdirs/all/damuel_for_index_8"
 DAMUEL_FOR_INDEX_NEW_DIR="$OUTPUTS/triplets/combined"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning"
 WORKDIR="$OUTPUTS/workdirs/all"

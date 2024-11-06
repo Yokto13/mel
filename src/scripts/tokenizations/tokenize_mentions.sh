@@ -9,6 +9,6 @@ cd ../../
 
 source ../venv/bin/activate
 
-python run_action_gin.py ../configs/paraphrase.gin ../configs/tokenization_mentions.gin run_damuel_mention
+python run_action_gin.py ../configs/lealla.gin ../configs/tokenization_mentions.gin run_damuel_mention
 
-python run_action_gin.py ../configs/paraphrase.gin ../configs/tokenization_mentions.gin run_mewsli_mention
+python run_action_gin.py ../configs/lealla.gin ../configs/tokenization_mentions.gin run_mewsli_mention
