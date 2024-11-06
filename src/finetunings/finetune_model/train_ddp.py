@@ -191,6 +191,8 @@ def _ddp_train(
 
             if is_the_main_process:
                 update_recalls_and_wandb(outputs, labels, loss_item, running_averages)
+        if is_the_main_process and epoch % 100 == 0:
+            save_final_model(model.module, MODEL_SAVE_DIR)
 
     if is_the_main_process:
         # We only save the model on the main process and only once
