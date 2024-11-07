@@ -105,6 +105,6 @@ class RecallCalculator:
             # TODO: This should be reworked to batching solution
             negihboring_qids = self._get_neighboring_qids(np.array([emb]), k)
             qid_was_present.append(qid in negihboring_qids[0])
-            candidate_qids.append(negihboring_qids[0])
+            candidate_qids.append(negihboring_qids[0] + [-1] * (k - len(negihboring_qids[0])))
 
         return qid_was_present, candidate_qids
