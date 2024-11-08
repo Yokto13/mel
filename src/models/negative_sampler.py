@@ -1,14 +1,19 @@
 from enum import Enum
+import logging
 
 import numba as nb
 import numpy as np
 
 from models.searchers.searcher import Searcher
 
+_logger = logging.getLogger(__name__)
+
 
 class NegativeSamplingType(Enum):
     Shuffling = "shuffle"
     MostSimilar = "top"
+    MostSimilarDistribution = "top_distribution"
+    ShufflingDistribution = "shuffling_distribution"
 
 
 # _rng = np.random.default_rng(seed=42)
@@ -104,9 +109,15 @@ def _get_neighbors_mask_set(batch_qids, neighbors_qids):
 
 
 def _get_sampler(sampler_type: NegativeSamplingType) -> callable:
-    if sampler_type == NegativeSamplingType.Shuffling:
+    if sampler_type in (
+        NegativeSamplingType.Shuffling,
+        NegativeSamplingType.ShufflingDistribution,
+    ):
         return _sample_shuffling_numba
-    if sampler_type == NegativeSamplingType.MostSimilar:
+    if sampler_type in (
+        NegativeSamplingType.MostSimilar,
+        NegativeSamplingType.MostSimilarDistribution,
+    ):
         return _sample_top_numba
     raise AttributeError(f"No samplig method for {sampler_type}")
 
@@ -118,6 +129,8 @@ class NegativeSampler:
         qids: np.ndarray,
         searcher_constructor: type[Searcher],
         sampling_type: NegativeSamplingType,
+        qids_distribution: np.ndarray | None = None,
+        randomly_sampled: int | None = None,
     ) -> None:
         assert len(embs) == len(qids)
         self.embs = embs
@@ -126,6 +139,9 @@ class NegativeSampler:
         self.searcher = searcher_constructor(embs, np.arange(len(embs)))
         print(sampling_type)
         self.sample_f = _get_sampler(sampling_type)
+        self.qids_distribution = qids_distribution
+        self.randomly_sampled = randomly_sampled
+        self._validate()
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
@@ -143,3 +159,15 @@ class NegativeSampler:
         return self.sample_f(
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )
+
+    def _validate(self):
+        if self.sampling_type in (
+            NegativeSamplingType.MostSimilarDistribution,
+            NegativeSamplingType.ShufflingDistribution,
+        ):
+            if self.qids_distribution is None:
+                _logger.warning(
+                    "qids_distribution is None, negative sampling will use uniform distribution."
+                )
+                self.qids_distribution = np.ones(len(self.qids)) / len(self.qids)
+            assert isinstance(self.randomly_sampled, int)

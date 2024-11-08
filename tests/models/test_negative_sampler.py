@@ -1,4 +1,5 @@
 from enum import Enum
+import logging
 from unittest.mock import Mock
 
 import numpy as np
@@ -147,3 +148,97 @@ def test_get_sampler_most_similar():
 def test_get_sampler_invalid_type():
     with pytest.raises(AttributeError):
         _get_sampler("invalid_type")
+
+
+@pytest.mark.parametrize("randomly_sampled", [10, 100])
+@pytest.mark.parametrize(
+    "sampling_type, qids_distribution, expected_warning",
+    [
+        (NegativeSamplingType.MostSimilarDistribution, None, True),
+        (NegativeSamplingType.ShufflingDistribution, None, True),
+        (NegativeSamplingType.MostSimilarDistribution, np.ones(5) / 5, False),
+        (NegativeSamplingType.ShufflingDistribution, np.ones(5) / 5, False),
+    ],
+)
+def test_negative_sampler_validation_warning(
+    sampling_type: NegativeSamplingType,
+    qids_distribution: np.ndarray,
+    randomly_sampled: int,
+    expected_warning: bool,
+    caplog,
+):
+    embs = np.random.rand(5, 3)
+    qids = np.arange(5)
+
+    with caplog.at_level(logging.WARNING):
+        NegativeSampler(
+            embs,
+            qids,
+            ScaNNSearcher,
+            sampling_type,
+            qids_distribution,
+            randomly_sampled,
+        )
+
+    if expected_warning:
+        assert "qids_distribution is None" in caplog.text
+    else:
+        assert "qids_distribution is None" not in caplog.text
+
+
+@pytest.mark.parametrize("randomly_sampled", [0.1, None])
+@pytest.mark.parametrize(
+    "sampling_type, qids_distribution",
+    [
+        (NegativeSamplingType.MostSimilarDistribution, np.ones(5) / 5),
+        (NegativeSamplingType.ShufflingDistribution, np.ones(5) / 5),
+    ],
+)
+def test_negative_sampler_validation_assert_error(
+    sampling_type: NegativeSamplingType,
+    qids_distribution: np.ndarray,
+    randomly_sampled: int,
+):
+    embs = np.random.rand(5, 3)
+    qids = np.arange(5)
+
+    with pytest.raises(AssertionError):
+        NegativeSampler(
+            embs,
+            qids,
+            ScaNNSearcher,
+            sampling_type,
+            qids_distribution,
+            randomly_sampled,
+        )
+
+
+@pytest.mark.parametrize("randomly_sampled", [None, 10])
+@pytest.mark.parametrize("qids_distribution", [None, np.ones(5) / 5])
+@pytest.mark.parametrize(
+    "sampling_type",
+    [
+        NegativeSamplingType.MostSimilar,
+        NegativeSamplingType.Shuffling,
+    ],
+)
+def test_negative_sampler_validation_no_warning_or_error(
+    sampling_type: NegativeSamplingType,
+    qids_distribution: np.ndarray | None,
+    randomly_sampled: int | None,
+    caplog,
+):
+    embs = np.random.rand(5, 3)
+    qids = np.arange(5)
+
+    with caplog.at_level(logging.WARNING):
+        NegativeSampler(
+            embs,
+            qids,
+            ScaNNSearcher,
+            sampling_type,
+            qids_distribution,
+            randomly_sampled,
+        )
+
+    assert len(caplog.records) == 0
