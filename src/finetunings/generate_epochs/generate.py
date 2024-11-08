@@ -80,7 +80,6 @@ def generate(
     NEG: int,
     CONTEXT_SIZE: int,
     NEGATIVE_SAMPLING_TYPE: str,
-    GENERATE_Y: bool = True,
 ) -> None:
     LINKS_EMBS_DIR = Path(LINKS_EMBS_DIR)
     INDEX_TOKENS_DIR = Path(INDEX_TOKENS_DIR)
@@ -138,7 +137,6 @@ def generate(
         batch_sampler,
         tokens,
         CONTEXT_SIZE,
-        GENERATE_Y,
     )
 
     gen = iter(damuel_neighbors_iterator)
@@ -155,12 +153,8 @@ def generate(
             if i == 0:
                 X = np.empty((STEPS_PER_EPOCH, *x.shape), dtype=np.int32)
                 lines = np.empty((STEPS_PER_EPOCH, *line.shape), dtype=np.int32)
-                if GENERATE_Y:
-                    Y = np.empty((STEPS_PER_EPOCH, *data[2].shape), dtype=np.float32)
             X[i] = x
             lines[i] = line
-            if GENERATE_Y:
-                Y[i] = data[2]
             epoch_steps_counter += 1
             if epoch_steps_counter == STEPS_PER_EPOCH:
                 epoch_steps_counter = 0
@@ -168,17 +162,8 @@ def generate(
         _logger.debug(f"Epoch {epoch} created")
         _logger.debug("Saving")
 
-        # save compressed with lzma and pickle
-        if GENERATE_Y:
-            np.savez(
-                OUTPUT_DIR / f"epoch_{epoch}.npz",
-                X=np.array(X),
-                lines=np.array(lines),
-                Y=np.array(Y),
-            )
-        else:
-            np.savez(
-                OUTPUT_DIR / f"epoch_{epoch}.npz", X=np.array(X), lines=np.array(lines)
-            )
+        np.savez(
+            OUTPUT_DIR / f"epoch_{epoch}.npz", X=np.array(X), lines=np.array(lines)
+        )
 
         _logger.debug("Saved")

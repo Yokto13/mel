@@ -94,7 +94,6 @@ run_ml_finetuning_round() {
             --INDEX_TOKENS_DIR="$DAMUEL_DESCS_TOKENS_RAW" \
             --INDEX_EMBS_QIDS_DIR="$DAMUEL_FOR_INDEX_DIR" \
             --OUTPUT_DIR="$BATCH_DIR" \
-            --GENERATE_Y=False
     fi
 
     # ====================TRAINING MODEL====================
