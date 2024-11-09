@@ -130,27 +130,28 @@ class NegativeSampler:
         searcher_constructor: type[Searcher],
         sampling_type: NegativeSamplingType,
         qids_distribution: np.ndarray | None = None,
-        randomly_sampled: int | None = None,
+        randomly_sampled_cnt: int | None = None,
     ) -> None:
         assert len(embs) == len(qids)
         self.embs = embs
         self.qids = qids
         # self.set_arr = np.zeros(int(np.max(self.qids)) + 1, dtype=np.bool_)
-        self.searcher = searcher_constructor(embs, np.arange(len(embs)))
+        self.returned_indices = np.arange(len(embs))
+        self.searcher = searcher_constructor(embs, self.returned_indices)
         print(sampling_type)
         self.sample_f = _get_sampler(sampling_type)
         self.qids_distribution = qids_distribution
-        self.randomly_sampled = randomly_sampled
+        self.randomly_sampled_cnt = randomly_sampled_cnt
         self._validate()
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
     ) -> np.ndarray:
+        if self._should_sample_randomly():
+            negative_cnts -= self.randomly_sampled_cnt
         neighbors = self.searcher.find(
             batch_embs, max(negative_cnts + len(batch_embs), 100)
         )
-        # wanted_neighbors_mask = np.isin(self.qids[neighbors], batch_qids, invert=True)
-
         # performance seems comparable with _get_neighbors_mask_set_arr
         # by the Occams razor _get_neighbors_mask_set is better.
         wanted_neighbors_mask = _get_neighbors_mask_set(
@@ -160,14 +161,30 @@ class NegativeSampler:
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )
 
-    def _validate(self):
-        if self.sampling_type in (
-            NegativeSamplingType.MostSimilarDistribution,
+    def _should_sample_randomly(self):
+        return self.sampling_type in (
             NegativeSamplingType.ShufflingDistribution,
-        ):
+            NegativeSamplingType.MostSimilarDistribution,
+        )
+
+    def _sample_randomly(self, batch_qids, negative_cnts):
+        batch_size = len(batch_qids)
+        batch_qid = batch_qids[0]
+        batch_qids = set(batch_qids)
+        result = np.empty(batch_size, negative_cnts)
+        for i in range(batch_size):
+            for j in range(negative_cnts):
+                qid_to_add = batch_qid
+                while qid_to_add in batch_qids:
+                    qid_idx = np.random.choice(
+                        self.returned_indices, size=1, p=self.qids_distribution
+                    )[0]
+
+    def _validate(self):
+        if self._should_sample_randomly():
             if self.qids_distribution is None:
                 _logger.warning(
                     "qids_distribution is None, negative sampling will use uniform distribution."
                 )
                 self.qids_distribution = np.ones(len(self.qids)) / len(self.qids)
-            assert isinstance(self.randomly_sampled, int)
+            assert isinstance(self.randomly_sampled_cnt, int)
