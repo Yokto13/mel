@@ -1,4 +1,6 @@
+from collections import Counter
 from enum import Enum
+import json
 
 import numba as nb
 import numpy as np
@@ -118,6 +120,7 @@ class NegativeSampler:
         qids: np.ndarray,
         searcher_constructor: type[Searcher],
         sampling_type: NegativeSamplingType,
+        verbose: bool = True,
     ) -> None:
         assert len(embs) == len(qids)
         self.embs = embs
@@ -126,6 +129,9 @@ class NegativeSampler:
         self.searcher = searcher_constructor(embs, np.arange(len(embs)))
         print(sampling_type)
         self.sample_f = _get_sampler(sampling_type)
+        self._mined_qids = Counter()
+        self._mined_qids_total = 0
+        self._verbose = verbose
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
@@ -133,13 +139,34 @@ class NegativeSampler:
         neighbors = self.searcher.find(
             batch_embs, max(negative_cnts + len(batch_embs), 100)
         )
-        # wanted_neighbors_mask = np.isin(self.qids[neighbors], batch_qids, invert=True)
-
         # performance seems comparable with _get_neighbors_mask_set_arr
         # by the Occams razor _get_neighbors_mask_set is better.
         wanted_neighbors_mask = _get_neighbors_mask_set(
             batch_qids, self.qids[neighbors]
         )
-        return self.sample_f(
-            batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
-        )
+
+        res = self.sample_f(batch_qids, negative_cnts, neighbors, wanted_neighbors_mask)
+
+        if self._verbose:
+            for i in range(len(res)):
+                for idx in res[i]:
+                    self._mined_qids[int(self.qids[idx])] += 1
+            self._mined_qids_total += 1
+            if self._mined_qids_total % 1000 == 0:
+                print("Top 100 most common QIDs:")
+                print(f"Total mined qids: {self._mined_qids_total}")
+                for qid, count in self._mined_qids.most_common(100):
+                    print(f"QID: {qid}, Count: {count}")
+                print("\nBottom 20 least common QIDs:")
+                for qid, count in sorted(self._mined_qids.items(), key=lambda x: x[1])[
+                    :20
+                ]:
+                    print(f"QID: {qid}, Count: {count}")
+                with open("mined_qids.json", "w") as f:
+                    json.dump(
+                        {"total": self._mined_qids_total, "counts": self._mined_qids},
+                        f,
+                        default=str,
+                    )
+
+        return res
