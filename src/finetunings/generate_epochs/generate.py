@@ -2,20 +2,18 @@ import logging
 import sys
 from pathlib import Path
 
-from models.negative_sampler import NegativeSamplingType
-from models.searchers.brute_force_searcher import DPBruteForceSearcher
-from tqdm import tqdm
-from utils.multifile_dataset import MultiFileDataset
-
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import gin
+from tqdm import tqdm
 import numpy as np
 import torch
 
-# from data_processors.index.token_index import TokenIndex
+from utils.calculate_qids_distribution import calculate_qids_distribution_from_links
+from utils.multifile_dataset import MultiFileDataset
+from models.negative_sampler import NegativeSamplingType
+from models.searchers.brute_force_searcher import DPBruteForceSearcher
 from models.batch_sampler import BatchSampler
-from models.searchers.scann_searcher import ScaNNSearcher
 from utils.loaders import load_embs_and_qids
 
 from finetunings.generate_epochs.datasets import (
@@ -96,15 +94,22 @@ def generate(
     _logger.debug("NEG: %s", NEG)
     _logger.debug("CONTEXT_SIZE: %s", CONTEXT_SIZE)
 
-    # token_index = TokenIndex.from_saved(TOKENS_INDEX_DIR)
     index_embs, index_qids = load_embs_and_qids(INDEX_EMBS_QIDS_DIR)
-    # batch_sampler = BatchSampler(index_embs, index_qids, ScaNNSearcher)
+
+    negative_sampler_kwargs = {}
+    if "distribution" in NEGATIVE_SAMPLING_TYPE:
+        negative_sampler_kwargs["qids_distribution"] = (
+            calculate_qids_distribution_from_links(LINKS_EMBS_DIR, index_qids)
+        )
+        negative_sampler_kwargs["randomly_sampled_cnt"] = 1
+
     batch_sampler = BatchSampler(
         index_embs,
         index_qids,
         DPBruteForceSearcher,
         # BruteForceSearcher,
         NegativeSamplingType(NEGATIVE_SAMPLING_TYPE),
+        **negative_sampler_kwargs,
     )
 
     _logger.debug("Batch sampler created")
