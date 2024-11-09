@@ -151,7 +151,7 @@ def test_prepare_batch_shape():
     line_size = 3 * batch_size
     toks_size = 4
     sampler_tokens = np.random.randint(0, 100, (100, 4))
-    positive = np.array([[1, 4]])
+    positive = np.array([1, 4])
     negative = np.array([[5, 6], [7, 8]])
     together_line = prepare_batch(
         batch_size, line_size, toks_size, sampler_tokens, positive, negative
@@ -166,9 +166,9 @@ def test_prepare_batch_values():
     sampler_tokens = np.random.randint(0, 100, (100, 4))
     for i in range(10):
         sampler_tokens[i] = np.ones((4,)) * i
-    positive = np.array([[1, 4]])
+    positive = np.array([1, 4])
     negative = np.array([[5, 6], [7, 8]])
     together_line = prepare_batch(
         batch_size, line_size, toks_size, sampler_tokens, positive, negative
     )
-    assert set(together_line.flatten()) == set(1, 4, 5, 6, 7, 8)
+    assert set(together_line.flatten()) == set([1, 4, 5, 6, 7, 8])
