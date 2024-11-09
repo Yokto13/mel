@@ -11,7 +11,7 @@ from models.negative_sampler import (
     NegativeSampler,
     NegativeSamplingType,
 )
-from models.searchers.scann_searcher import ScaNNSearcher
+from models.searchers import ScaNNSearcher, SimplifiedBruteForceSearcher
 
 
 class MockSearcher(ScaNNSearcher):
@@ -174,7 +174,7 @@ def test_negative_sampler_validation_warning(
         NegativeSampler(
             embs,
             qids,
-            ScaNNSearcher,
+            SimplifiedBruteForceSearcher,
             sampling_type,
             qids_distribution,
             randomly_sampled,
@@ -206,7 +206,7 @@ def test_negative_sampler_validation_assert_error(
         NegativeSampler(
             embs,
             qids,
-            ScaNNSearcher,
+            SimplifiedBruteForceSearcher,
             sampling_type,
             qids_distribution,
             randomly_sampled,
@@ -235,7 +235,7 @@ def test_negative_sampler_validation_no_warning_or_error(
         NegativeSampler(
             embs,
             qids,
-            ScaNNSearcher,
+            SimplifiedBruteForceSearcher,
             sampling_type,
             qids_distribution,
             randomly_sampled,

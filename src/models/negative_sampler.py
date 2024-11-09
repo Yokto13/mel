@@ -138,7 +138,7 @@ class NegativeSampler:
         # self.set_arr = np.zeros(int(np.max(self.qids)) + 1, dtype=np.bool_)
         self.returned_indices = np.arange(len(embs))
         self.searcher = searcher_constructor(embs, self.returned_indices)
-        print(sampling_type)
+        self.sampling_type = sampling_type
         self.sample_f = _get_sampler(sampling_type)
         self.qids_distribution = qids_distribution
         self.randomly_sampled_cnt = randomly_sampled_cnt
@@ -157,9 +157,13 @@ class NegativeSampler:
         wanted_neighbors_mask = _get_neighbors_mask_set(
             batch_qids, self.qids[neighbors]
         )
-        return self.sample_f(
+        sampled = self.sample_f(
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )
+        if self._should_sample_randomly():
+            randomly_sampled = self._sample_randomly(batch_qids, negative_cnts)
+            sampled = np.concatenate([sampled, randomly_sampled], axis=1)
+        return sampled
 
     def _should_sample_randomly(self):
         return self.sampling_type in (
@@ -179,6 +183,9 @@ class NegativeSampler:
                     qid_idx = np.random.choice(
                         self.returned_indices, size=1, p=self.qids_distribution
                     )[0]
+                    qid_to_add = self.qids[qid_idx]
+                result[i][j] = qid_idx
+        return result
 
     def _validate(self):
         if self._should_sample_randomly():
