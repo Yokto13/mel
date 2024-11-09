@@ -130,12 +130,15 @@ class DaMuELDescriptionProcessor(PipelineStep):
             title = self._extract_title(damuel_entry)
             if title is None:
                 continue
-            title = self._wrap_title(title, self.label_token)
+            original_titled = title
+            title_wrapped = self._wrap_title(title, self.label_token)
 
             description = self._extract_description(damuel_entry)
             if description is None:
                 description = ""
-            text = self._construct_text_from_title_and_description(title, description)
+            text = self.construct_text_from_title_and_description(
+                title_wrapped, description, original_titled
+            )
 
             qid = parse_qid(damuel_entry["qid"])
             yield text, qid
@@ -168,9 +171,12 @@ class DaMuELDescriptionProcessor(PipelineStep):
     def _wrap_title(self, title: str, label_token: str) -> str:
         return f"{label_token}{title}{label_token}"
 
-    def _construct_text_from_title_and_description(
-        self, title: str, description: str
+    @classmethod
+    def construct_text_from_title_and_description(
+        cls, title: str, description: str, original_title: str | None = None
     ) -> str:
+        if original_title is not None and description.startswith(original_title):
+            return f"{title}\n{description[len(original_title):]}"
         return f"{title}\n{description}"
 
 

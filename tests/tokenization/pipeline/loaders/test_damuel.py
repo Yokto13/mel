@@ -3,6 +3,7 @@ import lzma
 import pytest
 
 from tokenization.pipeline.loaders import DaMuELStartLoader
+from tokenization.pipeline.loaders.damuel import DaMuELDescriptionProcessor
 
 
 class TestDaMuELStartLoader:
@@ -67,3 +68,29 @@ class TestDaMuELStartLoader:
         ]
 
         assert results == expected_results
+
+
+def test_description_title_concatenation_default():
+    text = DaMuELDescriptionProcessor.construct_text_from_title_and_description(
+        "title", "description"
+    )
+    assert text == "title\ndescription"
+
+
+@pytest.mark.parametrize(
+    "title, description, original_title, expected_text",
+    [
+        ("title", "description", "title", "title\ndescription"),
+        ("title", "description", "other", "title\ndescription"),
+        ("title", "title description", "title", "title\n description"),
+        ("title", "description", None, "title\ndescription"),
+        ("title", "description", "description", "title\n"),
+    ],
+)
+def test_description_title_concatenation_with_original_title(
+    title, description, original_title, expected_text
+):
+    text = DaMuELDescriptionProcessor.construct_text_from_title_and_description(
+        title, description, original_title
+    )
+    assert text == expected_text
