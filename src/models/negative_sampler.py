@@ -161,7 +161,7 @@ class NegativeSampler:
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )
         if self._should_sample_randomly():
-            randomly_sampled = self._sample_randomly(batch_qids, negative_cnts)
+            randomly_sampled = self._sample_randomly(batch_qids)
             sampled = np.concatenate([sampled, randomly_sampled], axis=1)
         return sampled
 
@@ -171,13 +171,13 @@ class NegativeSampler:
             NegativeSamplingType.MostSimilarDistribution,
         )
 
-    def _sample_randomly(self, batch_qids, negative_cnts):
+    def _sample_randomly(self, batch_qids):
         batch_size = len(batch_qids)
         batch_qid = batch_qids[0]
         batch_qids = set(batch_qids)
-        result = np.empty(batch_size, negative_cnts)
+        result = np.empty((batch_size, self.randomly_sampled_cnt), dtype=np.int32)
         for i in range(batch_size):
-            for j in range(negative_cnts):
+            for j in range(self.randomly_sampled_cnt):
                 qid_to_add = batch_qid
                 while qid_to_add in batch_qids:
                     qid_idx = np.random.choice(
