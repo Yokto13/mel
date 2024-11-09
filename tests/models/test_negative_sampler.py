@@ -145,6 +145,16 @@ def test_get_sampler_most_similar():
     assert sampler == _sample_top_numba
 
 
+def test_get_sampler_shuffling_distribution():
+    sampler = _get_sampler(NegativeSamplingType.ShufflingDistribution)
+    assert sampler == _sample_shuffling_numba
+
+
+def test_get_sampler_most_similar_distribution():
+    sampler = _get_sampler(NegativeSamplingType.MostSimilarDistribution)
+    assert sampler == _sample_top_numba
+
+
 def test_get_sampler_invalid_type():
     with pytest.raises(AttributeError):
         _get_sampler("invalid_type")
@@ -242,3 +252,39 @@ def test_negative_sampler_validation_no_warning_or_error(
         )
 
     assert len(caplog.records) == 0
+
+
+@pytest.mark.parametrize(
+    "sampling_type, distribution, randomly_sampled_cnt",
+    [
+        (NegativeSamplingType.MostSimilar, None, None),
+        (NegativeSamplingType.Shuffling, None, None),
+        (NegativeSamplingType.MostSimilarDistribution, np.ones(1000) / 1000, 1),
+        (NegativeSamplingType.ShufflingDistribution, np.ones(1000) / 1000, 1),
+        (NegativeSamplingType.MostSimilarDistribution, None, 1),
+        (NegativeSamplingType.ShufflingDistribution, None, 1),
+    ],
+)
+def test_sample_check_shape(
+    sampling_type: NegativeSamplingType,
+    distribution: np.ndarray | None,
+    randomly_sampled_cnt: int | None,
+):
+    negative_sampler = NegativeSampler(
+        np.random.rand(1000, 12),
+        np.random.default_rng().choice(2000, size=1000),
+        MockSearcher,
+        sampling_type,
+        distribution,
+        randomly_sampled_cnt,
+    )
+    batch_embs = np.random.rand(4, 12)
+    batch_qids = np.random.randint(1, 1000, size=4)
+    negative_cnts = 7
+
+    mock_neighbors = np.random.randint(0, 1000, size=(4, 4 + 7))
+    negative_sampler.searcher.find.return_value = mock_neighbors
+
+    result = negative_sampler.sample(batch_embs, batch_qids, negative_cnts)
+
+    assert result.shape == (4, negative_cnts)
