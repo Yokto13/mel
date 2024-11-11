@@ -35,7 +35,7 @@ def qids_remap(qids: np.array, old_to_new_qids_path: str | Path) -> np.array:
 
 
 @gin.configurable
-def remap_qids_decorator(qids_index: int, json_path: str) -> Callable:
+def remap_qids_decorator(qids_index: int | None, json_path: str) -> Callable:
     def decorator(
         func: Callable[..., Tuple[Any, ...]]
     ) -> Callable[..., Tuple[Any, ...]]:
@@ -53,6 +53,8 @@ def remap_qids_decorator(qids_index: int, json_path: str) -> Callable:
                     result[:qids_index] + (remapped_qids,) + result[qids_index + 1 :]
                 )
                 return updated_result
+            elif qids_index is None:
+                return qids_remap(result, json_path)
             else:
                 raise ValueError(
                     f"Invalid qids_index {qids_index} for the returned tuple."
