@@ -1,4 +1,4 @@
-model_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+model_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 inference_batch_size=100000
 output_type="sentence_transformer"
 

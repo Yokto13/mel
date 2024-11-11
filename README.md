@@ -46,6 +46,14 @@ will be done through it.
 
 For OLPEAT explanation click [here](https://arxiv.org/pdf/2406.16892#section.6.4).
 
+## About entity linking
+
+Entity linking is a cute problem in NLP where your are tasked with connecting a mention to an entry in a knowledge base. For example, take the sentence "In order to save Troy, **Paris** had to be sacrificed" -- the mention Paris should connect to Paris (mythological figure) not the capital of France.
+
+## Overview of the finetuning pipeline
+
+![Finetuning pipeline](finetuning_loop.pdf)
+
 ## History
 
 This repository is based on my [thesis](https://arxiv.org/abs/2406.16892); however, it implements a plateau of different improvements which were not part of the original code.

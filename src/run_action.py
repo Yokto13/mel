@@ -5,10 +5,6 @@ logging.basicConfig(level=logging.INFO)
 
 import wandb
 
-from baselines.alias_table.all_languages import all_languages
-from baselines.alias_table.from_tokens import one_language
-from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
-from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
@@ -51,22 +47,12 @@ def choose_action(action):
             return evaluate
         case "copy":
             return move_tokens
-        case "at_lemmas":
-            return alias_table_with_lemmas
-        case "at_one":
-            return one_language
-        case "at_all":
-            return all_languages
-        case "string_similarity":
-            return string_similarity
         case "recalls":
             return run_recall_calculation
         case "rename":
             return rename
         case "remove_duplicates":
             return remove_duplicates
-        case "filter_duplicates_script":
-            return run_duplicates_filter_script
         case "embs_from_tokens_and_model_name":
             return embs_from_tokens_and_model_name
         case "embs_from_tokens_and_model_name_at":
@@ -83,18 +69,8 @@ def choose_action(action):
             return run_kb_creator
         case "combine_embs_by_qid":
             return combine_embs_by_qid
-        case "run_mewsli_mention":
-            return run_mewsli_mention
-        case "run_mewsli_context":
-            return run_mewsli_context
         case "validate_tokens":
             return validate_tokens
-        case "run_damuel_description_mention":
-            return run_damuel_description_mention
-        case "run_damuel_description_context":
-            return run_damuel_description_context
-        case "run_damuel_link_context":
-            return run_damuel_link_context
         case _:
             raise ValueError(f"Unknown action: {action}")
 

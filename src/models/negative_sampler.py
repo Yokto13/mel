@@ -1,16 +1,20 @@
 from collections import Counter
 from enum import Enum
-import json
+import logging
 
 import numba as nb
 import numpy as np
 
 from models.searchers.searcher import Searcher
 
+_logger = logging.getLogger(__name__)
+
 
 class NegativeSamplingType(Enum):
     Shuffling = "shuffle"
     MostSimilar = "top"
+    MostSimilarDistribution = "top_distribution"
+    ShufflingDistribution = "shuffling_distribution"
 
 
 # _rng = np.random.default_rng(seed=42)
@@ -106,9 +110,15 @@ def _get_neighbors_mask_set(batch_qids, neighbors_qids):
 
 
 def _get_sampler(sampler_type: NegativeSamplingType) -> callable:
-    if sampler_type == NegativeSamplingType.Shuffling:
+    if sampler_type in (
+        NegativeSamplingType.Shuffling,
+        NegativeSamplingType.ShufflingDistribution,
+    ):
         return _sample_shuffling_numba
-    if sampler_type == NegativeSamplingType.MostSimilar:
+    if sampler_type in (
+        NegativeSamplingType.MostSimilar,
+        NegativeSamplingType.MostSimilarDistribution,
+    ):
         return _sample_top_numba
     raise AttributeError(f"No samplig method for {sampler_type}")
 
@@ -120,22 +130,27 @@ class NegativeSampler:
         qids: np.ndarray,
         searcher_constructor: type[Searcher],
         sampling_type: NegativeSamplingType,
-        verbose: bool = True,
+        qids_distribution: np.ndarray | None = None,
+        randomly_sampled_cnt: int | None = None,
     ) -> None:
         assert len(embs) == len(qids)
         self.embs = embs
         self.qids = qids
         # self.set_arr = np.zeros(int(np.max(self.qids)) + 1, dtype=np.bool_)
-        self.searcher = searcher_constructor(embs, np.arange(len(embs)))
-        print(sampling_type)
+        self.returned_indices = np.arange(len(embs))
+        self.searcher = searcher_constructor(embs, self.returned_indices)
+        self.sampling_type = sampling_type
         self.sample_f = _get_sampler(sampling_type)
-        self._mined_qids = Counter()
-        self._mined_qids_total = 0
-        self._verbose = verbose
+        self.qids_distribution = qids_distribution
+        self.randomly_sampled_cnt = randomly_sampled_cnt
+        self._validate()
+
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
     ) -> np.ndarray:
+        if self._should_sample_randomly():
+            negative_cnts -= self.randomly_sampled_cnt
         neighbors = self.searcher.find(
             batch_embs, max(negative_cnts + len(batch_embs), 100)
         )
@@ -144,29 +159,41 @@ class NegativeSampler:
         wanted_neighbors_mask = _get_neighbors_mask_set(
             batch_qids, self.qids[neighbors]
         )
+        sampled = self.sample_f(
+            batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
+        )
+        if self._should_sample_randomly():
+            randomly_sampled = self._sample_randomly(batch_qids)
+            sampled = np.concatenate([sampled, randomly_sampled], axis=1)
+        return sampled
 
-        res = self.sample_f(batch_qids, negative_cnts, neighbors, wanted_neighbors_mask)
+    def _should_sample_randomly(self):
+        return self.sampling_type in (
+            NegativeSamplingType.ShufflingDistribution,
+            NegativeSamplingType.MostSimilarDistribution,
+        )
 
-        if self._verbose:
-            for i in range(len(res)):
-                for idx in res[i]:
-                    self._mined_qids[int(self.qids[idx])] += 1
-            self._mined_qids_total += 1
-            if self._mined_qids_total % 1000 == 0:
-                print("Top 100 most common QIDs:")
-                print(f"Total mined qids: {self._mined_qids_total}")
-                for qid, count in self._mined_qids.most_common(100):
-                    print(f"QID: {qid}, Count: {count}")
-                print("\nBottom 20 least common QIDs:")
-                for qid, count in sorted(self._mined_qids.items(), key=lambda x: x[1])[
-                    :20
-                ]:
-                    print(f"QID: {qid}, Count: {count}")
-                with open("mined_qids.json", "w") as f:
-                    json.dump(
-                        {"total": self._mined_qids_total, "counts": self._mined_qids},
-                        f,
-                        default=str,
-                    )
+    def _sample_randomly(self, batch_qids):
+        batch_size = len(batch_qids)
+        batch_qid = batch_qids[0]
+        batch_qids = set(batch_qids)
+        result = np.empty((batch_size, self.randomly_sampled_cnt), dtype=np.int32)
+        for i in range(batch_size):
+            for j in range(self.randomly_sampled_cnt):
+                qid_to_add = batch_qid
+                while qid_to_add in batch_qids:
+                    qid_idx = np.random.choice(
+                        self.returned_indices, size=1, p=self.qids_distribution
+                    )[0]
+                    qid_to_add = self.qids[qid_idx]
+                result[i][j] = qid_idx
+        return result
 
-        return res
+    def _validate(self):
+        if self._should_sample_randomly():
+            if self.qids_distribution is None:
+                _logger.warning(
+                    "qids_distribution is None, negative sampling will use uniform distribution."
+                )
+                self.qids_distribution = np.ones(len(self.qids)) / len(self.qids)
+            assert isinstance(self.randomly_sampled_cnt, int)

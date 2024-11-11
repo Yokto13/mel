@@ -5,7 +5,12 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from utils.loaders import load_embs_and_qids, load_embs_qids_tokens, load_mentions
+from utils.loaders import (
+    load_embs_and_qids,
+    load_embs_qids_tokens,
+    load_mentions,
+    load_qids,
+)
 
 
 def mock_remap_qids(qids, _):
@@ -271,3 +276,22 @@ def test_embs_qids_tokens_from_file(mock_qids_remap, use_string_path, file_name)
             assert isinstance(loaded, np.ndarray)
 
         assert len(loaded_data) == len(test_data)
+
+
+@pytest.mark.parametrize("use_string_path", [True, False])
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_load_qids(mock_qids_remap, use_string_path: bool) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dir_path = Path(temp_dir)
+        if use_string_path:
+            dir_path = str(dir_path)
+        file_path = Path(dir_path) / "qids.npz"
+
+        test_qids = np.array([100, 200, 300])
+
+        np.savez(file_path, qids=test_qids)
+
+        loaded_qids = load_qids(file_path)
+
+        assert np.array_equal(loaded_qids, test_qids)
+        assert isinstance(loaded_qids, np.ndarray)

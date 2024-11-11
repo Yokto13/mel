@@ -34,7 +34,7 @@ run_ml_finetuning_round() {
     local STEPS_PER_EPOCH=1000
 
     # Multiple by 2 to make sure that if a link contained something faulty we can skip it.
-    local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 1000 * 3000))
+    local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 1600000))
     echo "LPR $LINKS_PER_ROUND"
 
     local ACTION_SCRIPT="run_action_gin.py $MODEL_CONFIG_PATH $TRAIN_CONFIG_PATH"
@@ -93,7 +93,8 @@ run_ml_finetuning_round() {
             --LINKS_EMBS_DIR="$DAMUEL_LINKS_DIR" \
             --INDEX_TOKENS_DIR="$DAMUEL_DESCS_TOKENS_RAW" \
             --INDEX_EMBS_QIDS_DIR="$DAMUEL_FOR_INDEX_DIR" \
-            --OUTPUT_DIR="$BATCH_DIR"
+            --OUTPUT_DIR="$BATCH_DIR" \
+            --GENERATE_Y=False
     fi
 
     # ====================TRAINING MODEL====================

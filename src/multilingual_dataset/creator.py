@@ -11,7 +11,7 @@ import numpy as np
 from multilingual_dataset.mixer import Mixer
 from tqdm import tqdm
 from utils.damuel_paths import DamuelPaths
-from utils.loaders import load_mentions
+from utils.loaders import load_mentions, load_qids
 
 _logger = logging.getLogger("multilingual_dataset.creator")
 
@@ -116,9 +116,7 @@ class _KBCreator:
         self, wanted_qids: list[int], filepaths: list[Path], lang: str
     ) -> None:
         for i, descs_file_path in enumerate(filepaths):
-            d = np.load(descs_file_path)
-            tokens = d["tokens"]
-            qids = d["qids"]
+            tokens, qids = load_mentions(descs_file_path)
 
             index = np.isin(qids, list(wanted_qids))
             chosen_tokens = tokens[index]
@@ -173,12 +171,8 @@ class _KBCreator:
         return qid_lang_counts, lang_sizes
 
     def _load_qids_from_filepaths(self, filepaths: list[Path]) -> list[int]:
-        def read_file(filepath: Path) -> np.ndarray:
-            with np.load(filepath) as data:
-                return data["qids"]
-
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            qids = list(executor.map(read_file, filepaths))
+            qids = list(executor.map(load_qids, filepaths))
 
         return [item for sublist in qids for item in sublist]
 
@@ -217,7 +211,7 @@ class _KBCreator:
             for descs_file_path in self._get_file_paths(
                 self.damuel_paths.get_pages([lang])
             ):
-                qids = np.load(descs_file_path)["qids"]
+                qids = load_qids(descs_file_path)
                 for qid in qids:
                     qid_lang_counts[qid][lang] += 1
         return qid_lang_counts

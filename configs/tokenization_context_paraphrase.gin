@@ -1,6 +1,6 @@
-expected_size=128
-output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/128_finetuning_damuel/"
-output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/128_finetuning_mewsli/"
+expected_size=64
+output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/para_finetuning_damuel/"
+output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/para_finetuning_mewsli/"
 languages = [
     "af", "be", "ca", "da", "el", "es", "eu", "fi", "ga", "gl", "hi", "hu", "id", 
     "ja", "la", "lv", "mt", "nn", "pt", "ru", "sk", "sr", "ta", "tr", "uk", "vi", 
