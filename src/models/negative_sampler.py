@@ -1,3 +1,4 @@
+from collections import Counter
 from enum import Enum
 import logging
 
@@ -143,6 +144,7 @@ class NegativeSampler:
         self.qids_distribution = qids_distribution
         self.randomly_sampled_cnt = randomly_sampled_cnt
         self._validate()
+
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int

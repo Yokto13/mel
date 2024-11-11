@@ -20,29 +20,15 @@ will be done through it.
 
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
-| Arabic   |   90.4   |   94.5    |    95.1    |
-| German   |   90.8   |   95.0    |    95.7    |
-| English  |   85.6   |   92.2    |    93.6    |
-| Spanish  |   87.9   |   93.6    |    94.8    |
-| Persian  |   87.1   |   95.5    |    97.2    |
-| Japanese |   86.6   |   94.5    |    96.3    |
-| Serbian  |   92.0   |   96.4    |    97.1    |
-| Tamil    |   90.6   |   97.0    |    97.8    |
-| Turkish  |   87.1   |   94.1    |    95.0    |
-
-#### Top 3 combined
-
-| Language | Recall@1 | Recall@10 | Recall@100 |
-|----------|----------|-----------|------------|
-| Arabic   |   89.6   |   94.1    |    94.8    |
-| German   |   90.0   |   94.6    |    95.5    |
-| English  |   84.0   |   90.8    |    93.0    |
-| Spanish  |   87.3   |   92.9    |    94.5    |
-| Persian  |   86.9   |   94.8    |    96.6    |
-| Japanese |   85.5   |   93.2    |    95.6    |
-| Serbian  |   90.0   |   95.3    |    96.7    |
-| Tamil    |   88.6   |   95.8    |    97.3    |
-| Turkish  |   86.3   |   92.9    |    94.5    |
+| Arabic   |   91.1   |   94.3    |    95.1    |
+| German   |   90.6   |   94.8    |    95.6    |
+| English  |   85.8   |   91.6    |    93.3    |
+| Spanish  |   88.1   |   93.4    |    94.6    |
+| Persian  |   89.0   |   95.5    |    97.0    |
+| Japanese |   87.6   |   94.2    |    95.9    |
+| Serbian  |   91.6   |   96.1    |    97.0    |
+| Tamil    |   90.0   |   96.4    |    97.7    |
+| Turkish  |   87.3   |   93.4    |    94.6    |
 
 ### OLPEAT
 
@@ -59,6 +45,14 @@ will be done through it.
 | Turkish  |   86.4   |   93.9    |    94.6    |
 
 For OLPEAT explanation click [here](https://arxiv.org/pdf/2406.16892#section.6.4).
+
+## About entity linking
+
+Entity linking is a cute problem in NLP where your are tasked with connecting a mention to an entry in a knowledge base. For example, take the sentence "In order to save Troy, **Paris** had to be sacrificed" -- the mention Paris should connect to Paris (mythological figure) not the capital of France.
+
+## Overview of the finetuning pipeline
+
+![Finetuning pipeline](finetuning_loop.pdf)
 
 ## History
 
