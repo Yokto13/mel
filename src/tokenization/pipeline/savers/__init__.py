@@ -1,3 +1,3 @@
-from .npz import NPZSaver
+from .npz import NPZSaver, NPZSaverIncremental
 
-__all__ = ["NPZSaver"]
+__all__ = ["NPZSaver", "NPZSaverIncremental"]
