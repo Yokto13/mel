@@ -5,10 +5,6 @@ logging.basicConfig(level=logging.INFO)
 import gin
 import wandb
 
-from baselines.alias_table.all_languages import all_languages
-from baselines.alias_table.from_tokens import one_language
-from baselines.alias_table.one_language_lemma import alias_table_with_lemmas
-from baselines.alias_table.string_similarity import string_similarity
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from baselines.olpeat.olpeat import olpeat
@@ -55,14 +51,6 @@ def choose_action(action):
             return evaluate
         case "copy":
             return move_tokens
-        case "at_lemmas":
-            return alias_table_with_lemmas
-        case "at_one":
-            return one_language
-        case "at_all":
-            return all_languages
-        case "string_similarity":
-            return string_similarity
         case "recalls":
             return run_recall_calculation
         case "rename":
