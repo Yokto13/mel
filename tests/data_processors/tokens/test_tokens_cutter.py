@@ -120,6 +120,35 @@ class TestTokensCutter:
         assert tokenizer.decode([tokenizer.vocab[label_token]]) == label_token
         assert list(result).count(tokenizer.vocab[label_token]) == 2
 
+    @pytest.mark.parametrize(
+        "text, should_warn",
+        [
+            (
+                "This is a text with a mention of [M]John Smith[M] it is veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery long.",
+                False,
+            ),
+            ("Hi [M]John[M].", True),
+        ],
+    )
+    def test_warn_about_length(
+        self,
+        tokenizer: BertTokenizerFast,
+        label_token: str,
+        caplog,
+        text: str,
+        should_warn: bool,
+    ):
+        tokenizer_wrapper = TokenizerWrapper(tokenizer, expected_size=10)
+        tokens_cutter = TokensCutter(
+            text=text,
+            tokenizer_wrapper=tokenizer_wrapper,
+            expected_size=12,
+            label_token=label_token,
+        )
+        tokens_cutter.cut_mention_with_context()
+
+        assert len(caplog.text) > 0 if should_warn else len(caplog.text) == 0
+
 
 class TestFastTokenMentionSpan:
     @pytest.fixture(scope="class")

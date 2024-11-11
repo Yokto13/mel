@@ -45,7 +45,7 @@ class TokensCutter:
             add_special_tokens=False,
             return_offsets_mapping=True,
         )
-        if len(self.be_of_all["input_ids"]) < self.size_without_special_tokens:
+        if len(self.be_of_all["input_ids"][0]) < self.size_without_special_tokens:
             self._warn_about_padding()
         self.all_tokens = np.array(self.be_of_all["input_ids"][0])
         self.offset_mapping = self.be_of_all["offset_mapping"][0]
@@ -157,7 +157,6 @@ class TokensCutter:
         )
 
     def _warn_about_padding(self):
-        print("warning...")
         _logger.warning(
             "Padding tokens are present in the input text. This means that input text is shorter than expected."
         )
