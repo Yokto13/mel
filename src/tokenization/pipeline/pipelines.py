@@ -2,7 +2,7 @@ from .base import Pipeline
 
 from .loaders import DaMuELDescriptionLoader, DaMuELLinkLoader, MewsliLoader
 from .loggers import LoggerStep, StatisticsLogger
-from .savers import NPZSaver
+from .savers import NPZSaver, NPZSaverIncremental
 from .tokenizers import CuttingTokenizer, SimpleTokenizer
 
 
@@ -102,6 +102,7 @@ class DamuelLinkContextPipeline(Pipeline):
         remainder: int = None,
         mod: int = None,
         require_link_wiki_origin: bool = True,
+        save_every: int = 1000000,
     ):
         super().__init__()
         self.add(
@@ -115,6 +116,7 @@ class DamuelLinkContextPipeline(Pipeline):
         )
         self.add(CuttingTokenizer(tokenizer, expected_size, label_token))
         self.add(NPZSaver(output_filename, compress))
+        # self.add(NPZSaverIncremental(output_filename, compress, save_every))
 
 
 class DamuelLinkMentionPipeline(Pipeline):

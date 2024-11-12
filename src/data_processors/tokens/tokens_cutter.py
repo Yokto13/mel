@@ -8,7 +8,10 @@ _logger = logging.getLogger(__name__)
 
 
 def fast_token_mention_span(all_tokens, label_token_id):
-    @nb.njit
+    # Premature optimalization is cause of all evil and here it is so so true
+    # The numba njit version crashes the code at OOM, maybe not working good with multiprocessing?
+    # TODO: We should investigate why is it broken.
+    # @nb.njit
     def _fast_token_mention_span(all_tokens, label_token_id):
         mention_start_idx, mention_end_idx = None, None
         for i, token in enumerate(all_tokens):
@@ -157,6 +160,7 @@ class TokensCutter:
         )
 
     def _warn_about_padding(self):
-        _logger.warning(
-            "Padding tokens are present in the input text. This means that input text is shorter than expected."
-        )
+        pass
+        # _logger.warning(
+        # "Padding tokens are present in the input text. This means that input text is shorter than expected."
+        # )

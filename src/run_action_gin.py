@@ -2,6 +2,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+from fire import Fire
 import gin
 import wandb
 
@@ -17,7 +18,6 @@ from finetunings.generate_epochs.embed_links_for_generation import (
     embed_links_for_generation,
 )
 from finetunings.generate_epochs.generate import generate
-from fire import Fire
 from multilingual_dataset.combine_embs import combine_embs_by_qid
 from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
 from tokenization.runner import (
