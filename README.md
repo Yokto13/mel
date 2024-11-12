@@ -52,7 +52,7 @@ Entity linking is a cute problem in NLP where your are tasked with connecting a 
 
 ## Overview of the finetuning pipeline
 
-![Finetuning pipeline](finetuning_loop.png)
+![Finetuning pipeline](finetuning_loop.pdf)
 
 ## History
 
