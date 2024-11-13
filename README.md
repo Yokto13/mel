@@ -54,6 +54,9 @@ Entity linking is a cute problem in NLP where your are tasked with connecting a 
 
 ![Finetuning pipeline](finetuning_loop.png)
 
+
+![Bi-encoder](bi-encoder.png)
+
 ## History
 
 This repository is based on my [thesis](https://arxiv.org/abs/2406.16892); however, it implements a plateau of different improvements which were not part of the original code.
