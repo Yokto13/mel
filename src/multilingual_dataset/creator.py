@@ -26,7 +26,7 @@ class _LinksCreator:
         self.dest_links_dir.mkdir(parents=True, exist_ok=True)
 
         self.single_mixer = Mixer(buffer_size=1)
-        self.standard_mixer = Mixer(buffer_size=200)
+        self.standard_mixer = Mixer(buffer_size=10)
 
     def run(self) -> None:
         """Gathers links from all languages and writes them to dest_dir.
@@ -49,7 +49,7 @@ class _LinksCreator:
             out_file_paths.append(out_file_path)
 
         self.single_mixer.mix(out_file_paths, n_of_mixings=1, compress_output=False)
-        self.standard_mixer.mix(out_file_paths, n_of_mixings=5, compress_output=True)
+        self.standard_mixer.mix(out_file_paths, n_of_mixings=20, compress_output=True)
 
     def _copy_files(
         self, source_file_paths: Iterable[Path], dest_file_path: Path
@@ -93,6 +93,7 @@ class _KBCreator:
 
     def run(self) -> None:
         qid_lang_mapping = self._get_qid_lang_mapping()
+        assert all(len(v) <= self.langs_per_qid for v in qid_lang_mapping.values())
         lang_qid_lists = self._group_qids_by_lang(qid_lang_mapping)
         self._copy_chosen_pages(lang_qid_lists)
 
@@ -115,10 +116,20 @@ class _KBCreator:
     def _copy_chosen_pages_from_lang(
         self, wanted_qids: list[int], filepaths: list[Path], lang: str
     ) -> None:
+        # wanted_qids = list(wanted_qids)
+        processed_qids = set()
         for i, descs_file_path in enumerate(filepaths):
             tokens, qids = load_mentions(descs_file_path)
+            _, unique_qids_index = np.unique(qids, return_index=True)
+            qids = qids[unique_qids_index]
+            tokens = tokens[unique_qids_index]
 
-            index = np.isin(qids, list(wanted_qids))
+            index = np.isin(qids, wanted_qids)
+            # This is likely better than the isin from numpy which needs linear scan.
+            for i, flag in enumerate(index):
+                if flag and qids[i] in processed_qids:
+                    index[i] = False
+
             chosen_tokens = tokens[index]
             chosen_qids = qids[index]
 
@@ -130,6 +141,7 @@ class _KBCreator:
                 tokens=chosen_tokens,
                 qids=chosen_qids,
             )
+            processed_qids.update(chosen_qids)
 
     def _group_qids_by_lang(
         self, qid_lang_mapping: dict[int, str]
@@ -194,6 +206,11 @@ class _KBCreator:
             desc="Mapping QIDs to languages",
             total=len(qid_lang_counts),
         ):
+            if qid in qid_lang_mapping:
+                _logger.warning(
+                    f"QID {qid} already has a language mapping, not adding it again. This might happen when using qids remap dict. If that is the case, ignore this warning."
+                )
+                continue
             items_by_importance = sorted(
                 lang_counts.items(), key=lambda x: (-x[1], -lang_sizes[x[0]])
             )
@@ -235,13 +252,13 @@ class MultilingualDatasetCreator:
         )
 
     def run(self) -> None:
-        _logger.info("Starting to create KB")
-        self._kb_creator.run()
-        _logger.info("Finished creating KB")
-
         _logger.info("Starting to create links")
         self._links_creator.run()
         _logger.info("Finished creating links")
+
+        _logger.info("Starting to create KB")
+        self._kb_creator.run()
+        _logger.info("Finished creating KB")
 
 
 def create_multilingual_dataset(
