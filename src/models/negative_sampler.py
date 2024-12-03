@@ -143,12 +143,14 @@ class NegativeSampler:
         self.sample_f = _get_sampler(sampling_type)
         self.qids_distribution = qids_distribution
         self.randomly_sampled_cnt = randomly_sampled_cnt
+
+        self._validate()
+
         if self._should_sample_randomly():
             # self.urng = np.random.default_rng()
             # DescreteAliasUrn seems slightly faster but there is a UNU.RAN error which I don't want to debug and
             # DiscreteGuideTable looks okish.
             self.rng = DiscreteGuideTable(self.qids_distribution)
-        self._validate()
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
