@@ -44,6 +44,20 @@ will be done through it.
 | Tamil    |   91.4   |   95.5    |    97.3    |
 | Turkish  |   86.4   |   93.9    |    94.6    |
 
+### Alias table
+
+| Language | Recall@1 | Recall@10 | Recall@100 |
+|----------|----------|-----------|------------|
+| Arabic   |   90.7   |           |            |
+| German   |   86.9   |           |            |
+| English  |   78.6   |           |            |
+| Spanish  |   83.3   |           |            |
+| Persian  |   86.9   |           |            |
+| Japanese |   83.6   |           |            |
+| Serbian  |   88.8   |           |            |
+| Tamil    |   83.0   |           |            |
+| Turkish  |   83.5   |           |            |
+
 For OLPEAT explanation click [here](https://arxiv.org/pdf/2406.16892#section.6.4).
 
 ## About entity linking
