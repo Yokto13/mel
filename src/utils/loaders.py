@@ -9,7 +9,9 @@ import numpy as np
 import pandas as pd
 
 from utils.qids_remap import remap_qids_decorator
-from tokenization.pipeline import DamuelAliasTablePipeline
+
+# from tokenization.pipeline import DamuelAliasTablePipeline
+from tokenization.runner import run_alias_table_damuel
 
 
 current_file_path = os.path.abspath(__file__)
@@ -138,24 +140,22 @@ class AliasTableLoader:
 
     @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
     def load_damuel(self, lang) -> tuple[list[str], np.ndarray]:
-        pipeline = DamuelAliasTablePipeline(
-            self._construct_damuel_path(lang).as_posix()
-        )
-        data = list(pipeline.process())
-        textual = [d[0] for d in data]
-        qids = [d[1] for d in data]
+        data = run_alias_table_damuel(self._construct_damuel_path(lang))
+        textual = np.concatenate([[x[0] for x in d] for d in data])
+        qids = np.concatenate([[x[1] for x in d] for d in data])
         if self.lowercase:
             textual = [t.lower() for t in textual]
-        return textual, np.array(qids)
+        print(qids)
+        return textual, qids
 
-    def _construct_mewsli_path(self, lang: str) -> Path:
-        return self.mewsli_root_path / lang / "mentions.tsv"
+    def _construct_mewsli_path(self, lang: str) -> str:
+        return (self.mewsli_root_path / lang / "mentions.tsv").as_posix()
 
-    def _construct_damuel_path(self, lang: str) -> Path:
+    def _construct_damuel_path(self, lang: str) -> str:
         for subdir in self.damuel_root_path.iterdir():
             if subdir.is_dir() and subdir.name.endswith(lang):
                 print(f"Found directory: {subdir}")
-                return subdir
+                return subdir.as_posix()
         raise FileNotFoundError(
             f"No directory ending with '{lang}' found in {self.damuel_root_path}"
         )

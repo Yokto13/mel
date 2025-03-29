@@ -63,9 +63,9 @@ damuels = [
     "gd",
     "tr",
 ]
-# assert len(damuels) == 53
+assert len(damuels) == 53
 
-damuels = ["fa"]
+# damuels = ["fa"]
 mewslis = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]
 
 
@@ -118,9 +118,7 @@ def all_languages(
     print("Loading MEWSLI...")
     for mewsli_lang in mewslis:
         print(f"Loading MEWSLI {mewsli_lang}...")
-        mewsli_mentions_names, mewsli_qids = loader.load_mewsli(
-            mewsli / mewsli_lang / "mentions.tsv", lowercase=lowercase
-        )
+        mewsli_mentions_names, mewsli_qids = loader.load_mewsli(mewsli_lang)
 
         print("Knowledge base size: %d", len(knowledge_base))
 

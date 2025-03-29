@@ -352,13 +352,13 @@ class TestAliasTableLoader:
                 f.write(f"{mention}\t{qid}\n")
 
     @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-    @patch("utils.loaders.DamuelAliasTablePipeline")
+    @patch("utils.loaders.run_alias_table_damuel")
     def test_load_damuel(self, mock_pipeline, mock_qids_remap, lowercase):
         lang = "en"
         damuel_dir = self.damuel_root_path / f"dataset_{lang}"
         self.create_dummy_damuel_dir(damuel_dir)
 
-        mock_pipeline.return_value.process.return_value = [
+        mock_pipeline.return_value = [
             ("mention1", 123),
             ("mention2", 456),
             ("Mention3", 789),
@@ -374,7 +374,6 @@ class TestAliasTableLoader:
         assert mentions == expected_mentions
         assert list(qids) == [123, 456, 789]
         mock_pipeline.assert_called_once_with(damuel_dir)
-        mock_pipeline.return_value.process.assert_called_once()
 
     def create_dummy_damuel_subdirs(self):
         (self.damuel_root_path / "dataset_en").mkdir(parents=True)

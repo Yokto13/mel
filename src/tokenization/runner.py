@@ -40,7 +40,8 @@ def process_pipelines(
     pipelines: List[Pipeline], num_processes: int = multiprocessing.cpu_count()
 ) -> None:
     with multiprocessing.Pool(processes=num_processes) as pool:
-        result = pool.map(run_pipeline, pipelines)
+        result = pool.map(process_pipeline, pipelines)
+    # print(result)
     return result
 
 
@@ -49,17 +50,15 @@ def run_alias_table_damuel(
     path: str,
     num_processes: int,
     remainder_mod: int,
-):
+) -> list[Any]:
     pipelines = [
         DamuelAliasTablePipeline(
-            path=path,
-            remainder=i,
-            mod=remainder_mod,
+            damuel_path=path, remainder=i, mod=remainder_mod, logger=None
         )
         for i in range(remainder_mod)
     ]
     results = process_pipelines(pipelines, num_processes)
-    logging.info("Finished processing all languages for DaMuEL Alias Table")
+    logging.info("Finished processing one language for DaMuEL Alias Table")
     return results
 
 

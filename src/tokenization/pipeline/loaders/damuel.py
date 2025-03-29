@@ -65,6 +65,8 @@ class DaMuELStartLoader(LoaderStep):
             return True
         if filename.endswith(".xz"):
             filename = filename[:-3]
+        elif filename.endswith(".bz2"):
+            filename = filename[:-4]
         file_number = int(filename.split("-")[1])
         return file_number % self.mod == self.remainder
 
