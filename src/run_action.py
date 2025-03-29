@@ -5,6 +5,7 @@ logging.basicConfig(level=logging.INFO)
 
 import wandb
 
+from baselines.string_alias_tables.all_languages import all_languages
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
@@ -37,6 +38,8 @@ print("Imports finished")
 
 def choose_action(action):
     match action:
+        case "standard_alias_table":
+            return all_languages
         case "generate":
             return generate
         case "train":

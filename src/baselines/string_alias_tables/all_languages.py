@@ -6,7 +6,7 @@ from pathlib import Path
 import wandb
 
 import fire
-from utils.loaders import load_mewsli, load_damuel
+from utils.loaders import AliasTableLoader
 
 damuels = [
     "de",
@@ -63,11 +63,15 @@ damuels = [
     "gd",
     "tr",
 ]
-assert len(damuels) == 53
+# assert len(damuels) == 53
+
+damuels = ["fa"]
 mewslis = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]
 
 
-def all_languages(damuel, mewsli, only_wiki_links, R, lowercase=False):
+def all_languages(
+    damuel: str, mewsli: str, only_wiki_links: bool, R: int, lowercase=False
+):
     wandb.init(
         project="alias-table-all-languages",
         config={
@@ -80,8 +84,6 @@ def all_languages(damuel, mewsli, only_wiki_links, R, lowercase=False):
     )
     damuel = Path(damuel)
     mewsli = Path(mewsli)
-    if type(only_wiki_links) == str:
-        only_wiki_links = only_wiki_links.lower() == "true"
     print("Args damuel: %s", damuel)
     print("Args mewsli: %s", mewsli)
     print("Args only_wiki_links: %s", only_wiki_links)
@@ -91,21 +93,17 @@ def all_languages(damuel, mewsli, only_wiki_links, R, lowercase=False):
 
     mention_qid_to_count = defaultdict(Counter)
 
+    loader = AliasTableLoader(mewsli, damuel, lowercase=lowercase)
+
     # Just to test that all mewslis are loadable
+    # Lol
     for mewsli_lang in mewslis:
         print(f"Loading MEWSLI {mewsli_lang}...")
-        mewsli_mentions_names, mewsli_qids = load_mewsli(
-            mewsli / mewsli_lang / "mentions.tsv", lowercase
-        )
+        mewsli_mentions_names, mewsli_qids = loader.load_mewsli(mewsli_lang)
 
     total_dam_len = 0
     for suffix in damuels:
-        dam_mentions_names, dam_qids = load_damuel(
-            damuel / f"damuel_1.0_{suffix}",
-            only_wiki_links,
-            use_xz=True,
-            lowercase=lowercase,
-        )
+        dam_mentions_names, dam_qids = loader.load_damuel(suffix)
         print(f"Loaded DAMUEL {suffix} with {len(dam_mentions_names)} mentions")
         total_dam_len += len(dam_mentions_names)
         for mention, qid in zip(dam_mentions_names, dam_qids):
@@ -120,7 +118,7 @@ def all_languages(damuel, mewsli, only_wiki_links, R, lowercase=False):
     print("Loading MEWSLI...")
     for mewsli_lang in mewslis:
         print(f"Loading MEWSLI {mewsli_lang}...")
-        mewsli_mentions_names, mewsli_qids = load_mewsli(
+        mewsli_mentions_names, mewsli_qids = loader.load_mewsli(
             mewsli / mewsli_lang / "mentions.tsv", lowercase=lowercase
         )
 
