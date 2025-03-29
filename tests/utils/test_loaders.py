@@ -299,36 +299,79 @@ def test_load_qids(mock_qids_remap, use_string_path: bool) -> None:
         assert isinstance(loaded_qids, np.ndarray)
 
 
+@pytest.mark.parametrize("lowercase", [True, False])
 class TestAliasTableLoader:
-    def setup_method(self):
+    def setup_method(self, lowercase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.mewsli_root_path = Path(self.temp_dir.name) / "mewsli"
         self.damuel_root_path = Path(self.temp_dir.name) / "damuel"
         self.loader = AliasTableLoader(
             mewsli_root_path=self.mewsli_root_path,
             damuel_root_path=self.damuel_root_path,
-            lowercase=False,
+            lowercase=lowercase,
         )
+        self.lowercase = lowercase
 
     def teardown_method(self):
         self.temp_dir.cleanup()
 
     def create_dummy_mentions_tsv(self, file_path: Path):
         data = {
-            "mention": ["mention1", "mention2", "mention3"],
+            "mention": ["mention1", "Mention2", "mention3"],
             "qid": ["Q123", "Q456", "Q789"],
         }
         df = pd.DataFrame(data)
         df.to_csv(file_path, sep="\t", index=False)
 
     @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-    def test_load_mentions_with_path_object(self, mock_qids_remap):
+    def test_load_mentions_with_path_object(self, mock_qids_remap, lowercase):
         file_path = self.mewsli_root_path / "ar" / "mentions.tsv"
         file_path.parent.mkdir(parents=True)
 
         self.create_dummy_mentions_tsv(file_path)
 
         mentions, qids = self.loader.load_mewsli("ar")
-
-        assert mentions == ["mention1", "mention2", "mention3"]
+        expected_mentions = (
+            ["mention1", "mention2", "mention3"]
+            if self.lowercase
+            else ["mention1", "Mention2", "mention3"]
+        )
+        assert mentions == expected_mentions
         assert qids == [123, 456, 789]
+
+    def create_dummy_damuel_dir(self, dir_path: Path):
+        dir_path.mkdir(parents=True)
+        data = [
+            ("mention1", 123),
+            ("mention2", 456),
+            ("Mention3", 789),
+        ]
+        for i, (mention, qid) in enumerate(data):
+            file_path = dir_path / f"alias_{i}.txt"
+            with file_path.open("w") as f:
+                f.write(f"{mention}\t{qid}\n")
+
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    @patch("utils.loaders.DamuelAliasTablePipeline")
+    def test_load_damuel(self, mock_pipeline, mock_qids_remap, lowercase):
+        lang = "en"
+        damuel_dir = self.damuel_root_path / f"dataset_{lang}"
+        self.create_dummy_damuel_dir(damuel_dir)
+
+        mock_pipeline.return_value.process.return_value = [
+            ("mention1", 123),
+            ("mention2", 456),
+            ("Mention3", 789),
+        ]
+
+        mentions, qids = self.loader.load_damuel(lang)
+
+        expected_mentions = (
+            ["mention1", "mention2", "mention3"]
+            if self.lowercase
+            else ["mention1", "mention2", "Mention3"]
+        )
+        assert mentions == expected_mentions
+        assert qids == [123, 456, 789]
+        mock_pipeline.assert_called_once_with(damuel_dir)
+        mock_pipeline.return_value.process.assert_called_once()

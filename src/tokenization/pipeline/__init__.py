@@ -4,6 +4,7 @@ from .pipelines import (
     DamuelLinkContextPipeline,
     MewsliContextPipeline,
     MewsliMentionPipeline,
+    DamuelAliasTablePipeline,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "DamuelDescriptionMentionPipeline",
     "DamuelDescriptionContextPipeline",
     "DamuelLinkContextPipeline",
+    "DamuelAliasTablePipeline",
 ]

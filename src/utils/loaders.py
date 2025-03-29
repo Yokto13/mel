@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from utils.qids_remap import remap_qids_decorator
+from tokenization.pipeline import DamuelAliasTablePipeline
 
 
 current_file_path = os.path.abspath(__file__)
@@ -108,6 +109,19 @@ def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]
 
 
 class AliasTableLoader:
+    """
+    This class provides methods to load and process alias tables from two different sources:
+        - MEWSLI alias tables, stored as tab-separated files.
+        - DAMUEL alias tables, processed via a dedicated pipeline.
+
+    Attributes:
+            mewsli_root_path (Path): Base directory containing MEWSLI alias table files.
+            damuel_root_path (Path): Base directory where directories for DAMUEL alias tables reside.
+            lowercase (bool): Flag to indicate whether mentions should be converted to lowercase.
+
+    TODO: Move as much logic as possible to the pipeline. Probably just get rid of this class.
+    """
+
     def __init__(
         self, mewsli_root_path: Path, damuel_root_path: Path, lowercase: bool = False
     ):
@@ -122,5 +136,23 @@ class AliasTableLoader:
             df["mention"] = df["mention"].str.lower()
         return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).tolist()
 
+    @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
+    def load_damuel(self, lang) -> tuple[list[str], list[int]]:
+        pipeline = DamuelAliasTablePipeline(self._construct_damuel_path(lang))
+        data = list(pipeline.process())
+        textual = [d[0] for d in data]
+        qids = [d[1] for d in data]
+        if self.lowercase:
+            textual = [t.lower() for t in textual]
+        return textual, qids
+
     def _construct_mewsli_path(self, lang: str) -> Path:
         return self.mewsli_root_path / lang / "mentions.tsv"
+
+    def _construct_damuel_path(self, lang: str) -> Path:
+        for subdir in self.damuel_root_path.iterdir():
+            if subdir.is_dir() and subdir.name.endswith(lang):
+                return subdir
+        raise FileNotFoundError(
+            f"No directory ending with '{lang}' found in {self.damuel_root_path}"
+        )
