@@ -2,7 +2,7 @@ import glob
 import logging
 import multiprocessing
 import os
-from typing import List
+from typing import Any, List
 
 import gin
 from tokenization.pipeline.pipelines import (
@@ -13,6 +13,7 @@ from tokenization.pipeline.pipelines import (
     MewsliContextPipeline,
     MewsliMentionPipeline,
     Pipeline,
+    DamuelAliasTablePipeline,
 )
 
 from transformers import AutoTokenizer
@@ -29,6 +30,37 @@ def run_pipelines(
 ) -> None:
     with multiprocessing.Pool(processes=num_processes) as pool:
         pool.map(run_pipeline, pipelines)
+
+
+def process_pipeline(pipe: Pipeline) -> list[Any]:
+    return list(pipe.process())
+
+
+def process_pipelines(
+    pipelines: List[Pipeline], num_processes: int = multiprocessing.cpu_count()
+) -> None:
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        result = pool.map(run_pipeline, pipelines)
+    return result
+
+
+@gin.configurable
+def run_alias_table_damuel(
+    path: str,
+    num_processes: int,
+    remainder_mod: int,
+):
+    pipelines = [
+        DamuelAliasTablePipeline(
+            path=path,
+            remainder=i,
+            mod=remainder_mod,
+        )
+        for i in range(remainder_mod)
+    ]
+    results = process_pipelines(pipelines, num_processes)
+    logging.info("Finished processing all languages for DaMuEL Alias Table")
+    return results
 
 
 @gin.configurable
