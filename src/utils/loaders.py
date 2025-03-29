@@ -1,8 +1,7 @@
 import functools
-import json
-import lzma
 import os
 from pathlib import Path
+
 
 import gin
 
@@ -106,3 +105,22 @@ def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray
 def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     d = np.load(file_path)
     return d["tokens"], d["qids"]
+
+
+class AliasTableLoader:
+    def __init__(
+        self, mewsli_root_path: Path, damuel_root_path: Path, lowercase: bool = False
+    ):
+        self.mewsli_root_path = mewsli_root_path
+        self.damuel_root_path = damuel_root_path
+        self.lowercase = lowercase
+
+    @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
+    def load_mewsli(self, lang: str) -> tuple[list[str], list[int]]:
+        df = pd.read_csv(self._construct_mewsli_path(lang), sep="\t")
+        if self.lowercase:
+            df["mention"] = df["mention"].str.lower()
+        return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).tolist()
+
+    def _construct_mewsli_path(self, lang: str) -> Path:
+        return self.mewsli_root_path / lang / "mentions.tsv"

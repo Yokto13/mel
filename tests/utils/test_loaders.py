@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+import pandas as pd
 
 import numpy as np
 import pytest
@@ -10,6 +11,7 @@ from utils.loaders import (
     load_embs_qids_tokens,
     load_mentions,
     load_qids,
+    AliasTableLoader,
 )
 
 
@@ -295,3 +297,38 @@ def test_load_qids(mock_qids_remap, use_string_path: bool) -> None:
 
         assert np.array_equal(loaded_qids, test_qids)
         assert isinstance(loaded_qids, np.ndarray)
+
+
+class TestAliasTableLoader:
+    def setup_method(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.mewsli_root_path = Path(self.temp_dir.name) / "mewsli"
+        self.damuel_root_path = Path(self.temp_dir.name) / "damuel"
+        self.loader = AliasTableLoader(
+            mewsli_root_path=self.mewsli_root_path,
+            damuel_root_path=self.damuel_root_path,
+            lowercase=False,
+        )
+
+    def teardown_method(self):
+        self.temp_dir.cleanup()
+
+    def create_dummy_mentions_tsv(self, file_path: Path):
+        data = {
+            "mention": ["mention1", "mention2", "mention3"],
+            "qid": ["Q123", "Q456", "Q789"],
+        }
+        df = pd.DataFrame(data)
+        df.to_csv(file_path, sep="\t", index=False)
+
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    def test_load_mentions_with_path_object(self, mock_qids_remap):
+        file_path = self.mewsli_root_path / "ar" / "mentions.tsv"
+        file_path.parent.mkdir(parents=True)
+
+        self.create_dummy_mentions_tsv(file_path)
+
+        mentions, qids = self.loader.load_mewsli("ar")
+
+        assert mentions == ["mention1", "mention2", "mention3"]
+        assert qids == [123, 456, 789]
