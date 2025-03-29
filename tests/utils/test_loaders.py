@@ -337,7 +337,7 @@ class TestAliasTableLoader:
             else ["mention1", "Mention2", "mention3"]
         )
         assert mentions == expected_mentions
-        assert qids == [123, 456, 789]
+        assert list(qids) == [123, 456, 789]
 
     def create_dummy_damuel_dir(self, dir_path: Path):
         dir_path.mkdir(parents=True)
@@ -372,6 +372,24 @@ class TestAliasTableLoader:
             else ["mention1", "mention2", "Mention3"]
         )
         assert mentions == expected_mentions
-        assert qids == [123, 456, 789]
+        assert list(qids) == [123, 456, 789]
         mock_pipeline.assert_called_once_with(damuel_dir)
         mock_pipeline.return_value.process.assert_called_once()
+
+    def create_dummy_damuel_subdirs(self):
+        (self.damuel_root_path / "dataset_en").mkdir(parents=True)
+        (self.damuel_root_path / "dataset_fr").mkdir(parents=True)
+
+    def test_construct_damuel_path(self, lowercase):
+        self.create_dummy_damuel_subdirs()
+
+        lang = "en"
+        expected_path = self.damuel_root_path / f"dataset_{lang}"
+        constructed_path = self.loader._construct_damuel_path(lang)
+        assert constructed_path == expected_path
+
+        with pytest.raises(
+            FileNotFoundError,
+            match=f"No directory ending with 'de' found in {self.damuel_root_path}",
+        ):
+            self.loader._construct_damuel_path("de")

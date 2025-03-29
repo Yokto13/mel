@@ -130,21 +130,23 @@ class AliasTableLoader:
         self.lowercase = lowercase
 
     @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
-    def load_mewsli(self, lang: str) -> tuple[list[str], list[int]]:
+    def load_mewsli(self, lang: str) -> tuple[list[str], np.ndarray]:
         df = pd.read_csv(self._construct_mewsli_path(lang), sep="\t")
         if self.lowercase:
             df["mention"] = df["mention"].str.lower()
-        return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).tolist()
+        return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).to_numpy()
 
     @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
-    def load_damuel(self, lang) -> tuple[list[str], list[int]]:
-        pipeline = DamuelAliasTablePipeline(self._construct_damuel_path(lang))
+    def load_damuel(self, lang) -> tuple[list[str], np.ndarray]:
+        pipeline = DamuelAliasTablePipeline(
+            self._construct_damuel_path(lang).as_posix()
+        )
         data = list(pipeline.process())
         textual = [d[0] for d in data]
         qids = [d[1] for d in data]
         if self.lowercase:
             textual = [t.lower() for t in textual]
-        return textual, qids
+        return textual, np.array(qids)
 
     def _construct_mewsli_path(self, lang: str) -> Path:
         return self.mewsli_root_path / lang / "mentions.tsv"
@@ -152,6 +154,7 @@ class AliasTableLoader:
     def _construct_damuel_path(self, lang: str) -> Path:
         for subdir in self.damuel_root_path.iterdir():
             if subdir.is_dir() and subdir.name.endswith(lang):
+                print(f"Found directory: {subdir}")
                 return subdir
         raise FileNotFoundError(
             f"No directory ending with '{lang}' found in {self.damuel_root_path}"
