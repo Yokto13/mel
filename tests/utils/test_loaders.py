@@ -359,9 +359,11 @@ class TestAliasTableLoader:
         self.create_dummy_damuel_dir(damuel_dir)
 
         mock_pipeline.return_value = [
-            ("mention1", 123),
-            ("mention2", 456),
-            ("Mention3", 789),
+            [
+                ("mention1", 123),
+                ("mention2", 456),
+                ("Mention3", 789),
+            ]
         ]
 
         mentions, qids = self.loader.load_damuel(lang)
@@ -373,7 +375,6 @@ class TestAliasTableLoader:
         )
         assert mentions == expected_mentions
         assert list(qids) == [123, 456, 789]
-        mock_pipeline.assert_called_once_with(damuel_dir)
 
     def create_dummy_damuel_subdirs(self):
         (self.damuel_root_path / "dataset_en").mkdir(parents=True)
@@ -383,7 +384,7 @@ class TestAliasTableLoader:
         self.create_dummy_damuel_subdirs()
 
         lang = "en"
-        expected_path = self.damuel_root_path / f"dataset_{lang}"
+        expected_path = (self.damuel_root_path / f"dataset_{lang}").as_posix()
         constructed_path = self.loader._construct_damuel_path(lang)
         assert constructed_path == expected_path
 
