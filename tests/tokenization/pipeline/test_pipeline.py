@@ -12,6 +12,7 @@ from tokenization.pipeline.pipelines import (
     DamuelLinkMentionPipeline,
     MewsliContextPipeline,
     MewsliMentionPipeline,
+    DamuelAliasTablePipeline,
 )
 from transformers import AutoTokenizer
 
@@ -385,3 +386,23 @@ def test_run_damuel_description_context(
         assert np.all(
             label_token_count == 2
         ), f"Expected {label_token} to appear exactly twice in each row"
+
+
+@pytest.mark.parametrize("damuel_dir", ["damuel", "damuelbz2"])
+def test_damuel_alias_table(damuel_dir) -> None:
+    damuel_path = os.path.join(THIS_DIR, "data", damuel_dir)
+    assert os.path.exists(damuel_path), f"DaMuEL file not found at {damuel_path}"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        pipeline = DamuelAliasTablePipeline(
+            damuel_path=damuel_path,
+            logger=None,
+        )
+        results = list(pipeline.process())
+
+        # Just a very primitive tests that it behave as expected
+        # Does not check whether the chain works!
+        for text, qid in results:
+            assert isinstance(text, str)
+            assert isinstance(qid, int)
+            assert qid > 0
