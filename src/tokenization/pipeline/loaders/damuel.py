@@ -1,3 +1,4 @@
+import bz2
 import lzma
 import os
 from collections.abc import Generator
@@ -50,6 +51,8 @@ class DaMuELStartLoader(LoaderStep):
     def _open_file(self, file_path: str):
         if file_path.endswith(".xz"):
             return lzma.open(file_path, "rt")
+        elif file_path.endswith(".bz2"):
+            return bz2.open(file_path, "rt")
         else:
             return open(file_path, "r")
 

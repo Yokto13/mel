@@ -212,19 +212,18 @@ def test_run_damuel_link_mention(
         ), f"Expected qids to be integer type, but got {qids.dtype}"
 
 
-@pytest.mark.parametrize(
-    "expected_size, compress",
-    [
-        (64, False),
-        (16, True),
-    ],
-)
+@pytest.mark.parametrize("expected_size", [64, 16])
+@pytest.mark.parametrize("compress", [False, True])
+@pytest.mark.parametrize("damuel_dir", ["damuel", "damuelbz2"])
 @pytest.mark.slow
 def test_run_damuel_link_context(
-    expected_size: int, compress: bool, tokenizer_with_label
+    expected_size: int,
+    compress: bool,
+    tokenizer_with_label,
+    damuel_dir,
 ) -> None:
     label_token = "[M]"
-    damuel_path = os.path.join(THIS_DIR, "data", "damuel")
+    damuel_path = os.path.join(THIS_DIR, "data", damuel_dir)
     assert os.path.exists(damuel_path), f"DaMuEL file not found at {damuel_path}"
     tokenizer = tokenizer_with_label
 
@@ -276,18 +275,14 @@ def test_run_damuel_link_context(
         ), f"Expected {label_token} to appear exactly twice in each row"
 
 
-@pytest.mark.parametrize(
-    "expected_size, compress",
-    [
-        (64, False),
-        (16, True),
-    ],
-)
+@pytest.mark.parametrize("expected_size", [64, 16])
+@pytest.mark.parametrize("compress", [False, True])
+@pytest.mark.parametrize("damuel_dir", ["damuel", "damuelbz2"])
 @pytest.mark.slow
 def test_run_damuel_description_mention(
-    expected_size: int, compress: bool, standard_tokenizer
+    expected_size: int, compress: bool, standard_tokenizer, damuel_dir
 ) -> None:
-    damuel_path = os.path.join(THIS_DIR, "data", "damuel")
+    damuel_path = os.path.join(THIS_DIR, "data", damuel_dir)
     assert os.path.exists(damuel_path), f"DaMuEL file not found at {damuel_path}"
     tokenizer = standard_tokenizer
 
@@ -332,19 +327,15 @@ def test_run_damuel_description_mention(
         ), f"Expected qids to be integer type, but got {qids.dtype}"
 
 
-@pytest.mark.parametrize(
-    "expected_size, compress",
-    [
-        (64, False),
-        (16, True),
-    ],
-)
+@pytest.mark.parametrize("expected_size", [64, 16])
+@pytest.mark.parametrize("compress", [False, True])
+@pytest.mark.parametrize("damuel_dir", ["damuel", "damuelbz2"])
 @pytest.mark.slow
 def test_run_damuel_description_context(
-    expected_size: int, compress: bool, tokenizer_with_label
+    expected_size: int, compress: bool, tokenizer_with_label, damuel_dir
 ) -> None:
     label_token = "[M]"
-    damuel_path = os.path.join(THIS_DIR, "data", "damuel")
+    damuel_path = os.path.join(THIS_DIR, "data", damuel_dir)
     assert os.path.exists(damuel_path), f"DaMuEL file not found at {damuel_path}"
     tokenizer = tokenizer_with_label
 
