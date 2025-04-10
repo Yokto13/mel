@@ -1,5 +1,4 @@
-""" Utils for embedding tokens.
-"""
+"""Utils for embedding tokens."""
 
 from collections.abc import Generator
 import itertools
@@ -95,8 +94,6 @@ def embed(
 
     log_processer = _Processer(each=10**6)
 
-    scaler = torch.cuda.amp.GradScaler()
-
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             batch_toks = batch_toks.to(torch.int64)
@@ -105,7 +102,7 @@ def embed(
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
 
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast(device_type="cuda"):
                 batch_embeddings = model(batch_toks, attention_mask)
 
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
@@ -167,7 +164,7 @@ def embed_generator(
                 batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
 
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast(device_type="cuda"):
                 batch_embeddings = model(batch_toks, attention_mask)
 
             batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
