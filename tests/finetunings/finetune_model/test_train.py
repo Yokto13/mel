@@ -212,7 +212,7 @@ class TestForwardToEmbeddings:
 
         assert result.shape == (len(sample_texts), model.output_dim)
 
-        torch.testing.assert_allclose(
+        torch.testing.assert_close(
             torch.norm(result, p=2, dim=1),
             torch.ones(len(sample_texts)),
             atol=1e-4,
