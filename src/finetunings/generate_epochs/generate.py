@@ -98,8 +98,11 @@ def generate(
 
     negative_sampler_kwargs = {}
     if "distribution" in NEGATIVE_SAMPLING_TYPE:
+        # using sqrt seems like a sane default
         negative_sampler_kwargs["qids_distribution"] = (
-            calculate_qids_distribution_from_links(LINKS_EMBS_DIR, index_qids)
+            calculate_qids_distribution_from_links(
+                LINKS_EMBS_DIR, index_qids, lambda x: np.sqrt(x)
+            )
         )
         negative_sampler_kwargs["randomly_sampled_cnt"] = 1
 

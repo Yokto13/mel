@@ -1,9 +1,9 @@
-from collections import Counter
 from enum import Enum
 import logging
 
 import numba as nb
 import numpy as np
+from scipy.stats.sampling import DiscreteGuideTable
 
 from models.searchers.searcher import Searcher
 
@@ -143,8 +143,14 @@ class NegativeSampler:
         self.sample_f = _get_sampler(sampling_type)
         self.qids_distribution = qids_distribution
         self.randomly_sampled_cnt = randomly_sampled_cnt
+
         self._validate()
 
+        if self._should_sample_randomly():
+            # self.urng = np.random.default_rng()
+            # DescreteAliasUrn seems slightly faster but there is a UNU.RAN error which I don't want to debug and
+            # DiscreteGuideTable looks okish.
+            self.rng = DiscreteGuideTable(self.qids_distribution)
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
@@ -178,13 +184,12 @@ class NegativeSampler:
         batch_qid = batch_qids[0]
         batch_qids = set(batch_qids)
         result = np.empty((batch_size, self.randomly_sampled_cnt), dtype=np.int32)
+        # TODO: Is sampling of size 1 really needed? These nested loops seem incredibly slow.
         for i in range(batch_size):
             for j in range(self.randomly_sampled_cnt):
                 qid_to_add = batch_qid
                 while qid_to_add in batch_qids:
-                    qid_idx = np.random.choice(
-                        self.returned_indices, size=1, p=self.qids_distribution
-                    )[0]
+                    qid_idx = self.returned_indices[self.rng.rvs(1)[0]]
                     qid_to_add = self.qids[qid_idx]
                 result[i][j] = qid_idx
         return result
