@@ -1,6 +1,6 @@
-expected_size=128
-output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/128_finetuning_damuel/"
-output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/128_finetuning_mewsli/"
+expected_size=64
+output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/finetuning_damuel2/"
+output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/finetuning_mewsli2/"
 languages = [
     "af", "be", "ca", "da", "el", "es", "eu", "fi", "ga", "gl", "hi", "hu", "id", 
     "ja", "la", "lv", "mt", "nn", "pt", "ru", "sk", "sr", "ta", "tr", "uk", "vi", 
@@ -8,7 +8,7 @@ languages = [
     "it", "ko", "lt", "mr", "nl", "pl", "ro", "se", "sl", "sv", "te", "ug", "ur", 
     "wo"
 ]
-damuel_base_path="/lnet/work/home-students-external/farhan/damuel/1.0-xz"
+damuel_base_path="/lnet/work/home-students-external/farhan/damuel/dev"
 label_token="[M]"
 compress=True
 remainder_mod=128

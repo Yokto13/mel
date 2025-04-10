@@ -144,7 +144,7 @@ def run_damuel_description_mention(
     pipelines_dict = {
         lang: [
             DamuelDescriptionMentionPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",
@@ -183,7 +183,7 @@ def run_damuel_description_context(
     pipelines_dict = {
         lang: [
             DamuelDescriptionContextPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/descs_pages/tokens_qids_{i}.npz",
@@ -222,7 +222,7 @@ def run_damuel_link_context(
     pipelines_dict = {
         lang: [
             DamuelLinkContextPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/links/tokens_qids_{i}.npz",
@@ -261,7 +261,7 @@ def run_damuel_link_mention(
     pipelines_dict = {
         lang: [
             DamuelLinkMentionPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",
