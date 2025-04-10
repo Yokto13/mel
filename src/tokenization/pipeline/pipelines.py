@@ -4,6 +4,7 @@ from .loaders import DaMuELDescriptionLoader, DaMuELLinkLoader, MewsliLoader
 from .loggers import LoggerStep, StatisticsLogger
 from .savers import NPZSaver, NPZSaverIncremental
 from .tokenizers import CuttingTokenizer, SimpleTokenizer
+from .utils import ChainStep
 
 
 class MewsliMentionPipeline(Pipeline):
@@ -146,3 +147,34 @@ class DamuelLinkMentionPipeline(Pipeline):
             self.add(logger)
         self.add(SimpleTokenizer(tokenizer, expected_size))
         self.add(NPZSaver(output_filename, compress))
+
+
+class DamuelAliasTablePipeline(Pipeline):
+    def __init__(
+        self,
+        damuel_path: str,
+        remainder: int = None,
+        mod: int = None,
+        require_link_wiki_origin: bool = True,
+        logger: LoggerStep | None = StatisticsLogger(),
+    ):
+        super().__init__()
+
+        links = DaMuELLinkLoader(
+            path=damuel_path,
+            remainder=remainder,
+            mod=mod,
+            use_context=False,
+            require_link_wiki_origin=require_link_wiki_origin,
+        )
+        descriptions = DaMuELDescriptionLoader(
+            path=damuel_path,
+            require_wiki_page=True,
+            remainder=remainder,
+            mod=mod,
+            use_context=False,
+        )
+
+        self.add(ChainStep([links, descriptions]))
+        if logger is not None:
+            self.add(logger)

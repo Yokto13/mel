@@ -16,7 +16,7 @@ will be done through it.
 
 #### Standard
 
-**pre-limenary results**
+**preliminary results (old data)**
 
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
@@ -30,7 +30,7 @@ will be done through it.
 | Tamil    |   90.0   |   96.4    |    97.7    |
 | Turkish  |   87.3   |   93.4    |    94.6    |
 
-### OLPEAT
+### OLPEAT (old data)
 
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
@@ -45,6 +45,22 @@ will be done through it.
 | Turkish  |   86.4   |   93.9    |    94.6    |
 
 For OLPEAT explanation click [here](https://arxiv.org/pdf/2406.16892#section.6.4).
+
+
+### Alias table
+
+| Language | Recall@1 | Recall@10 | Recall@100 |
+|----------|----------|-----------|------------|
+| Arabic   |   90.7   |   94.3    |    94.4    |
+| German   |   86.9   |   93.3    |    94.1    |
+| English  |   78.6   |   88.6    |    90.2    |
+| Spanish  |   83.3   |   93.5    |    94.3    |
+| Persian  |   86.9   |   92.2    |    92.3    |
+| Japanese |   83.6   |   91.6    |    92.0    |
+| Serbian  |   88.8   |   93.7    |    94.1    |
+| Tamil    |   83.0   |   85.4    |    85.5    |
+| Turkish  |   83.5   |   92.9    |    93.5    |
+
 
 ## About entity linking
 

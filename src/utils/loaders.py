@@ -1,8 +1,7 @@
 import functools
-import json
-import lzma
 import os
 from pathlib import Path
+
 
 import gin
 
@@ -10,6 +9,9 @@ import numpy as np
 import pandas as pd
 
 from utils.qids_remap import remap_qids_decorator
+
+# from tokenization.pipeline import DamuelAliasTablePipeline
+from tokenization.runner import run_alias_table_damuel
 
 
 current_file_path = os.path.abspath(__file__)
@@ -106,3 +108,54 @@ def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray
 def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     d = np.load(file_path)
     return d["tokens"], d["qids"]
+
+
+class AliasTableLoader:
+    """
+    This class provides methods to load and process alias tables from two different sources:
+        - MEWSLI alias tables, stored as tab-separated files.
+        - DAMUEL alias tables, processed via a dedicated pipeline.
+
+    Attributes:
+            mewsli_root_path (Path): Base directory containing MEWSLI alias table files.
+            damuel_root_path (Path): Base directory where directories for DAMUEL alias tables reside.
+            lowercase (bool): Flag to indicate whether mentions should be converted to lowercase.
+
+    TODO: Move as much logic as possible to the pipeline. Probably just get rid of this class.
+    """
+
+    def __init__(
+        self, mewsli_root_path: Path, damuel_root_path: Path, lowercase: bool = False
+    ):
+        self.mewsli_root_path = mewsli_root_path
+        self.damuel_root_path = damuel_root_path
+        self.lowercase = lowercase
+
+    @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
+    def load_mewsli(self, lang: str) -> tuple[list[str], np.ndarray]:
+        df = pd.read_csv(self._construct_mewsli_path(lang), sep="\t")
+        if self.lowercase:
+            df["mention"] = df["mention"].str.lower()
+        return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).to_numpy()
+
+    @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
+    def load_damuel(self, lang) -> tuple[list[str], np.ndarray]:
+        data = run_alias_table_damuel(self._construct_damuel_path(lang))
+        textual = np.concatenate([[x[0] for x in d] for d in data])
+        qids = np.concatenate([[x[1] for x in d] for d in data])
+        if self.lowercase:
+            textual = [t.lower() for t in textual]
+        print(qids)
+        return textual, qids
+
+    def _construct_mewsli_path(self, lang: str) -> str:
+        return (self.mewsli_root_path / lang / "mentions.tsv").as_posix()
+
+    def _construct_damuel_path(self, lang: str) -> str:
+        for subdir in self.damuel_root_path.iterdir():
+            if subdir.is_dir() and subdir.name.endswith(lang):
+                print(f"Found directory: {subdir}")
+                return subdir.as_posix()
+        raise FileNotFoundError(
+            f"No directory ending with '{lang}' found in {self.damuel_root_path}"
+        )

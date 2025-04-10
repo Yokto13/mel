@@ -20,7 +20,11 @@ class DaMuELStartLoader(LoaderStep):
         self.remainder = remainder
         self.mod = mod
 
-    def process(self) -> Generator[str, None, None]:
+    def process(
+        self, input_gen: Generator[str, None, None] = None
+    ) -> Generator[str, None, None]:
+        if input_gen is not None:
+            raise ValueError("DaMuELStartLoader does not support input generator")
         file_list = [
             filename
             for filename in os.listdir(self.path)
@@ -61,6 +65,8 @@ class DaMuELStartLoader(LoaderStep):
             return True
         if filename.endswith(".xz"):
             filename = filename[:-3]
+        elif filename.endswith(".bz2"):
+            filename = filename[:-4]
         file_number = int(filename.split("-")[1])
         return file_number % self.mod == self.remainder
 

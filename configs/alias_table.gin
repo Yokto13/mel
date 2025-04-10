@@ -1,0 +1,8 @@
+damuel="/lnet/work/home-students-external/farhan/damuel/dev"
+mewsli="/lnet/work/home-students-external/farhan/mewsli/mewsli-9/output/dataset"
+
+remainder_mod=128
+num_processes=90
+
+run_alias_table_damuel.num_processes=%num_processes
+run_alias_table_damuel.remainder_mod=%remainder_mod

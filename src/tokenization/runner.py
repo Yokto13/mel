@@ -2,7 +2,7 @@ import glob
 import logging
 import multiprocessing
 import os
-from typing import List
+from typing import Any, List
 
 import gin
 from tokenization.pipeline.pipelines import (
@@ -13,6 +13,7 @@ from tokenization.pipeline.pipelines import (
     MewsliContextPipeline,
     MewsliMentionPipeline,
     Pipeline,
+    DamuelAliasTablePipeline,
 )
 
 from transformers import AutoTokenizer
@@ -29,6 +30,36 @@ def run_pipelines(
 ) -> None:
     with multiprocessing.Pool(processes=num_processes) as pool:
         pool.map(run_pipeline, pipelines)
+
+
+def process_pipeline(pipe: Pipeline) -> list[Any]:
+    return list(pipe.process())
+
+
+def process_pipelines(
+    pipelines: List[Pipeline], num_processes: int = multiprocessing.cpu_count()
+) -> None:
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        result = pool.map(process_pipeline, pipelines)
+    # print(result)
+    return result
+
+
+@gin.configurable
+def run_alias_table_damuel(
+    path: str,
+    num_processes: int,
+    remainder_mod: int,
+) -> list[Any]:
+    pipelines = [
+        DamuelAliasTablePipeline(
+            damuel_path=path, remainder=i, mod=remainder_mod, logger=None
+        )
+        for i in range(remainder_mod)
+    ]
+    results = process_pipelines(pipelines, num_processes)
+    logging.info("Finished processing one language for DaMuEL Alias Table")
+    return results
 
 
 @gin.configurable
@@ -113,7 +144,7 @@ def run_damuel_description_mention(
     pipelines_dict = {
         lang: [
             DamuelDescriptionMentionPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",
@@ -152,7 +183,7 @@ def run_damuel_description_context(
     pipelines_dict = {
         lang: [
             DamuelDescriptionContextPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/descs_pages/tokens_qids_{i}.npz",
@@ -191,7 +222,7 @@ def run_damuel_link_context(
     pipelines_dict = {
         lang: [
             DamuelLinkContextPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/links/tokens_qids_{i}.npz",
@@ -230,7 +261,7 @@ def run_damuel_link_mention(
     pipelines_dict = {
         lang: [
             DamuelLinkMentionPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_1.0_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",

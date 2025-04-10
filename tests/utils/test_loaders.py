@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+import pandas as pd
 
 import numpy as np
 import pytest
@@ -10,6 +11,7 @@ from utils.loaders import (
     load_embs_qids_tokens,
     load_mentions,
     load_qids,
+    AliasTableLoader,
 )
 
 
@@ -295,3 +297,99 @@ def test_load_qids(mock_qids_remap, use_string_path: bool) -> None:
 
         assert np.array_equal(loaded_qids, test_qids)
         assert isinstance(loaded_qids, np.ndarray)
+
+
+@pytest.mark.parametrize("lowercase", [True, False])
+class TestAliasTableLoader:
+    def setup_method(self, lowercase):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.mewsli_root_path = Path(self.temp_dir.name) / "mewsli"
+        self.damuel_root_path = Path(self.temp_dir.name) / "damuel"
+        self.loader = AliasTableLoader(
+            mewsli_root_path=self.mewsli_root_path,
+            damuel_root_path=self.damuel_root_path,
+            lowercase=lowercase,
+        )
+        self.lowercase = lowercase
+
+    def teardown_method(self):
+        self.temp_dir.cleanup()
+
+    def create_dummy_mentions_tsv(self, file_path: Path):
+        data = {
+            "mention": ["mention1", "Mention2", "mention3"],
+            "qid": ["Q123", "Q456", "Q789"],
+        }
+        df = pd.DataFrame(data)
+        df.to_csv(file_path, sep="\t", index=False)
+
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    def test_load_mentions_with_path_object(self, mock_qids_remap, lowercase):
+        file_path = self.mewsli_root_path / "ar" / "mentions.tsv"
+        file_path.parent.mkdir(parents=True)
+
+        self.create_dummy_mentions_tsv(file_path)
+
+        mentions, qids = self.loader.load_mewsli("ar")
+        expected_mentions = (
+            ["mention1", "mention2", "mention3"]
+            if self.lowercase
+            else ["mention1", "Mention2", "mention3"]
+        )
+        assert mentions == expected_mentions
+        assert list(qids) == [123, 456, 789]
+
+    def create_dummy_damuel_dir(self, dir_path: Path):
+        dir_path.mkdir(parents=True)
+        data = [
+            ("mention1", 123),
+            ("mention2", 456),
+            ("Mention3", 789),
+        ]
+        for i, (mention, qid) in enumerate(data):
+            file_path = dir_path / f"alias_{i}.txt"
+            with file_path.open("w") as f:
+                f.write(f"{mention}\t{qid}\n")
+
+    @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+    @patch("utils.loaders.run_alias_table_damuel")
+    def test_load_damuel(self, mock_pipeline, mock_qids_remap, lowercase):
+        lang = "en"
+        damuel_dir = self.damuel_root_path / f"dataset_{lang}"
+        self.create_dummy_damuel_dir(damuel_dir)
+
+        mock_pipeline.return_value = [
+            [
+                ("mention1", 123),
+                ("mention2", 456),
+                ("Mention3", 789),
+            ]
+        ]
+
+        mentions, qids = self.loader.load_damuel(lang)
+
+        expected_mentions = (
+            ["mention1", "mention2", "mention3"]
+            if self.lowercase
+            else ["mention1", "mention2", "Mention3"]
+        )
+        assert mentions == expected_mentions
+        assert list(qids) == [123, 456, 789]
+
+    def create_dummy_damuel_subdirs(self):
+        (self.damuel_root_path / "dataset_en").mkdir(parents=True)
+        (self.damuel_root_path / "dataset_fr").mkdir(parents=True)
+
+    def test_construct_damuel_path(self, lowercase):
+        self.create_dummy_damuel_subdirs()
+
+        lang = "en"
+        expected_path = (self.damuel_root_path / f"dataset_{lang}").as_posix()
+        constructed_path = self.loader._construct_damuel_path(lang)
+        assert constructed_path == expected_path
+
+        with pytest.raises(
+            FileNotFoundError,
+            match=f"No directory ending with 'de' found in {self.damuel_root_path}",
+        ):
+            self.loader._construct_damuel_path("de")
