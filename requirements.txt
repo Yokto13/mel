@@ -74,7 +74,7 @@ jupyterlab==4.2.4
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
 jupyterlab_widgets==3.0.11
-keras==3.4.1
+keras==3.9.0
 langcodes==3.4.0
 language_data==1.2.0
 libclang==18.1.1
