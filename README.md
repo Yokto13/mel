@@ -16,7 +16,7 @@ will be done through it.
 
 #### Standard
 
-**pre-limenary results (old data)**
+**preliminary results (old data)**
 
 | Language | Recall@1 | Recall@10 | Recall@100 |
 |----------|----------|-----------|------------|
