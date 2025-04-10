@@ -66,7 +66,7 @@ class Mixer:
             else:
                 np.savez(file_path, tokens=tokens, qids=qids)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             futures = [
                 executor.submit(save_file, tokens, qids, file_path)
                 for tokens, qids, file_path in zip(tokens_chunked, qids_chunked, chunk)
@@ -85,7 +85,7 @@ class Mixer:
         def load_file(file_path):
             return load_mentions(file_path)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             results = list(executor.map(load_file, chunk))
 
         all_tokens, all_qids = zip(*results)

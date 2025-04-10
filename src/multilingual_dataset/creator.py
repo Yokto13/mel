@@ -26,7 +26,7 @@ class _LinksCreator:
         self.dest_links_dir.mkdir(parents=True, exist_ok=True)
 
         self.single_mixer = Mixer(buffer_size=1)
-        self.standard_mixer = Mixer(buffer_size=200)
+        self.standard_mixer = Mixer(buffer_size=50)
 
     def run(self) -> None:
         """Gathers links from all languages and writes them to dest_dir.
@@ -57,7 +57,7 @@ class _LinksCreator:
         def load_file(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
             return load_mentions(file_path)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             results = list(executor.map(load_file, source_file_paths))
 
         tokens, qids = zip(*results)
@@ -97,7 +97,7 @@ class _KBCreator:
         self._copy_chosen_pages(lang_qid_lists)
 
     def _copy_chosen_pages(self, lang_qid_lists: dict[str, list[int]]) -> None:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             futures = []
             for lang in self.langs:
                 filepaths = self._get_file_paths(self.damuel_paths.get_pages([lang]))
@@ -171,7 +171,7 @@ class _KBCreator:
         return qid_lang_counts, lang_sizes
 
     def _load_qids_from_filepaths(self, filepaths: list[Path]) -> list[int]:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             qids = list(executor.map(load_qids, filepaths))
 
         return [item for sublist in qids for item in sublist]
