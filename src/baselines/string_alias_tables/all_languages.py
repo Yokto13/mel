@@ -84,11 +84,10 @@ def all_languages(
     )
     damuel = Path(damuel)
     mewsli = Path(mewsli)
-    print("Args damuel: %s", damuel)
-    print("Args mewsli: %s", mewsli)
-    print("Args only_wiki_links: %s", only_wiki_links)
-    print("Args R: %s", R)
-
+    print(f"Args damuel: {damuel}")
+    print(f"Args mewsli: {mewsli}")
+    print(f"Args only_wiki_links: {only_wiki_links}")
+    print(f"Args R: {R}")
     print("Loading DAMUEL...")
 
     mention_qid_to_count = defaultdict(Counter)
