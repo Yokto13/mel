@@ -15,10 +15,10 @@ echo "Current directory: $(pwd)"
 MODEL_CONFIG_PATH="../configs/lealla_m.gin"
 TRAIN_CONFIG_PATH="../configs/train.gin"
 
-DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/all/descs_pages"
-DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/all/links"
+DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/v2/descs_pages"
+DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/v2/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning"
-WORKDIR="$OUTPUTS/workdirs/all"
+WORKDIR="$OUTPUTS/workdirs/v2_retraining_with_model_from_all"
 N_OF_ROUNDS=10
 
 run_ml_finetuning_round() {
