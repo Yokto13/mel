@@ -197,7 +197,7 @@ tornado==6.4.2
 tqdm==4.66.4
 trailrunner==1.4.0
 traitlets==5.14.3
-transformers==4.43.1
+transformers==4.48.0
 triton==2.3.1
 typer==0.12.3
 types-python-dateutil==2.9.0.20240316
