@@ -36,7 +36,7 @@ class BruteForceSearcher(Searcher):
         return self.results[top_indices_np]
 
     def build(self) -> None:
-        self.embs: torch.Tensor = torch.tensor(self.embs, device=self.device)
+        self.embs: torch.Tensor = torch.from_numpy(self.embs).to(self.device)
 
 
 class _WrappedSearcher(nn.Module):

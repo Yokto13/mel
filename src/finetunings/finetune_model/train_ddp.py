@@ -27,7 +27,7 @@ from finetunings.finetune_model.data import (
     SaveInformation,
 )
 from finetunings.finetune_model.ddp import cleanup, setup
-from finetunings.finetune_model.monitoring import batch_recall, get_wandb_logs
+from finetunings.finetune_model.monitoring import process_metrics, get_gradient_norm
 
 from finetunings.finetune_model.train import forward_to_embeddings, load_model
 
@@ -80,19 +80,6 @@ def _calculate_loss(
     outputs = outputs * LOGIT_MULTIPLIER
     loss = criterion(outputs, labels) + criterion(outputs.t(), labels.t())
     return loss, outputs
-
-
-def update_recalls_and_wandb(outputs, labels, loss_item, running_averages):
-    r_at_1 = batch_recall(outputs, labels, k=1)
-    r_at_10 = batch_recall(outputs, labels, k=10)
-
-    running_averages.update_loss(loss_item)
-    running_averages.update_recall(r_at_1, r_at_10)
-
-    wand_dict = get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
-    wandb.log(
-        wand_dict,
-    )
 
 
 def save_final_model(model, MODEL_SAVE_DIR):
@@ -184,13 +171,22 @@ def _ddp_train(
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
+            norm_for_logs = get_gradient_norm(model.module)
             optimizer.zero_grad()
 
             loss_item = loss.item()
             train_loss += loss_item
 
             if is_the_main_process:
-                update_recalls_and_wandb(outputs, labels, loss_item, running_averages)
+                process_metrics(
+                    outputs,
+                    labels,
+                    loss_item,
+                    running_averages,
+                    {
+                        "gradient_norm": norm_for_logs,
+                    },
+                )
         if is_the_main_process and epoch % 100 == 0:
             save_final_model(model.module, MODEL_SAVE_DIR)
 

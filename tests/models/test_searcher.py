@@ -28,7 +28,8 @@ def small_random_data():
 @pytest.mark.slow
 def test_searcher_build_large(large_random_data, searcher_class):
     embs, results = large_random_data
-    searcher = searcher_class(embs, results)
+    # For clarity built is explicitly run below
+    searcher = searcher_class(embs, results, run_build_from_init=False)
 
     try:
         searcher.build()
@@ -55,7 +56,8 @@ def test_searcher_find_large(large_random_data, searcher_class):
 @pytest.mark.parametrize("searcher_class", [ScaNNSearcher, BruteForceSearcher])
 def test_searcher_build_small(small_random_data, searcher_class):
     embs, results = small_random_data
-    searcher = searcher_class(embs, results)
+    # For clarity built is explicitly run below
+    searcher = searcher_class(embs, results, run_build_from_init=False)
 
     try:
         searcher.build()

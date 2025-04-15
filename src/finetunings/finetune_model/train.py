@@ -21,7 +21,7 @@ from finetunings.finetune_model.data import (
     save_model,
     SaveInformation,
 )
-from finetunings.finetune_model.monitoring import batch_recall, get_wandb_logs
+from finetunings.finetune_model.monitoring import batch_recall, _get_wandb_logs
 
 # Settings ===========================================
 
@@ -151,7 +151,7 @@ def train(
             running_averages.update_loss(loss_item)
             running_averages.update_recall(r_at_1, r_at_10)
 
-            wand_dict = get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
+            wand_dict = _get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages)
             wandb.log(
                 wand_dict,
             )
