@@ -1,5 +1,5 @@
 model_path="setu4993/LEALLA-base"
-inference_batch_size=100000
+inference_batch_size=300000
 output_type="pooler_output"
 
 embs_from_tokens_and_model_name_at.model_name=%model_path

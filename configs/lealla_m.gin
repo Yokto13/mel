@@ -1,5 +1,5 @@
 model_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
-inference_batch_size=100000
+inference_batch_size=380000
 output_type="pooler_output"
 
 embs_from_tokens_and_model_name_at.model_name=%model_path
