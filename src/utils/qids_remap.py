@@ -1,4 +1,5 @@
 import functools
+import logging
 from pathlib import Path
 from typing import Any, Callable, Tuple
 
@@ -6,6 +7,8 @@ import gin
 import numpy as np
 
 import orjson
+
+_logger = logging.getLogger("utils.qids_remap")
 
 
 def _load_json_file(filepath: str | Path) -> dict:
@@ -35,7 +38,14 @@ def qids_remap(qids: np.array, old_to_new_qids_path: str | Path) -> np.array:
     if _qids_lookup is None:
         qids_map = load_qids_remap(old_to_new_qids_path)
         global _largest_qid
-        _largest_qid = max(_largest_qid, *qids_map.keys(), *qids_map.values())
+        map_largest_qid = max(*qids_map.keys(), *qids_map.values())
+        if map_largest_qid < _largest_qid:
+            _logger.warning(
+                f"""Map largest qid {map_largest_qid} is smaller than the largest qid {_largest_qid}.
+                This might mean that the map is not complete or old.
+                """
+            )
+        _largest_qid = max(_largest_qid, map_largest_qid)
         _qids_lookup = np.arange(_largest_qid + 1, dtype=qids.dtype)
         keys = np.fromiter(qids_map.keys(), dtype=_qids_lookup.dtype)
         vals = np.fromiter(qids_map.values(), dtype=_qids_lookup.dtype)

@@ -1,4 +1,5 @@
 import json
+import logging
 from unittest.mock import patch, Mock
 
 import numpy as np
@@ -97,3 +98,23 @@ def test_large_qid_fallback():
         inp = np.array([1, 9999], dtype=np.int32)
         out = qids_remap(inp, "dummy")
         assert np.array_equal(out, np.array([10, 9999], dtype=np.int32))
+
+
+def test_qids_remap_logs_warning_when_map_incomplete(caplog):
+    # 1) Reset cache and set a “previous” largest qid
+    qr._qids_lookup = None
+    qr._largest_qid = 100
+
+    # 2) Make load_qids_remap return a map whose largest_qid (20) < 100
+    mock_map = {1: 10, 2: 20}
+    with patch("utils.qids_remap.load_qids_remap", return_value=mock_map):
+        # Capture WARNING‐level logs
+        caplog.set_level(logging.WARNING)
+
+        # 3) Call qids_remap
+        inp = np.array([1, 2, 3], dtype=np.int32)
+        out = qr.qids_remap(inp, "dummy_path")
+
+    # 4) Check that the warning was emitted
+    expected_msg = "Map largest qid 20 is smaller than the largest qid 100"
+    assert any(expected_msg in rec.getMessage() for rec in caplog.records)
