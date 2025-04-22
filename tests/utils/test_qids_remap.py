@@ -95,5 +95,5 @@ def test_large_qid_fallback():
     qr._qids_lookup = None
     with patch("utils.qids_remap.load_qids_remap", return_value={1: 10}):
         inp = np.array([1, 9999], dtype=np.int32)
-        with pytest.raises(IndexError):
-            out = qids_remap(inp, "dummy")
+        out = qids_remap(inp, "dummy")
+        assert np.array_equal(out, np.array([10, 9999], dtype=np.int32))

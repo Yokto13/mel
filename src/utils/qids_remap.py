@@ -23,6 +23,10 @@ def load_qids_remap(filepath: str | Path) -> dict[int, int]:
 
 
 _qids_lookup = None
+# This should be a safe default for the forseeable future.
+# Also I don't want to waste too much memory, this is already like 1 GB for a lookup table
+# that maps nearly everything to itself.
+_largest_qid = int(3e8)
 
 
 @gin.configurable
@@ -30,8 +34,9 @@ def qids_remap(qids: np.array, old_to_new_qids_path: str | Path) -> np.array:
     global _qids_lookup
     if _qids_lookup is None:
         qids_map = load_qids_remap(old_to_new_qids_path)
-        largest_qid = max(max(qids_map.values()), max(qids_map.keys()))
-        _qids_lookup = np.arange(largest_qid + 1, dtype=qids.dtype)
+        global _largest_qid
+        _largest_qid = max(_largest_qid, *qids_map.keys(), *qids_map.values())
+        _qids_lookup = np.arange(_largest_qid + 1, dtype=qids.dtype)
         keys = np.fromiter(qids_map.keys(), dtype=_qids_lookup.dtype)
         vals = np.fromiter(qids_map.values(), dtype=_qids_lookup.dtype)
         _qids_lookup[keys] = vals
