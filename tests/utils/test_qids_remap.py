@@ -1,11 +1,11 @@
-import functools
 import json
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import numpy as np
-
 import pytest
+
 from utils.qids_remap import load_qids_remap, qids_remap, remap_qids_decorator
+import utils.qids_remap as qr  # to reset the internal cache
 
 
 def test_load_qids_remap(tmp_path):
@@ -22,10 +22,10 @@ def test_load_qids_remap(tmp_path):
 
 
 def test_qids_remap():
-    # Mock the load_qids_remap function
     mock_qid_map = {1: 10, 2: 20, 3: 30}
-    with patch("utils.qids_remap._qids_dict", mock_qid_map):
-        # Test qids_remap function
+    with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):
+        qr._qids_lookup = None  # clear any previously built table
+
         input_qids = np.array([1, 2, 3, 4, 5])
         expected_output = np.array([10, 20, 30, 4, 5])
 
@@ -38,27 +38,25 @@ def test_qids_remap():
     "dtype", [np.int16, np.int32, np.int64, np.uint16, np.uint32, np.uint64]
 )
 def test_qids_remap_preserve_dtype(dtype):
-    # Mock the load_qids_remap function
     mock_qid_map = {1: 10, 2: 20, 3: 30}
-    with patch("utils.qids_remap._qids_dict", mock_qid_map):
-        # Test qids_remap function
-        input_qids = np.array([1, 2, 3, 4, 5], dtype=dtype)
+    with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):
+        qr._qids_lookup = None
 
+        input_qids = np.array([1, 2, 3, 4, 5], dtype=dtype)
         remapped_qids = qids_remap(input_qids, "dummy_path")
 
         assert remapped_qids.dtype == dtype
 
 
 def test_qids_remap_decorator():
-    # Mock the load_qids_remap function
     mock_qid_map = {1: 10, 2: 20, 3: 30}
-    with patch("utils.qids_remap._qids_dict", mock_qid_map):
-        # Define a test function that uses the qids_remap decorator
+    with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):
+        qr._qids_lookup = None
+
         @remap_qids_decorator(qids_index=None, json_path="dummy_path")
         def test_func(arg1: str, qids: np.ndarray) -> np.ndarray:
             return qids
 
-        # Test the decorated function
         input_qids = np.array([1, 2, 3, 4, 5])
         expected_output = np.array([10, 20, 30, 4, 5])
 
@@ -68,18 +66,34 @@ def test_qids_remap_decorator():
 
 
 def test_qids_remap_decorator_with_index():
-    # Mock the load_qids_remap function
     mock_qid_map = {1: 10, 2: 20, 3: 30}
-    with patch("utils.qids_remap._qids_dict", mock_qid_map):
-        # Define a test function that uses the qids_remap decorator
+    with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):
+        qr._qids_lookup = None
+
         @remap_qids_decorator(qids_index=1, json_path="dummy_path")
-        def test_func(arg1: str, qids: np.ndarray) -> np.ndarray:
+        def test_func(arg1: str, qids: np.ndarray):
             return None, qids
 
-        # Test the decorated function
         input_qids = np.array([1, 2, 3, 4, 5])
         expected_output = np.array([10, 20, 30, 4, 5])
 
         _, remapped_qids = test_func("some_arg", input_qids)
 
         assert np.array_equal(remapped_qids, expected_output)
+
+
+def test_load_only_once():
+    qr._qids_lookup = None
+    m = Mock(return_value={1: 10})
+    with patch("utils.qids_remap.load_qids_remap", m):
+        a = qids_remap(np.array([1]), "p")
+        b = qids_remap(np.array([1]), "p")
+    assert m.call_count == 1
+
+
+def test_large_qid_fallback():
+    qr._qids_lookup = None
+    with patch("utils.qids_remap.load_qids_remap", return_value={1: 10}):
+        inp = np.array([1, 9999], dtype=np.int32)
+        with pytest.raises(IndexError):
+            out = qids_remap(inp, "dummy")

@@ -22,22 +22,28 @@ def load_qids_remap(filepath: str | Path) -> dict[int, int]:
     return _convert_qid_keys_to_int(qid_map)
 
 
-_qids_dict = None
+_qids_lookup = None
 
 
 @gin.configurable
 def qids_remap(qids: np.array, old_to_new_qids_path: str | Path) -> np.array:
-    global _qids_dict
-    if _qids_dict is None:
-        _qids_dict = load_qids_remap(old_to_new_qids_path)
-    remapped_qids = np.array([_qids_dict.get(q, q) for q in qids], dtype=qids.dtype)
+    global _qids_lookup
+    if _qids_lookup is None:
+        qids_map = load_qids_remap(old_to_new_qids_path)
+        largest_qid = max(max(qids_map.values()), max(qids_map.keys()))
+        _qids_lookup = np.arange(largest_qid + 1, dtype=qids.dtype)
+        keys = np.fromiter(qids_map.keys(), dtype=_qids_lookup.dtype)
+        vals = np.fromiter(qids_map.values(), dtype=_qids_lookup.dtype)
+        _qids_lookup[keys] = vals
+
+    remapped_qids = _qids_lookup[qids]
     return remapped_qids
 
 
 @gin.configurable
 def remap_qids_decorator(qids_index: int | None, json_path: str) -> Callable:
     def decorator(
-        func: Callable[..., Tuple[Any, ...]]
+        func: Callable[..., Tuple[Any, ...]],
     ) -> Callable[..., Tuple[Any, ...]]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Tuple[Any, ...]:
