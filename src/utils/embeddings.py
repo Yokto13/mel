@@ -216,4 +216,6 @@ def embs_from_tokens_model_name_and_state_dict(
 
 def embs_from_tokens_and_model(source, model, batch_size, dest):
     embs, qids = get_embs_and_qids(Path(source), model, batch_size)
-    np.savez_compressed(f"{dest}/embs_qids.npz", embs=embs, qids=qids)
+    # np.savez_compressed(f"{dest}/embs_qids.npz", embs=embs, qids=qids)
+    # compressing embs is likely to be useless, as they do not adhere to any specific pattern.
+    np.savez(f"{dest}/embs_qids.npz", embs=embs, qids=qids)

@@ -17,7 +17,13 @@ def _get_dataset(links_tokens_dir_path: str) -> IterableDataset:
 
 
 def _save(dest_dir_path: str, embs, qids, tokens, idx: int):
-    np.savez_compressed(
+    # np.savez_compressed(
+    #     Path(dest_dir_path) / f"embs_qids_tokens_{idx}.npz",
+    #     embs=embs,
+    #     qids=qids,
+    #     tokens=tokens,
+    # )
+    np.savez(
         Path(dest_dir_path) / f"embs_qids_tokens_{idx}.npz",
         embs=embs,
         qids=qids,

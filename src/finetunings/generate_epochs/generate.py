@@ -153,7 +153,8 @@ def generate(
 
         X, lines, Y = None, None, None
 
-        for i, data in tqdm(enumerate(gen), total=STEPS_PER_EPOCH):
+        # for i, data in tqdm(enumerate(gen), total=STEPS_PER_EPOCH):
+        for i, data in enumerate(gen):
             x, line = data[:2]
             if i == 0:
                 X = np.empty((STEPS_PER_EPOCH, *x.shape), dtype=np.int32)
@@ -167,8 +168,6 @@ def generate(
         _logger.debug(f"Epoch {epoch} created")
         _logger.debug("Saving")
 
-        np.savez(
-            OUTPUT_DIR / f"epoch_{epoch}.npz", X=np.array(X), lines=np.array(lines)
-        )
+        np.savez(OUTPUT_DIR / f"epoch_{epoch}.npz", X=X, lines=lines)
 
         _logger.debug("Saved")
