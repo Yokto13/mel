@@ -110,6 +110,7 @@ def main(*args, **kwargs):
         project=f"EL-{args[-1]}",
         config={"action": args[-1]}
         | {arg_name: arg_value for arg_name, arg_value in zip(arg_names, args[:-1])},
+        notes=str(args[:-1]),
     )
     print(f"Running {action_descriptor} with args {args[:-1]} and kwargs {kwargs}")
     for arg in args[:-1]:

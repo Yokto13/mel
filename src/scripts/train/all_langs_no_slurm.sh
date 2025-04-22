@@ -29,7 +29,6 @@ run_ml_finetuning_round() {
     local STATE_DICT=${5:-"None"}
     local ROUND_ID=${6:-"0"}
     local N_OF_ROUNDS=${7}
-    local CARDS=${8:-8}
 
     local STEPS_PER_EPOCH=1000
 
@@ -89,6 +88,7 @@ run_ml_finetuning_round() {
     mkdir -p "$BATCH_DIR"
     if [ ! "$(ls -A $BATCH_DIR)" ]; then
         echo "Running batches generating for damuel"
+        #../venv/bin/python -m cProfile -o "generate.prof" $ACTION_SCRIPT "generate" \
         ../venv/bin/python $ACTION_SCRIPT "generate" \
             --LINKS_EMBS_DIR="$DAMUEL_LINKS_DIR" \
             --INDEX_TOKENS_DIR="$DAMUEL_DESCS_TOKENS_RAW" \
@@ -104,6 +104,7 @@ run_ml_finetuning_round() {
 
     if [ ! "$(ls -A $MODELS_DIR)" ]; then
         echo "Running training for damuel"
+        #../venv/bin/python -m cProfile -o "train_ddp.prof" $ACTION_SCRIPT "train_ddp" \
         ../venv/bin/python $ACTION_SCRIPT "train_ddp" \
             --DATASET_DIR="$BATCH_DIR" \
             --MODEL_SAVE_DIR="$MODELS_DIR" \
@@ -172,16 +173,20 @@ done
 
 STATE_DICT="None"
 
-for ((ROUND_ID=0; ROUND_ID<$N_OF_ROUNDS; ROUND_ID++))
+for ((ROUND_ID=3; ROUND_ID<$N_OF_ROUNDS; ROUND_ID++))
 do
-    if [ ! -e "$WORKDIR/models_$ROUND_ID/final.pth" ]; then
-        echo "Running round $ROUND_ID"
+    run_ml_finetuning_round "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" \
+        "$MEWSLI_TOKENS_RAW" \
+        "$WORKDIR" "$STATE_DICT" \
+        "$ROUND_ID" "$N_OF_ROUNDS"
+    #if [ ! -e "$WORKDIR/models_$ROUND_ID/final.pth" ]; then
+    #    echo "Running round $ROUND_ID"
 
-        run_ml_finetuning_round "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" \
-            "$MEWSLI_TOKENS_RAW" \
-            "$WORKDIR" "$STATE_DICT" \
-            "$ROUND_ID" "$N_OF_ROUNDS" 8
-    fi
+    #    run_ml_finetuning_round "$DAMUEL_DESCS_TOKENS_RAW" "$DAMUEL_LINKS_TOKENS_RAW" \
+    #        "$MEWSLI_TOKENS_RAW" \
+    #        "$WORKDIR" "$STATE_DICT" \
+    #        "$ROUND_ID" "$N_OF_ROUNDS"
+    #fi
 
     STATE_DICT="$WORKDIR/models_$ROUND_ID/final.pth"
 done
