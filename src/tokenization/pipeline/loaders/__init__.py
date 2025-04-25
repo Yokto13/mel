@@ -1,4 +1,9 @@
-from .damuel import DaMuELDescriptionLoader, DaMuELLinkLoader, DaMuELStartLoader
+from .damuel import (
+    DaMuELDescriptionLoader,
+    DaMuELLinkLoader,
+    DaMuELStartLoader,
+    DaMuELPageTypeLoader,
+)
 from .mewsli import MewsliLoader
 
 __all__ = [
@@ -6,4 +11,5 @@ __all__ = [
     "DaMuELLinkLoader",
     "DaMuELStartLoader",
     "MewsliLoader",
+    "DaMuELPageTypeLoader",
 ]

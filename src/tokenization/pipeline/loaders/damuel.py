@@ -222,3 +222,36 @@ class DaMuELLinkLoader(Pipeline):
         # Here WikiKeyFilter is required because links are only in Wikipages
         self.add(WikiKeyFilter())
         self.add(DaMuELLinkProcessor(use_context, require_link_wiki_origin))
+
+
+class DaMuELPageTypeProcessor(PipelineStep):
+    def __init__(self, extract_qid: bool = False):
+        super().__init__()
+        self._extract_qid = extract_qid
+
+    def process(self, input_gen=None):
+        for damuel_entry in input_gen:
+            page_type = self._get_page_type(damuel_entry)
+            if self._extract_qid:
+                qid = parse_qid(damuel_entry["qid"])
+                yield page_type, qid
+            else:
+                yield page_type,
+
+    def _get_page_type(self, damuel_entry: dict) -> str:
+        if "page_type" in damuel_entry:
+            return damuel_entry["page_type"]
+        return "none"
+
+
+class DaMuELPageTypeLoader(Pipeline):
+    def __init__(
+        self,
+        path: str,
+        remainder: int = None,
+        mod: int = None,
+        extract_qid: bool = False,
+    ):
+        super().__init__()
+        self.add(DaMuELStartLoader(path, remainder, mod))
+        self.add(DaMuELPageTypeProcessor(extract_qid))
