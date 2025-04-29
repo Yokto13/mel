@@ -92,6 +92,13 @@ def load_qids(file_path: str | Path) -> np.ndarray:
     return d["qids"]
 
 
+@remap_qids_decorator(qids_index=None, json_path=gin.REQUIRED)
+def load_qids_npy(file_path: str | Path) -> np.ndarray:
+    if type(file_path) == str:
+        file_path = Path(file_path)
+    return np.load(file_path)
+
+
 @_sort_by_output(1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
