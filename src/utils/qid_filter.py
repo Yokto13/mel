@@ -24,6 +24,10 @@ def qid_filter(qids_index: int | None, filter_path: str | None = None):
         qids_index (int | None): Index of the QIDs in the input data. If None assumes the input data to be just qids.
         filter_path (str): Path to the `.npy` file containing QIDs to filter out.
             Can be empty. If empty, no filtering is applied; the decorator is an identity.
+
+    Raises:
+        ValueError: If `qids_index` is not valid for the returned tuple.
+        TypeError: If the index is specified but the result is array of qids but not a tuple.
     """
 
     def decorator(fn):
@@ -34,14 +38,18 @@ def qid_filter(qids_index: int | None, filter_path: str | None = None):
                 return result
 
             mask_set = set(_load_filter(filter_path))
-            is_valid_tuple = isinstance(result, tuple) and 0 <= qids_index < len(result)
-            if is_valid_tuple:
+            is_tuple = isinstance(result, tuple)
+            if is_tuple:
+                if qids_index is None:
+                    raise ValueError(
+                        "qids_index cannot be None for a tuple result from the decorated function."
+                    )
                 qids = result[qids_index]
             else:
                 qids = result
             keep = np.array([q not in mask_set for q in qids])
 
-            if is_valid_tuple:
+            if is_tuple:
                 updated_result = tuple(result_array[keep] for result_array in result)
             elif qids_index is None and not isinstance(result, tuple):
                 updated_result = result[keep]

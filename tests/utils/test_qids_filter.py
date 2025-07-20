@@ -137,23 +137,7 @@ def test_qid_filter_no_tuple_identity(mock_qids_remap):
     assert np.array_equal(out_qids, expected_qids)
 
 
-@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_qid_filter_assert_raises_value_error_list(mock_qids_remap, tmp_path):
-    to_filter = np.array([1, 3])
-    filter_file = tmp_path / "filter.npy"
-    np.save(filter_file, to_filter)
-
-    @qid_filter(1, filter_path=str(filter_file))
-    def loader(qids):
-        return [qids]
-
-    qids = np.array([1, 2, 3, 4])
-    with pytest.raises(ValueError):
-        a = loader(qids)
-        print(a)
-
-
-@pytest.mark.parametrize("idx", [-1, 2])
+@pytest.mark.parametrize("idx", [1, 2])
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
 def test_qid_filter_assert_raises_value_error_idx(mock_qids_remap, idx, tmp_path):
     to_filter = np.array([1, 3])
@@ -165,5 +149,26 @@ def test_qid_filter_assert_raises_value_error_idx(mock_qids_remap, idx, tmp_path
         return (qids,)
 
     qids = np.array([1, 2, 3, 4])
-    with pytest.raises(ValueError):
+    with pytest.raises(IndexError):
         _ = loader(qids)
+
+
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_qid_filter_raises_value_error_for_none_index_with_tuple(
+    mock_qids_remap, tmp_path
+):
+    to_filter = np.array([1, 3])
+    filter_file = tmp_path / "filter.npy"
+    np.save(filter_file, to_filter)
+
+    @qid_filter(None, filter_path=str(filter_file))
+    def loader(data, qids):
+        return data, qids
+
+    data = np.array([[1, 2], [3, 4]])
+    qids = np.array([1, 2])
+    with pytest.raises(
+        ValueError,
+        match="qids_index cannot be None for a tuple result from the decorated function.",
+    ):
+        loader(data, qids)
