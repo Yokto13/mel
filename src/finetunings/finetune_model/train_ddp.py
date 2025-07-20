@@ -6,8 +6,6 @@ import numpy as np
 
 import torch
 
-from tqdm import tqdm
-
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import gin
@@ -143,7 +141,7 @@ def _ddp_train(
         labels = construct_labels(dataset)
         labels = torch.from_numpy(labels).to(rank)
 
-        for replica_part in tqdm(dataloader, total=len(dataloader)):
+        for replica_part in dataloader:
 
             with torch.autocast(device_type="cuda"):
                 replica_part = forward_to_embeddings(replica_part, model)

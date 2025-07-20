@@ -2,3 +2,6 @@ remap_qids_decorator.json_path=%qids_remap_json
 qids_remap.old_to_new_qids_path=%qids_remap_json
 #qids_remap_json="/net/projects/damuel/dev/damuel_1.1-dev_qid_redirects.json"
 qids_remap_json="/lnet/work/home-students-external/farhan/damuel/dev/damuel_2.0-dev_qid_redirects.json"
+
+#filter_qids_npy_path="/lnet/work/home-students-external/farhan/troja/filtered_qids2.npy"
+#qid_filter.filter_path=%filter_qids_npy_path

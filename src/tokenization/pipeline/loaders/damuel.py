@@ -2,6 +2,7 @@ import bz2
 import lzma
 import os
 from collections.abc import Generator
+import random
 
 import orjson
 from tqdm.auto import tqdm
@@ -48,6 +49,7 @@ class DaMuELStartLoader(LoaderStep):
             position=tqdm_position,
         ):
             file_path = os.path.join(self.path, filename)
+            print(f"Processing file: {file_path}")
             with self._open_file(file_path) as file:
                 for line in file:
                     yield orjson.loads(line)
@@ -231,9 +233,14 @@ class DaMuELPageTypeProcessor(PipelineStep):
 
     def process(self, input_gen=None):
         for damuel_entry in input_gen:
+            # print(damuel_entry)
             page_type = self._get_page_type(damuel_entry)
             if self._extract_qid:
                 qid = parse_qid(damuel_entry["qid"])
+                if random.random() < 0.0001:
+                    print(f"Page type: {page_type}, QID: {qid}")
+                # if random.random() < 0.1:
+                # assert False
                 yield page_type, qid
             else:
                 yield page_type,

@@ -45,6 +45,9 @@ class BatcherDataset(IterableDataset):
 
     def __iter__(self) -> Iterator[tuple[np.ndarray, np.ndarray, np.ndarray]]:
         for file_path in self.file_paths:
+            print(file_path)
+            # TODO: A lot of time is spent just waiting for this to load, it would be nice to prefetch the data on a different worker
+            # Otherwise we are waiting a lot for a slow disk to read the gargantual file
             embs, qids, tokens = load_embs_qids_tokens(file_path)
 
             embs, qids, tokens = self._remove_when_qid_missing(

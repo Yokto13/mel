@@ -35,6 +35,7 @@ from utils.embeddings import (
     embs_from_tokens_and_model_name,
     embs_from_tokens_model_name_and_state_dict,
 )
+from utils.qid_filter import qid_filter
 from utils.validate_tokens import validate_tokens
 
 print("Imports finished")

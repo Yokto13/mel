@@ -26,7 +26,7 @@ class BruteForceSearcher(Searcher):
         super().__init__(embs, results, run_build_from_init)
 
     def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
-        @torch.compile
+        # @torch.compile
         def _find(batch: np.ndarray) -> np.ndarray:
             batch_torch: torch.Tensor = torch.from_numpy(batch).to(self.device)
             # embs after build are (dim, embs_count)
@@ -50,7 +50,7 @@ class _WrappedSearcher(nn.Module):
         self.kb_embs: torch.Tensor = nn.Parameter(kb_embs)
         self.num_neighbors: int = num_neighbors
 
-    @torch.compile
+    # @torch.compile
     def forward(self, x):
         dot_product = F.linear(x, self.kb_embs)
         _, top_indices = dot_product.topk(self.num_neighbors)
@@ -71,6 +71,7 @@ class DPBruteForceSearcher(Searcher):
         self.required_num_neighbors: Optional[int] = None
         super().__init__(embs, results, run_build_from_init)
 
+    @torch.compile
     def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
         """
         Finds the nearest neighbors for a given batch of input data.
@@ -90,9 +91,10 @@ class DPBruteForceSearcher(Searcher):
               num_neighbors, it will not raise an error and will fail silently.
             - The first call to find will be slow, because the module_searcher will be initialized and torch.compile is called.
         """
-        with torch.inference_mode(), torch.autocast(
-            device_type=self.device.type, dtype=torch.float16
-        ):
+        # with torch.inference_mode(), torch.autocast(
+        #     device_type=self.device.type, dtype=torch.float16
+        # ):
+        with torch.no_grad():
             # A try except trick to avoid the overhead of checking if the module_searcher is None
             # on every call to find.
             # This is a bit of a hack, but it should make things faster as we are suggesting that the module_searcher is initialized.

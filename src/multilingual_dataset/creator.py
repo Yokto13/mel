@@ -6,6 +6,7 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import Union
 
+import gin
 import numpy as np
 
 from multilingual_dataset.mixer import Mixer
@@ -244,6 +245,7 @@ class MultilingualDatasetCreator:
         _logger.info("Finished creating links")
 
 
+@gin.configurable
 def create_multilingual_dataset(
     source_dir: Union[str, Path],
     langs: list[str],

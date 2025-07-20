@@ -1,21 +1,23 @@
 import functools
 
+import gin
 import numpy as np
-
-from .loaders import load_qids_npy
 
 
 @functools.cache
 def _load_filter(path: str) -> set:
     """Load QIDs to filter from a `.npy` file."""
     try:
-        arr = load_qids_npy(path)
+        # TODO: qid remap this loading
+        print("Loading filter from", path)
+        arr = np.load(path)
     except Exception:
         raise FileNotFoundError(f"Cannot load filter file: {path}")
     return set(arr.tolist())
 
 
-def qid_filter(qids_index: int | None, filter_path: str = None):
+@gin.configurable
+def qid_filter(qids_index: int | None, filter_path: str | None = None):
     """Decorator that filters out QIDs listed in a `.npy` file.
 
     Args:
@@ -31,13 +33,13 @@ def qid_filter(qids_index: int | None, filter_path: str = None):
             if filter_path is None:
                 return result
 
-            mask_set = _load_filter(filter_path)
+            mask_set = set(_load_filter(filter_path))
             is_valid_tuple = isinstance(result, tuple) and 0 <= qids_index < len(result)
             if is_valid_tuple:
                 qids = result[qids_index]
             else:
                 qids = result
-            keep = ~np.isin(qids, list(mask_set))
+            keep = np.array([q not in mask_set for q in qids])
 
             if is_valid_tuple:
                 updated_result = tuple(result_array[keep] for result_array in result)
