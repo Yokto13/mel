@@ -99,9 +99,10 @@ class DPBruteForceSearcher(Searcher):
             # on every call to find.
             # This is a bit of a hack, but it should make things faster as we are suggesting that the module_searcher is initialized.
             try:
-                top_indices: torch.Tensor = self.module_searcher(
-                    torch.tensor(batch, device=self.device)
-                )
+                with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
+                    top_indices: torch.Tensor = self.module_searcher(
+                        torch.from_numpy(batch).to(self.device)
+                    )
             except TypeError as e:
                 if self.module_searcher is not None:
                     raise e
@@ -111,7 +112,7 @@ class DPBruteForceSearcher(Searcher):
                 self.module_searcher.to(self.device)
                 self.required_num_neighbors = num_neighbors
                 top_indices: torch.Tensor = self.module_searcher(
-                    torch.tensor(batch, device=self.device)
+                    torch.from_numpy(batch).to(self.device)
                 )
 
         top_indices_np: np.ndarray = top_indices.cpu().numpy()
