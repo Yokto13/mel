@@ -21,6 +21,7 @@ from utils.running_averages import RunningAverages
 
 from finetunings.finetune_model.data import (
     LightWeightDataset,
+    LightWeightIterableDataset,
     save_model,
     SaveInformation,
 )
@@ -97,11 +98,13 @@ def _ddp_train(
     STATE_DICT_PATH: str | None,
     TARGET_DIM: int | None,
     WEIGHT_DECAY: float | None,
+    GRADIENT_CLIP: float = 1.0,
 ):
     setup(rank, world_size)
 
     model = load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH, TARGET_DIM)
     model = DDP(model.to(rank), device_ids=[rank])
+    model = torch.compile(model)
 
     is_the_main_process = rank == 0
 
@@ -116,6 +119,7 @@ def _ddp_train(
                 "MODEL_SAVE_DIR": MODEL_SAVE_DIR,
                 "STATE_DICT_PATH": STATE_DICT_PATH,
                 "WEIGHT_DECAY": WEIGHT_DECAY,
+                "GRADIENT_CLIP": GRADIENT_CLIP,
             },
         )
 
@@ -124,69 +128,70 @@ def _ddp_train(
 
     scaler = torch.amp.GradScaler("cuda")
 
+    def step():
+        scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), GRADIENT_CLIP)
+        scaler.step(optimizer)
+        scaler.update()
+        optimizer.zero_grad()
+
+    step = torch.compile(step)
+
     running_averages = None
     if is_the_main_process:
         running_averages = RunningAverages(_RUNNING_AVERAGE_SMALL, _RUNNING_AVERAGE_BIG)
 
-    for epoch in range(EPOCHS):
-        model.train()
+    dataset = LightWeightIterableDataset(DATASET_DIR, 0, rank, world_size)
+    dataloader = DataLoader(
+        dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
+    )
 
-        train_loss = 0
+    labels = construct_labels(dataset)
+    labels = torch.from_numpy(labels).to(rank)
 
-        dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
-        dataloader = DataLoader(
-            dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
-        )
+    for replica_part in dataloader:
 
-        labels = construct_labels(dataset)
-        labels = torch.from_numpy(labels).to(rank)
+        with torch.autocast(device_type="cuda"):
+            replica_part = forward_to_embeddings(replica_part, model)
 
-        for replica_part in dataloader:
+            with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
+                all_replicas = [
+                    torch.zeros_like(replica_part) for _ in range(world_size)
+                ]
+                torch.distributed.all_gather(all_replicas, replica_part)
 
-            with torch.autocast(device_type="cuda"):
-                replica_part = forward_to_embeddings(replica_part, model)
+            # Allow gradients propagation for the slice owned by the current process
+            all_replicas[rank] = replica_part
 
-                with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
-                    all_replicas = [
-                        torch.zeros_like(replica_part) for _ in range(world_size)
-                    ]
-                    torch.distributed.all_gather(all_replicas, replica_part)
+            all_replicas = torch.cat(all_replicas, dim=0)
 
-                # Allow gradients propagation for the slice owned by the current process
-                all_replicas[rank] = replica_part
+            links_embedded, descs_embedded = (
+                all_replicas[: dataset.links_cnt],
+                all_replicas[dataset.links_cnt :],
+            )
 
-                all_replicas = torch.cat(all_replicas, dim=0)
+            loss, outputs = _calculate_loss(
+                links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
+            )
 
-                links_embedded, descs_embedded = (
-                    all_replicas[: dataset.links_cnt],
-                    all_replicas[dataset.links_cnt :],
-                )
+        # norm_for_logs = step()
+        step()
 
-                loss, outputs = _calculate_loss(
-                    links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
-                )
-
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-            norm_for_logs = get_gradient_norm(model.module)
-            optimizer.zero_grad()
-
+        if is_the_main_process:
             loss_item = loss.item()
-            train_loss += loss_item
 
-            if is_the_main_process:
-                process_metrics(
-                    outputs,
-                    labels,
-                    loss_item,
-                    running_averages,
-                    {
-                        "gradient_norm": norm_for_logs,
-                    },
-                )
-        if is_the_main_process and epoch % 100 == 0:
-            save_final_model(model.module, MODEL_SAVE_DIR)
+            process_metrics(
+                outputs,
+                labels,
+                loss_item,
+                running_averages,
+                # {
+                #     "gradient_norm": norm_for_logs,
+                # },
+            )
+    if is_the_main_process:
+        save_final_model(model.module, MODEL_SAVE_DIR)
 
     if is_the_main_process:
         # We only save the model on the main process and only once
@@ -212,6 +217,7 @@ def train_ddp(
     STATE_DICT_PATH=None,
     TARGET_DIM=None,
     WEIGHT_DECAY=0.0,
+    GRADIENT_CLIP=1.0,
 ):
     DATASET_DIR = Path(DATASET_DIR)
     FOUNDATION_MODEL_PATH = str(FOUNDATION_MODEL_PATH)
@@ -222,6 +228,7 @@ def train_ddp(
     STATE_DICT_PATH = str(STATE_DICT_PATH) if STATE_DICT_PATH is not None else None
     TARGET_DIM = int(TARGET_DIM) if TARGET_DIM is not None else None
     WEIGHT_DECAY = float(WEIGHT_DECAY)
+    GRADIENT_CLIP = float(GRADIENT_CLIP)
 
     world_size = torch.cuda.device_count()
 
@@ -238,6 +245,7 @@ def train_ddp(
             STATE_DICT_PATH,
             TARGET_DIM,
             WEIGHT_DECAY,
+            GRADIENT_CLIP,
         ),
         nprocs=world_size,
     )
