@@ -78,7 +78,7 @@ def embed(
     model.eval()
 
     # We usually work with IterableDataset subclass so no multiprocessing
-    data_loader = DataLoader(dataset, batch_size, num_workers=0)
+    data_loader = DataLoader(dataset, batch_size, num_workers=0, pin_memory=True)
 
     if torch.cuda.is_available():
         model = torch.nn.DataParallel(model).cuda()
@@ -96,19 +96,21 @@ def embed(
 
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
-            batch_toks = batch_toks.to(torch.int64)
+            if torch.cuda.is_available():
+                batch_toks = batch_toks.to(
+                    dtype=torch.int64, non_blocking=True, device="cuda"
+                )
             attention_mask = create_attention_mask(batch_toks)
             if torch.cuda.is_available():
-                batch_toks = batch_toks.cuda()
                 attention_mask = attention_mask.cuda()
 
             with torch.amp.autocast(device_type="cuda"):
                 batch_embeddings = model(batch_toks, attention_mask)
 
-            batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
-            batch_embeddings = batch_embeddings / np.linalg.norm(
-                batch_embeddings, ord=2, axis=1, keepdims=True
+            batch_embeddings = batch_embeddings / torch.linalg.norm(
+                batch_embeddings, ord=2, dim=1, keepdim=True
             )
+            batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float16)
             embeddings.extend(batch_embeddings)
             if return_tokens:
                 tokens.extend(batch_toks.cpu().numpy())
