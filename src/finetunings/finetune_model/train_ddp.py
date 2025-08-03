@@ -142,56 +142,58 @@ def _ddp_train(
     if is_the_main_process:
         running_averages = RunningAverages(_RUNNING_AVERAGE_SMALL, _RUNNING_AVERAGE_BIG)
 
-    dataset = LightWeightIterableDataset(DATASET_DIR, 0, rank, world_size)
-    dataloader = DataLoader(
-        dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
-    )
+    dataset = LightWeightDataset(DATASET_DIR, 0, rank, world_size)
 
     labels = construct_labels(dataset)
     labels = torch.from_numpy(labels).to(rank)
-
-    for replica_part in dataloader:
-
-        with torch.autocast(device_type="cuda"):
-            replica_part = forward_to_embeddings(replica_part, model)
-
-            with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
-                all_replicas = [
-                    torch.zeros_like(replica_part) for _ in range(world_size)
-                ]
-                torch.distributed.all_gather(all_replicas, replica_part)
-
-            # Allow gradients propagation for the slice owned by the current process
-            all_replicas[rank] = replica_part
-
-            all_replicas = torch.cat(all_replicas, dim=0)
-
-            links_embedded, descs_embedded = (
-                all_replicas[: dataset.links_cnt],
-                all_replicas[dataset.links_cnt :],
-            )
-
-            loss, outputs = _calculate_loss(
-                links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
-            )
-
-        # norm_for_logs = step()
-        step()
-
+    for epoch in range(EPOCHS):
         if is_the_main_process:
-            loss_item = loss.item()
+            _logger.info(f"Starting epoch {epoch + 1}/{EPOCHS}")
 
-            process_metrics(
-                outputs,
-                labels,
-                loss_item,
-                running_averages,
-                # {
-                #     "gradient_norm": norm_for_logs,
-                # },
-            )
-    if is_the_main_process:
-        save_final_model(model.module, MODEL_SAVE_DIR)
+        dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
+        dataloader = DataLoader(
+            dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
+        )
+        for replica_part in dataloader:
+
+            with torch.autocast(device_type="cuda"):
+                replica_part = forward_to_embeddings(replica_part, model)
+
+                with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
+                    all_replicas = [
+                        torch.zeros_like(replica_part) for _ in range(world_size)
+                    ]
+                    torch.distributed.all_gather(all_replicas, replica_part)
+
+                # Allow gradients propagation for the slice owned by the current process
+                all_replicas[rank] = replica_part
+
+                all_replicas = torch.cat(all_replicas, dim=0)
+
+                links_embedded, descs_embedded = (
+                    all_replicas[: dataset.links_cnt],
+                    all_replicas[dataset.links_cnt :],
+                )
+
+                loss, outputs = _calculate_loss(
+                    links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
+                )
+
+            # norm_for_logs = step()
+            step()
+
+            if is_the_main_process:
+                loss_item = loss.item()
+
+                process_metrics(
+                    outputs,
+                    labels,
+                    loss_item,
+                    running_averages,
+                    # {
+                    #     "gradient_norm": norm_for_logs,
+                    # },
+                )
 
     if is_the_main_process:
         # We only save the model on the main process and only once
