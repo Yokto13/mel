@@ -78,7 +78,7 @@ class LightWeightDataset(Dataset):
         self._rank = rank
         self._dataset_dir = dataset_dir
         self._epoch = epoch
-        self._data = self._load()
+        # self._data = self._load()
         self._links_cnt = None
         self._descriptions_cnt = None
         self._len = None
@@ -99,6 +99,9 @@ class LightWeightDataset(Dataset):
         return self._descriptions_cnt
 
     def _load(self) -> Any:
+        _logger.info(
+            f"Loading dataset from {self._dataset_dir} for epoch {self._epoch}, rank {self._rank}, world size {self._world_size}"
+        )
         self._set_cnts()
         this_share_start, this_share_end = self._get_share_bounds()
         if this_share_end <= self.links_cnt:
