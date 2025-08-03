@@ -150,7 +150,12 @@ def _ddp_train(
         if is_the_main_process:
             _logger.info(f"Starting epoch {epoch + 1}/{EPOCHS}")
 
-        dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
+        try:
+            dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
+        except FileNotFoundError:
+            _logger.error(f"Dataset for epoch {epoch} not found. Stopping training.")
+            break
+
         dataloader = DataLoader(
             dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
         )
