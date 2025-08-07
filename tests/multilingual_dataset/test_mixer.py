@@ -2,10 +2,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import gin
-
 import numpy as np
 import pytest
-from multilingual_dataset.mixer import Mixer
+from multilingual_dataset.mixer import Mixer, ParallelMixer
 
 gin.add_config_file_search_path("configs/general.gin")
 
@@ -14,12 +13,26 @@ def mock_remap_qids(qids, _):
     return qids
 
 
+@pytest.fixture(
+    params=[
+        {"cls": Mixer, "kwargs": {}},
+        {"cls": ParallelMixer, "kwargs": {"n_workers": 1}},
+        {"cls": ParallelMixer, "kwargs": {"n_workers": 2}},
+    ],
+    ids=["Mixer", "ParallelMixer-1", "ParallelMixer-2"],
+)
+def mixer_factory(request):
+    cls = request.param["cls"]
+    kwargs = request.param["kwargs"]
+    return lambda buffer_size: cls(buffer_size=buffer_size, **kwargs)
+
+
 @pytest.fixture
 def create_dummy_npz_files(tmpdir):
     file_paths = []
     for i in range(10):
         file_path = Path(tmpdir) / f"mentions_{i}.npz"
-        tokens = np.random.randint(1, 1000, size=(100, 10))  # 100 rows, 10 columns
+        tokens = np.random.randint(1, 1000, size=(100, 10))
         qids = np.random.randint(1, 1000, size=(100,))
         np.savez(file_path, tokens=tokens, qids=qids)
         file_paths.append(file_path)
@@ -32,11 +45,13 @@ def load_npz_content(file_path):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_changes_file_contents(mock_qids_remap, create_dummy_npz_files):
+def test_mix_changes_file_contents(
+    mock_qids_remap, create_dummy_npz_files, mixer_factory
+):
     file_paths = create_dummy_npz_files
     original_contents = [load_npz_content(path) for path in file_paths]
 
-    mixer = Mixer(buffer_size=10)
+    mixer = mixer_factory(buffer_size=10)
     mixer.mix(file_paths, n_of_mixings=1, compress_output=False)
 
     new_contents = [load_npz_content(path) for path in file_paths]
@@ -48,12 +63,14 @@ def test_mix_changes_file_contents(mock_qids_remap, create_dummy_npz_files):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_preserves_total_content(mock_qids_remap, create_dummy_npz_files):
+def test_mix_preserves_total_content(
+    mock_qids_remap, create_dummy_npz_files, mixer_factory
+):
     file_paths = create_dummy_npz_files
     original_tokens = np.concatenate([load_npz_content(path)[0] for path in file_paths])
     original_qids = np.concatenate([load_npz_content(path)[1] for path in file_paths])
 
-    mixer = Mixer(buffer_size=10)
+    mixer = mixer_factory(buffer_size=10)
     mixer.mix(file_paths, n_of_mixings=1, compress_output=False)
 
     new_tokens = np.concatenate([load_npz_content(path)[0] for path in file_paths])
@@ -66,11 +83,11 @@ def test_mix_preserves_total_content(mock_qids_remap, create_dummy_npz_files):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_multiple_times(mock_qids_remap, create_dummy_npz_files):
+def test_mix_multiple_times(mock_qids_remap, create_dummy_npz_files, mixer_factory):
     file_paths = create_dummy_npz_files
     original_contents = [load_npz_content(path) for path in file_paths]
 
-    mixer = Mixer(buffer_size=10)
+    mixer = mixer_factory(buffer_size=10)
     mixer.mix(file_paths, n_of_mixings=3, compress_output=False)
 
     new_contents = [load_npz_content(path) for path in file_paths]
@@ -82,11 +99,11 @@ def test_mix_multiple_times(mock_qids_remap, create_dummy_npz_files):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_with_small_buffer(mock_qids_remap, create_dummy_npz_files):
+def test_mix_with_small_buffer(mock_qids_remap, create_dummy_npz_files, mixer_factory):
     file_paths = create_dummy_npz_files
     original_contents = [load_npz_content(path) for path in file_paths]
 
-    mixer = Mixer(buffer_size=2)
+    mixer = mixer_factory(buffer_size=2)
     mixer.mix(file_paths, n_of_mixings=1, compress_output=False)
 
     new_contents = [load_npz_content(path) for path in file_paths]
@@ -98,21 +115,20 @@ def test_mix_with_small_buffer(mock_qids_remap, create_dummy_npz_files):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_empty_file_list(mock_qids_remap):
-    mixer = Mixer(buffer_size=1000)
+def test_mix_empty_file(mock_qids_remap, mixer_factory):
+    mixer = mixer_factory(buffer_size=1000)
     mixer.mix([], n_of_mixings=1, compress_output=False)
-    # This test passes if no exception is raised
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_single_file(mock_qids_remap, tmp_path):
+def test_mix_single_file(mock_qids_remap, tmp_path, mixer_factory):
     file_path = tmp_path / "mentions_0.npz"
     tokens = np.random.randint(1, 1000, size=(100, 10))
     qids = np.random.randint(1, 1000, size=(100,))
 
     np.savez_compressed(file_path, tokens=tokens, qids=qids)
 
-    mixer = Mixer(buffer_size=1000)
+    mixer = mixer_factory(buffer_size=1000)
     mixer.mix([file_path], n_of_mixings=1, compress_output=False)
 
     new_tokens, new_qids = load_npz_content(file_path)
@@ -122,11 +138,13 @@ def test_mix_single_file(mock_qids_remap, tmp_path):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_preserves_consistency(mock_qids_remap, create_dummy_npz_files):
+def test_mix_preserves_consistency(
+    mock_qids_remap, create_dummy_npz_files, mixer_factory
+):
     file_paths = create_dummy_npz_files
     original_shapes = [load_npz_content(path)[0].shape for path in file_paths]
 
-    mixer = Mixer(buffer_size=1000)
+    mixer = mixer_factory(buffer_size=1000)
     mixer.mix(file_paths, n_of_mixings=1, compress_output=False)
 
     for path, original_shape in zip(file_paths, original_shapes):
@@ -135,7 +153,7 @@ def test_mix_preserves_consistency(mock_qids_remap, create_dummy_npz_files):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_compress(mock_qids_remap, tmp_path):
+def test_mix_compress(mock_qids_remap, tmp_path, mixer_factory):
     file_path_1 = tmp_path / "mentions_0.npz"
     file_path_2 = tmp_path / "mentions_1.npz"
     tokens = np.random.randint(1, 1000, size=(100, 10))
@@ -143,7 +161,7 @@ def test_mix_compress(mock_qids_remap, tmp_path):
     np.savez(file_path_1, tokens=tokens, qids=qids)
     np.savez(file_path_2, tokens=tokens, qids=qids)
 
-    mixer = Mixer(buffer_size=1000)
+    mixer = mixer_factory(buffer_size=1000)
     mixer.mix([file_path_1], n_of_mixings=1, compress_output=True)
 
     mixer.mix([file_path_2], n_of_mixings=1, compress_output=False)

@@ -5,11 +5,12 @@ from collections.abc import Iterable
 from itertools import zip_longest
 from pathlib import Path
 from typing import Union
+import time
 
 import gin
 import numpy as np
 
-from multilingual_dataset.mixer import Mixer
+from multilingual_dataset.mixer import Mixer, ParallelMixer
 from tqdm import tqdm
 from utils.damuel_paths import DamuelPaths
 from utils.loaders import load_mentions, load_qids
@@ -19,15 +20,22 @@ _logger = logging.getLogger("multilingual_dataset.creator")
 
 class _LinksCreator:
     def __init__(
-        self, damuel_paths: DamuelPaths, langs: list[str], dest_dir: Path
+        self,
+        damuel_paths: DamuelPaths,
+        langs: list[str],
+        dest_dir: Path,
+        max_samples_per_qid: int,
     ) -> None:
         self.damuel_paths: DamuelPaths = damuel_paths
         self.langs: list[str] = langs
         self.dest_links_dir: Path = dest_dir / "links"
         self.dest_links_dir.mkdir(parents=True, exist_ok=True)
 
+        self.max_samples_per_qid: int = max_samples_per_qid
+
         self.single_mixer = Mixer(buffer_size=1)
-        self.standard_mixer = Mixer(buffer_size=50)
+        self.parallel_mixer = ParallelMixer(n_workers=20, buffer_size=5)
+        self.standard_mixer = Mixer(buffer_size=100)
 
     def run(self) -> None:
         """Gathers links from all languages and writes them to dest_dir.
@@ -50,6 +58,8 @@ class _LinksCreator:
             out_file_paths.append(out_file_path)
 
         self.single_mixer.mix(out_file_paths, n_of_mixings=1, compress_output=False)
+        self.parallel_mixer.mix(out_file_paths, n_of_mixings=5, compress_output=False)
+        self._remove_often_qids(out_file_paths)
         self.standard_mixer.mix(out_file_paths, n_of_mixings=5, compress_output=True)
 
     def _copy_files(
@@ -75,6 +85,28 @@ class _LinksCreator:
                 [link_dir_path / file_name for file_name in link_dir_path.iterdir()]
             )
         return link_file_paths
+
+    def _remove_often_qids(self, file_paths: list[Path]):
+        qid_counter = Counter()
+        for file_path in tqdm(file_paths, desc="Counting QIDs", total=len(file_paths)):
+            tokens, qids = load_mentions(file_path)
+
+            tokens_filtered, qids_filtered = [], []
+            for token, qid in zip(tokens, qids):
+                if qid_counter[qid] < self.max_samples_per_qid:
+                    tokens_filtered.append(token)
+                    qids_filtered.append(qid)
+                    qid_counter[qid] += 1
+
+            np.savez(
+                file_path,
+                tokens=np.array(tokens_filtered),
+                qids=np.array(qids_filtered),
+            )
+
+        _logger.info(
+            f"Removed QIDs that occurred more than {self.max_samples_per_qid} times."
+        )
 
 
 class _KBCreator:
@@ -227,22 +259,34 @@ class _KBCreator:
 
 class MultilingualDatasetCreator:
     def __init__(
-        self, source_dir: Union[str, Path], langs: list[str], dest_dir: Union[str, Path]
+        self,
+        source_dir: Union[str, Path],
+        langs: list[str],
+        dest_dir: Union[str, Path],
+        max_links_per_qid: int,
     ) -> None:
         self._damuel_paths: DamuelPaths = DamuelPaths(source_dir)
         self._kb_creator: _KBCreator = _KBCreator(self._damuel_paths, langs, dest_dir)
         self._links_creator: _LinksCreator = _LinksCreator(
-            self._damuel_paths, langs, dest_dir
+            self._damuel_paths, langs, dest_dir, max_links_per_qid
         )
 
     def run(self) -> None:
-        _logger.info("Starting to create KB")
-        self._kb_creator.run()
-        _logger.info("Finished creating KB")
 
         _logger.info("Starting to create links")
+        start_time = time.time()
         self._links_creator.run()
-        _logger.info("Finished creating links")
+        links_time = time.time() - start_time
+        _logger.info(f"Finished creating links in {links_time:.2f} seconds")
+
+        _logger.info("Starting to create KB")
+        start_time = time.time()
+        self._kb_creator.run()
+        kb_time = time.time() - start_time
+        _logger.info(f"Finished creating KB in {kb_time:.2f} seconds")
+
+        total_time = links_time + kb_time
+        _logger.info(f"Total time: {total_time:.2f} seconds")
 
 
 @gin.configurable
@@ -250,8 +294,11 @@ def create_multilingual_dataset(
     source_dir: Union[str, Path],
     langs: list[str],
     dest_dir: Union[str, Path],
+    max_links_per_qid: int,
 ) -> None:
-    MultilingualDatasetCreator(Path(source_dir), langs, Path(dest_dir)).run()
+    MultilingualDatasetCreator(
+        Path(source_dir), langs, Path(dest_dir), max_links_per_qid
+    ).run()
 
 
 def run_kb_creator(

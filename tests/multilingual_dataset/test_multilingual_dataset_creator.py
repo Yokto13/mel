@@ -75,7 +75,7 @@ def output_dir(tmpdir):
 class Test_LinksCreator:
     @pytest.fixture
     def links_creator(self, damuel_paths, sample_langs, output_dir):
-        return _LinksCreator(damuel_paths, sample_langs, Path(output_dir))
+        return _LinksCreator(damuel_paths, sample_langs, Path(output_dir), 100000000)
 
     @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
     def test_run(self, mock_qids_remap, links_creator, output_dir):
@@ -198,7 +198,7 @@ class TestMultilingualDatasetCreator:
     @pytest.fixture
     def dataset_creator(self, sample_langs, output_dir, tmp_path):
         return MultilingualDatasetCreator(
-            Path(tmp_path), sample_langs, Path(output_dir)
+            Path(tmp_path), sample_langs, Path(output_dir), 10
         )
 
     @patch("multilingual_dataset.creator._KBCreator.run")
