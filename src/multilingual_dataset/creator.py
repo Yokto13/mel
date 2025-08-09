@@ -33,9 +33,9 @@ class _LinksCreator:
 
         self.max_samples_per_qid: int = max_samples_per_qid
 
-        self.single_mixer = Mixer(buffer_size=1)
-        self.parallel_mixer = ParallelMixer(n_workers=20, buffer_size=5)
-        self.standard_mixer = Mixer(buffer_size=100)
+        self.single_mixer = ParallelMixer(n_workers=30, buffer_size=1)
+        self.parallel_mixer = ParallelMixer(n_workers=3, buffer_size=10)
+        self.standard_mixer = Mixer(buffer_size=30)
 
     def run(self) -> None:
         """Gathers links from all languages and writes them to dest_dir.
@@ -58,9 +58,9 @@ class _LinksCreator:
             out_file_paths.append(out_file_path)
 
         self.single_mixer.mix(out_file_paths, n_of_mixings=1, compress_output=False)
-        self.parallel_mixer.mix(out_file_paths, n_of_mixings=5, compress_output=False)
+        self.parallel_mixer.mix(out_file_paths, n_of_mixings=130, compress_output=False)
         self._remove_often_qids(out_file_paths)
-        self.standard_mixer.mix(out_file_paths, n_of_mixings=5, compress_output=True)
+        self.standard_mixer.mix(out_file_paths, n_of_mixings=10, compress_output=True)
 
     def _copy_files(
         self, source_file_paths: Iterable[Path], dest_file_path: Path
