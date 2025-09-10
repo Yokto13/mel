@@ -1,6 +1,10 @@
 import logging
 
-from finetunings.evaluation.find_recall import find_recall
+from finetunings.evaluation.find_recall import (
+    find_recall_with_searcher,
+    load_embs_and_qids_with_normalization,
+)
+from models.searchers.brute_force_searcher import BruteForceSearcher
 
 _RECALLS = [1, 10, 100]
 
@@ -28,7 +32,10 @@ def evaluate(
 ):
     damuel_path = _construct_damuel_path(root_dir, finetuning_round)
 
+    damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_path)
+    searcher = BruteForceSearcher(damuel_embs, damuel_qids)
+
     for lang in langs:
         mewsli_path = _construct_mewsli_path(root_dir, finetuning_round, lang)
         _logger.info(f"Calculating recall for {lang}")
-        run_recall_calculation(damuel_path, mewsli_path)
+        find_recall_with_searcher(searcher, mewsli_path, _RECALLS)

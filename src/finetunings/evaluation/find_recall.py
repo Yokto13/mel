@@ -82,6 +82,23 @@ def find_recall(
         _logger.info(f"Recall at {R}: {recall}")
 
 
+@paths_exist(path_arg_ids=[1])
+def find_recall_with_searcher(
+    searcher: BruteForceSearcher,
+    mewsli: str,
+    recalls: list[int],
+) -> None:
+    mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
+
+    rc = RecallCalculator(searcher)
+
+    for R in recalls:
+        _logger.info("Calculating recall...")
+        recall = rc.recall(mewsli_embs, mewsli_qids, R)
+        wandb.log({f"recall_at_{R}": recall})
+        _logger.info(f"Recall at {R}: {recall}")
+
+
 def find_candidates(
     damuel_entities: str, candidates_path: str, mewsli: str, recall: int
 ) -> None:
