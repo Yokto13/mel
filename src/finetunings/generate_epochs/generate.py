@@ -102,6 +102,7 @@ def generate(
             calculate_qids_distribution_from_links(LINKS_EMBS_DIR, index_qids)
         )
         negative_sampler_kwargs["randomly_sampled_cnt"] = 1
+    negative_sampler_kwargs["limit_negs"] = 10
 
     batch_sampler = BatchSampler(
         index_embs,

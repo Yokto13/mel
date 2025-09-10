@@ -16,8 +16,9 @@ _logger = logging.getLogger("finetuning.finetune_model.data")
 class SaveInformation:
     output_path: Path
     is_final: bool
-    epoch: int = None
-    recall: int = None
+    epoch: int | None = None
+    recall: int | None = None
+    name: str | None = None
 
 
 def _load_epoch_npz(path: Path, epoch: int | str) -> tuple:
@@ -34,7 +35,8 @@ def _save_non_final_model(model: nn.Module, save_information: SaveInformation) -
 
 
 def _save_final_model(model: nn.Module, save_information: SaveInformation) -> None:
-    torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
+    name = save_information.name if save_information.name else "finals.pth"
+    torch.save(model.state_dict(), f"{save_information.output_path}/{name}")
 
 
 def save_model(model: nn.Module, save_information: SaveInformation) -> None:

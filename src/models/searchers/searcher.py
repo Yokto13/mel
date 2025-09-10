@@ -1,4 +1,4 @@
-""" Wrapper around any searcher we might use. """
+"""Wrapper around any searcher we might use."""
 
 import logging
 from abc import ABC, abstractmethod

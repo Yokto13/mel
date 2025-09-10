@@ -25,7 +25,7 @@ class BruteForceSearcher(Searcher):
             self.device: torch.device = torch.device("cpu")
         super().__init__(embs, results, run_build_from_init)
 
-    def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
+    def find(self, batch: np.ndarray, num_neighbors: int, mask=None) -> np.ndarray:
         # @torch.compile
         def _find(batch: np.ndarray) -> np.ndarray:
             batch_torch: torch.Tensor = torch.from_numpy(batch).to(self.device)
@@ -72,7 +72,7 @@ class DPBruteForceSearcher(Searcher):
         super().__init__(embs, results, run_build_from_init)
 
     @torch.compile
-    def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
+    def find(self, batch: np.ndarray, num_neighbors: int, mask=None) -> np.ndarray:
         """
         Finds the nearest neighbors for a given batch of input data.
         CAREFUL: This is an optimized version that comes with potential pitfalls to get better performance.
