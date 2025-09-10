@@ -1,3 +1,4 @@
+from copy import deepcopy
 import logging
 import os
 from pathlib import Path
@@ -5,8 +6,6 @@ from pathlib import Path
 import numpy as np
 
 import torch
-
-from tqdm import tqdm
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -82,9 +81,16 @@ def _calculate_loss(
     return loss, outputs
 
 
-def save_final_model(model, MODEL_SAVE_DIR):
+def save_final_model(model, MODEL_SAVE_DIR, name: str | None = None):
     save_information = SaveInformation(MODEL_SAVE_DIR, True)
+    save_information.name = name
     save_model(model, save_information)
+
+
+def update_ema(model, ema_model, decay=0.9999):
+    with torch.no_grad():
+        for param, ema_param in zip(model.parameters(), ema_model.parameters()):
+            ema_param.data.mul_(decay).add_(param.data, alpha=1 - decay)
 
 
 def _ddp_train(
@@ -99,13 +105,21 @@ def _ddp_train(
     STATE_DICT_PATH: str | None,
     TARGET_DIM: int | None,
     WEIGHT_DECAY: float | None,
+    GRADIENT_CLIP: float = 1.0,
 ):
     setup(rank, world_size)
 
     model = load_model(FOUNDATION_MODEL_PATH, STATE_DICT_PATH, TARGET_DIM)
+
     model = DDP(model.to(rank), device_ids=[rank])
+    model = torch.compile(model)
 
     is_the_main_process = rank == 0
+
+    if is_the_main_process:
+        ema_model = deepcopy(model)
+        ema_model.to(rank)
+        ema_model.eval()
 
     if is_the_main_process:
         wandb.init(
@@ -118,6 +132,7 @@ def _ddp_train(
                 "MODEL_SAVE_DIR": MODEL_SAVE_DIR,
                 "STATE_DICT_PATH": STATE_DICT_PATH,
                 "WEIGHT_DECAY": WEIGHT_DECAY,
+                "GRADIENT_CLIP": GRADIENT_CLIP,
             },
         )
 
@@ -126,24 +141,56 @@ def _ddp_train(
 
     scaler = torch.amp.GradScaler("cuda")
 
+    warmup_steps = 1000
+    if is_the_main_process:
+        _logger.warning(
+            "Running with learning rate warmup for the first 1000 steps. This is hardcoded and should be made configurable from config."
+        )
+
+    def lr_lambda(step):
+        if step < warmup_steps:
+            return step / warmup_steps
+        return 1.0
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
+    def step():
+        scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), GRADIENT_CLIP)
+        scaler.step(optimizer)
+        scaler.update()
+        optimizer.zero_grad()
+        scheduler.step()  # Step the scheduler after optimizer step
+
+    step = torch.compile(step)
+
     running_averages = None
     if is_the_main_process:
         running_averages = RunningAverages(_RUNNING_AVERAGE_SMALL, _RUNNING_AVERAGE_BIG)
 
+    dataset = LightWeightDataset(DATASET_DIR, 0, rank, world_size)
+
+    labels = construct_labels(dataset)
+    labels = torch.from_numpy(labels).to(rank)
+
+    global_step = 0  # Track global step for warmup
+
     for epoch in range(EPOCHS):
-        model.train()
+        if is_the_main_process:
+            _logger.info(f"Starting epoch {epoch + 1}/{EPOCHS}")
 
-        train_loss = 0
+        try:
+            dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
+        except FileNotFoundError:
+            _logger.error(f"Dataset for epoch {epoch} not found. Stopping training.")
+            break
 
-        dataset = LightWeightDataset(DATASET_DIR, epoch, rank, world_size)
         dataloader = DataLoader(
             dataset, batch_size=None, pin_memory=True, num_workers=2, prefetch_factor=2
         )
-
-        labels = construct_labels(dataset)
-        labels = torch.from_numpy(labels).to(rank)
-
-        for replica_part in tqdm(dataloader, total=len(dataloader)):
+        for replica_part in dataloader:
+            global_step += 1
 
             with torch.autocast(device_type="cuda"):
                 replica_part = forward_to_embeddings(replica_part, model)
@@ -168,32 +215,31 @@ def _ddp_train(
                     links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
                 )
 
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-            norm_for_logs = get_gradient_norm(model.module)
-            optimizer.zero_grad()
-
-            loss_item = loss.item()
-            train_loss += loss_item
+            # norm_for_logs = step()
+            step()
 
             if is_the_main_process:
+                update_ema(model.module, ema_model)
+
+                loss_item = loss.item()
+                current_lr = scheduler.get_last_lr()[0]
+
                 process_metrics(
                     outputs,
                     labels,
                     loss_item,
                     running_averages,
                     {
-                        "gradient_norm": norm_for_logs,
+                        "learning_rate": current_lr,
+                        "global_step": global_step,
                     },
                 )
-        if is_the_main_process and epoch % 100 == 0:
-            save_final_model(model.module, MODEL_SAVE_DIR)
 
     if is_the_main_process:
         # We only save the model on the main process and only once
         # Intermediate saves could mess up synchronization
-        save_final_model(model.module, MODEL_SAVE_DIR)
+        save_final_model(model.module, MODEL_SAVE_DIR, name="final.pth")
+        save_final_model(ema_model.module, MODEL_SAVE_DIR, name="ema.pth")
 
     cleanup()
 
@@ -214,6 +260,7 @@ def train_ddp(
     STATE_DICT_PATH=None,
     TARGET_DIM=None,
     WEIGHT_DECAY=0.0,
+    GRADIENT_CLIP=1.0,
 ):
     DATASET_DIR = Path(DATASET_DIR)
     FOUNDATION_MODEL_PATH = str(FOUNDATION_MODEL_PATH)
@@ -224,6 +271,7 @@ def train_ddp(
     STATE_DICT_PATH = str(STATE_DICT_PATH) if STATE_DICT_PATH is not None else None
     TARGET_DIM = int(TARGET_DIM) if TARGET_DIM is not None else None
     WEIGHT_DECAY = float(WEIGHT_DECAY)
+    GRADIENT_CLIP = float(GRADIENT_CLIP)
 
     world_size = torch.cuda.device_count()
 
@@ -240,6 +288,7 @@ def train_ddp(
             STATE_DICT_PATH,
             TARGET_DIM,
             WEIGHT_DECAY,
+            GRADIENT_CLIP,
         ),
         nprocs=world_size,
     )

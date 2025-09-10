@@ -26,6 +26,9 @@ class MultiFileDataset(IterableDataset):
                 if f.endswith(self.file_pattern[1:])
             ]
         )
+        _logger.info(
+            f"Found {len(file_list)} files matching pattern {self.file_pattern} in {self.data_dir}."
+        )
         return file_list
 
     def _load_data(self, file_path):

@@ -64,6 +64,16 @@ class ModelFactory:
         cls, state_dict_path: str, model: torch.nn.Module
     ) -> torch.nn.Module:
         d = torch.load(state_dict_path, map_location="cpu")
+        new_state_dict = {}
+        for k, v in d.items():
+            if k.startswith("_orig_mod.module.model."):
+                new_k = k.replace("_orig_mod.module.model.", "")
+            elif k.startswith("module."):
+                new_k = k.replace("module.", "")
+            else:
+                new_k = k
+            new_state_dict[new_k] = v
+        d = new_state_dict
         try:
             model.load_state_dict(d)
         except RuntimeError as e:

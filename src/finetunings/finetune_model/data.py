@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -6,15 +7,18 @@ import numpy as np
 import torch
 import torch.nn as nn
 import wandb
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, IterableDataset
+
+_logger = logging.getLogger("finetuning.finetune_model.data")
 
 
 @dataclass
 class SaveInformation:
     output_path: Path
     is_final: bool
-    epoch: int = None
-    recall: int = None
+    epoch: int | None = None
+    recall: int | None = None
+    name: str | None = None
 
 
 def _load_epoch_npz(path: Path, epoch: int | str) -> tuple:
@@ -31,7 +35,8 @@ def _save_non_final_model(model: nn.Module, save_information: SaveInformation) -
 
 
 def _save_final_model(model: nn.Module, save_information: SaveInformation) -> None:
-    torch.save(model.state_dict(), f"{save_information.output_path}/final.pth")
+    name = save_information.name if save_information.name else "finals.pth"
+    torch.save(model.state_dict(), f"{save_information.output_path}/{name}")
 
 
 def save_model(model: nn.Module, save_information: SaveInformation) -> None:
@@ -75,7 +80,7 @@ class LightWeightDataset(Dataset):
         self._rank = rank
         self._dataset_dir = dataset_dir
         self._epoch = epoch
-        self._data = self._load()
+        # self._data = self._load()
         self._links_cnt = None
         self._descriptions_cnt = None
         self._len = None
@@ -96,6 +101,9 @@ class LightWeightDataset(Dataset):
         return self._descriptions_cnt
 
     def _load(self) -> Any:
+        _logger.info(
+            f"Loading dataset from {self._dataset_dir} for epoch {self._epoch}, rank {self._rank}, world size {self._world_size}"
+        )
         self._set_cnts()
         this_share_start, this_share_end = self._get_share_bounds()
         if this_share_end <= self.links_cnt:
@@ -143,3 +151,39 @@ class LightWeightDataset(Dataset):
     def _get_data_obj(self) -> Any:
         d = np.load(self._dataset_dir / f"epoch_{self._epoch}.npz")
         return d
+
+
+class LightWeightIterableDataset(IterableDataset):
+    def __init__(
+        self, dataset_dir: Path, epoch: int, rank: int = 1, world_size: int = 1
+    ) -> None:
+        super().__init__()
+        self._world_size = world_size
+        self._rank = rank
+        self._dataset_dir = dataset_dir
+        self._epoch = epoch
+        self._dataset: LightWeightDataset | None = self._load_next()
+
+    def __iter__(self):
+        while self._dataset is not None:
+            for i in range(len(self._dataset)):
+                yield self._dataset[i]
+            try:
+                self._dataset = self._load_next()
+            except FileNotFoundError:
+                self._dataset = None
+
+    @property
+    def links_cnt(self) -> int:
+        return self._dataset.links_cnt
+
+    @property
+    def descriptions_cnt(self) -> int:
+        return self._dataset.descriptions_cnt
+
+    def _load_next(self) -> LightWeightDataset:
+        dataset = LightWeightDataset(
+            self._dataset_dir, self._epoch, self._rank, self._world_size
+        )
+        self._epoch += 1
+        return dataset

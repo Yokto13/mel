@@ -12,6 +12,7 @@ from utils.loaders import (
     load_mentions,
     load_qids,
     AliasTableLoader,
+    load_qids_npy,
 )
 
 
@@ -294,6 +295,25 @@ def test_load_qids(mock_qids_remap, use_string_path: bool) -> None:
         np.savez(file_path, qids=test_qids)
 
         loaded_qids = load_qids(file_path)
+
+        assert np.array_equal(loaded_qids, test_qids)
+        assert isinstance(loaded_qids, np.ndarray)
+
+
+@pytest.mark.parametrize("use_string_path", [True, False])
+@patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
+def test_load_qids_npy(mock_qids_remap, use_string_path: bool) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dir_path = Path(temp_dir)
+        if use_string_path:
+            dir_path = str(dir_path)
+        file_path = Path(dir_path) / "qids.npy"
+
+        test_qids = np.array([100, 200, 300])
+
+        np.save(file_path, test_qids)
+
+        loaded_qids = load_qids_npy(file_path)
 
         assert np.array_equal(loaded_qids, test_qids)
         assert isinstance(loaded_qids, np.ndarray)

@@ -18,8 +18,8 @@ TRAIN_CONFIG_PATH="../configs/train.gin"
 DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/v2_normal/descs_pages"
 DAMUEL_LINKS_TOKENS_RAW="$OUTPUTS/v2_normal/links"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning"
-WORKDIR="$OUTPUTS/workdirs/v2_retraining_with_model_from_all"
-N_OF_ROUNDS=4
+WORKDIR="$OUTPUTS/workdirs/asi_se_to_rozbilo"
+N_OF_ROUNDS=15
 
 run_ml_finetuning_round() {
     local DAMUEL_DESCS_TOKENS_RAW=$1
@@ -33,7 +33,7 @@ run_ml_finetuning_round() {
     local STEPS_PER_EPOCH=1000
 
     # Multiple by 2 to make sure that if a link contained something faulty we can skip it.
-    local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 1000 * 3000))
+    local LINKS_PER_ROUND=$(($STEPS_PER_EPOCH * 1000 * 1000))
     echo "LPR $LINKS_PER_ROUND"
 
     local ACTION_SCRIPT="run_action_gin.py $MODEL_CONFIG_PATH $TRAIN_CONFIG_PATH"
@@ -151,7 +151,7 @@ run_ml_finetuning_round() {
         echo "----------------------------------------"
     done
 
-    rm -r $BATCH_DIR $DAMUEL_LINKS_DIR $DAMUEL_FOR_INDEX_DIR
+    rm -r $BATCH_DIR $DAMUEL_LINKS_DIR $DAMUEL_FOR_INDEX_DIR $DAMUEL_LINKS_TOKENS
 }
 
 if [ ! -L "$WORKDIR" ]; then

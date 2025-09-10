@@ -8,16 +8,19 @@ import gin
 import numpy as np
 import pandas as pd
 
-from utils.qids_remap import remap_qids_decorator
-
 # from tokenization.pipeline import DamuelAliasTablePipeline
 from tokenization.runner import run_alias_table_damuel
+
+from utils.qids_remap import remap_qids_decorator
+from utils.qid_filter import qid_filter
 
 
 current_file_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 config_path = os.path.join(project_root, "configs", "general.gin")
 gin.parse_config_file(config_path)
+# config_path = os.path.join(project_root, "configs", "multilingual_dataset.gin")
+# gin.parse_config_file(config_path)
 
 
 def _sort_by_output(output_idx: int):
@@ -34,6 +37,7 @@ def _sort_by_output(output_idx: int):
 
 
 # @_sort_by_output(1)
+@qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_embs_and_qids(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Loads embeddings and qids from the directory.
@@ -76,6 +80,7 @@ def load_embs_qids_tokens(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
 
 
 # @_sort_by_output(1)
+@qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     if type(file_path) == str:
@@ -84,6 +89,7 @@ def load_mentions(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     return d["tokens"], d["qids"]
 
 
+@qid_filter(qids_index=None)
 @remap_qids_decorator(qids_index=None, json_path=gin.REQUIRED)
 def load_qids(file_path: str | Path) -> np.ndarray:
     if type(file_path) == str:
@@ -92,7 +98,16 @@ def load_qids(file_path: str | Path) -> np.ndarray:
     return d["qids"]
 
 
+@qid_filter(qids_index=None)
+@remap_qids_decorator(qids_index=None, json_path=gin.REQUIRED)
+def load_qids_npy(file_path: str | Path) -> np.ndarray:
+    if type(file_path) == str:
+        file_path = Path(file_path)
+    return np.load(file_path)
+
+
 @_sort_by_output(1)
+@qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     tokens, qids = [], []
@@ -104,6 +119,7 @@ def load_mentions_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray
     return np.array(tokens), np.array(qids)
 
 
+@qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
 def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     d = np.load(file_path)
@@ -138,6 +154,7 @@ class AliasTableLoader:
             df["mention"] = df["mention"].str.lower()
         return df["mention"].tolist(), df["qid"].apply(lambda x: int(x[1:])).to_numpy()
 
+    @qid_filter(qids_index=1)
     @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
     def load_damuel(self, lang) -> tuple[list[str], np.ndarray]:
         data = run_alias_table_damuel(self._construct_damuel_path(lang))

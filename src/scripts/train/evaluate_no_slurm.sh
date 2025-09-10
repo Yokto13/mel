@@ -9,11 +9,11 @@ MODEL_CONFIG_PATH="../configs/lealla_m.gin"
 TRAIN_CONFIG_PATH="../configs/train.gin"
 
 # DAMUEL_FOR_INDEX_NEW_DIR="$OUTPUTS/workdirs/all/damuel_for_index_8"
-DAMUEL_FOR_INDEX_NEW_DIR="$OUTPUTS/workdirs/v2tests/embs"
-DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/v2/descs_pages"
+DAMUEL_FOR_INDEX_NEW_DIR="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo/damuel_for_index_2"
+DAMUEL_DESCS_TOKENS_RAW="$OUTPUTS/v2_normal/descs_pages"
 MEWSLI_TOKENS_RAW="$OUTPUTS/tokens_mewsli_finetuning"
-WORKDIR="$OUTPUTS/workdirs/v2tests"
-ROUND_ID=0
+WORKDIR="$OUTPUTS/workdirs/asi_se_to_rozbilo"
+ROUND_ID=1
 MODELS_DIR="$WORKDIR/models_$ROUND_ID"
 
 ACTION_SCRIPT="run_action_gin.py $MODEL_CONFIG_PATH $TRAIN_CONFIG_PATH"

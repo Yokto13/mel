@@ -1,4 +1,4 @@
-""" Primarly for testing purposes """
+"""Primarly for testing purposes"""
 
 import numpy as np
 

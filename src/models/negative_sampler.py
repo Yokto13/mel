@@ -4,6 +4,7 @@ import logging
 
 import numba as nb
 import numpy as np
+import torch
 
 from models.searchers.searcher import Searcher
 
@@ -132,6 +133,7 @@ class NegativeSampler:
         sampling_type: NegativeSamplingType,
         qids_distribution: np.ndarray | None = None,
         randomly_sampled_cnt: int | None = None,
+        limit_negs: int | None = None,
     ) -> None:
         assert len(embs) == len(qids)
         self.embs = embs
@@ -144,27 +146,61 @@ class NegativeSampler:
         self.qids_distribution = qids_distribution
         self.randomly_sampled_cnt = randomly_sampled_cnt
         self._validate()
-
+        self._limit_negs = limit_negs
+        if self._limit_negs is not None:
+            if torch.cuda.is_available():
+                _logger.info("Running on CUDA.")
+                self.device: torch.device = torch.device("cuda")
+            else:
+                _logger.info("CUDA is not available.")
+                self.device: torch.device = torch.device("cpu")
+            self.pos_qids = torch.ones(max(qids) + 1, device=self.device)
+            self.neg_qids = torch.zeros(max(qids) + 1, device=self.device)
+            self.qids_t = torch.from_numpy(self.qids).to(self.device)
 
     def sample(
         self, batch_embs: np.ndarray, batch_qids: np.ndarray, negative_cnts: int
     ) -> np.ndarray:
         if self._should_sample_randomly():
             negative_cnts -= self.randomly_sampled_cnt
-        neighbors = self.searcher.find(
-            batch_embs, max(negative_cnts + len(batch_embs), 100)
-        )
-        # performance seems comparable with _get_neighbors_mask_set_arr
-        # by the Occams razor _get_neighbors_mask_set is better.
-        wanted_neighbors_mask = _get_neighbors_mask_set(
-            batch_qids, self.qids[neighbors]
-        )
+
+        enough_negatives_found = False
+
+        multiplier = 1
+        while not enough_negatives_found:
+            neighbors = self.searcher.find(
+                batch_embs,
+                max(int(multiplier * (negative_cnts + len(batch_embs))), 100),
+            )
+            # performance seems comparable with _get_neighbors_mask_set_arr
+            # by the Occams razor _get_neighbors_mask_set is better.
+            wanted_neighbors_mask = _get_neighbors_mask_set(
+                batch_qids, self.qids[neighbors]
+            )
+
+            enough_negatives_found = True
+
+            if self._limit_negs is not None:
+                mask = self.neg_qids <= self.pos_qids * self._limit_negs
+                wanted_neighbors_mask = torch.from_numpy(wanted_neighbors_mask).to(
+                    self.device
+                )
+                wanted_neighbors_mask &= mask[
+                    self.qids_t[torch.from_numpy(neighbors).to(self.device)]
+                ]
+                row_sums = torch.sum(wanted_neighbors_mask, dim=1)
+                enough_negatives_found = torch.all(row_sums >= negative_cnts).item()
+                wanted_neighbors_mask = wanted_neighbors_mask.cpu().numpy()
+
         sampled = self.sample_f(
             batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
         )
         if self._should_sample_randomly():
             randomly_sampled = self._sample_randomly(batch_qids)
             sampled = np.concatenate([sampled, randomly_sampled], axis=1)
+        if self._limit_negs is not None:
+            self.pos_qids[torch.from_numpy(batch_qids).to(self.device)] += 1
+            self.neg_qids[torch.from_numpy(sampled).to(self.device)] += 1
         return sampled
 
     def _should_sample_randomly(self):
