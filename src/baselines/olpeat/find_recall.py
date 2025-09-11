@@ -11,9 +11,9 @@ from collections.abc import Iterable
 
 import numpy as np
 import wandb
+
 from models.recall_calculator import RecallCalculator
 from models.searchers.brute_force_searcher import BruteForceSearcher
-
 from utils.argument_wrappers import paths_exist
 from utils.multifile_dataset import MultiFileDataset
 

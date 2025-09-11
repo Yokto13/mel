@@ -4,13 +4,13 @@ Usage: python length_statistics.py <DATASET_PATH>
 Assumes that the directory contains files with suffix <lang>_<number>.npz
 """
 
-import os
-import math
 import concurrent.futures
+import math
+import os
 
+import fire
 import numpy as np
 from tqdm import tqdm
-import fire
 
 
 def _file_stats(path):

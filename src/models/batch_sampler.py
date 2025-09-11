@@ -1,4 +1,5 @@
 import numpy as np
+
 from models.negative_sampler import NegativeSampler, NegativeSamplingType
 from models.searchers.searcher import Searcher
 

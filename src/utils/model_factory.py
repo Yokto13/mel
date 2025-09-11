@@ -2,11 +2,10 @@ import logging
 from typing import Any
 
 import torch
+from transformers import BertModel
 
 from models.change_dim_wrapper import ChangeDimWrapper
 from models.pooling_wrappers import PoolingWrapper
-
-from transformers import BertModel
 from utils.model_builder import ModelBuilder, ModelOutputType
 
 _logger = logging.getLogger("utils.model_factory")

@@ -1,31 +1,41 @@
-from unittest.mock import patch
+from unittest import mock
 
-from finetunings.evaluation.evaluate import evaluate
+import pytest
+
+from finetunings.evaluation import evaluate
 
 
-class TestEvaluate:
-    @patch("finetunings.evaluation.evaluate.run_recall_calculation")
-    def test_evaluate_default_langs(self, mock_run_recall):
-        evaluate("/root", 1)
+@pytest.fixture
+def mock_logger(monkeypatch):
+    monkeypatch.setattr(evaluate, "_logger", mock.Mock())
 
-        expected_damuel_path = "/root/damuel_for_index_2"
-        expected_calls = 9  # default 9 languages
 
-        assert mock_run_recall.call_count == expected_calls
-        for call in mock_run_recall.call_args_list:
-            assert call[0][0] == expected_damuel_path
+def test_evaluate(monkeypatch, mock_logger):
+    dummy_embs = [[1, 2], [3, 4]]
+    dummy_qids = [10, 20]
+    langs = ["en", "de"]
+    calls = []
+    monkeypatch.setattr(
+        evaluate,
+        "load_embs_and_qids_with_normalization",
+        lambda path: (dummy_embs, dummy_qids),
+    )
 
-    @patch("finetunings.evaluation.evaluate.run_recall_calculation")
-    def test_evaluate_custom_langs(self, mock_run_recall):
-        custom_langs = ["en", "de"]
-        evaluate("/root", 2, langs=custom_langs)
+    class DummySearcher:
+        def __init__(self, embs, qids):
+            self.embs = embs
+            self.qids = qids
 
-        expected_damuel_path = "/root/damuel_for_index_3"
-        expected_mewsli_paths = ["/root/mewsli_embs_en_2", "/root/mewsli_embs_de_2"]
+    monkeypatch.setattr(evaluate, "BruteForceSearcher", DummySearcher)
 
-        assert mock_run_recall.call_count == 2
-        calls = [call[0] for call in mock_run_recall.call_args_list]
+    def fake_find_recall_with_searcher(searcher, mewsli_path, recalls):
+        calls.append((searcher, mewsli_path, recalls))
 
-        for i, call in enumerate(calls):
-            assert call[0] == expected_damuel_path
-            assert call[1] == expected_mewsli_paths[i]
+    monkeypatch.setattr(
+        evaluate, "find_recall_with_searcher", fake_find_recall_with_searcher
+    )
+    evaluate.evaluate("/root", 1, langs=langs)
+    assert len(calls) == len(langs)
+    for i, lang in enumerate(langs):
+        assert calls[i][1] == f"/root/mewsli_embs_{lang}_1"
+        assert calls[i][2] == [1, 10, 100]

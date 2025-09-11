@@ -1,17 +1,17 @@
 import concurrent.futures
 import logging
+import time
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from itertools import zip_longest
 from pathlib import Path
 from typing import Union
-import time
 
 import gin
 import numpy as np
+from tqdm import tqdm
 
 from multilingual_dataset.mixer import Mixer, ParallelMixer
-from tqdm import tqdm
 from utils.damuel_paths import DamuelPaths
 from utils.loaders import load_mentions, load_qids
 

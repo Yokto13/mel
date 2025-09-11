@@ -1,8 +1,9 @@
 """FAISS-based searcher with GPU support."""
 
+import math
+
 import faiss
 import numpy as np
-import math
 
 from models.searchers.searcher import Searcher
 

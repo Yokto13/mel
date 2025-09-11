@@ -4,10 +4,10 @@ from pathlib import Path
 import gin
 import numpy as np
 from torch.utils.data import IterableDataset
-from utils.embeddings import embed_generator
-from utils.multifile_dataset import MultiFileDataset
 
 from finetunings.finetune_model.train import load_model
+from utils.embeddings import embed_generator
+from utils.multifile_dataset import MultiFileDataset
 
 _logger = logging.getLogger("generate_epochs.embed_links_for_generation")
 

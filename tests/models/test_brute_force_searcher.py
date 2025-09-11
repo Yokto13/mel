@@ -2,10 +2,8 @@ import numpy as np
 import pytest
 import torch
 
-from models.searchers.brute_force_searcher import (
-    BruteForceSearcher,
-    DPBruteForceSearcher,
-)
+from models.searchers.brute_force_searcher import (BruteForceSearcher,
+                                                   DPBruteForceSearcher)
 
 # torch.compiler.disable(BruteForceSearcher.find)
 # torch.compiler.disable(DPBruteForceSearcher.find)

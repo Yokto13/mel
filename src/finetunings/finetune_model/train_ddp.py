@@ -1,10 +1,9 @@
-from copy import deepcopy
 import logging
 import os
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
-
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -18,18 +17,13 @@ import wandb
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 
-from utils.running_averages import RunningAverages
-
-from finetunings.finetune_model.data import (
-    LightWeightDataset,
-    save_model,
-    SaveInformation,
-)
+from finetunings.finetune_model.data import (LightWeightDataset,
+                                             SaveInformation, save_model)
 from finetunings.finetune_model.ddp import cleanup, setup
-from finetunings.finetune_model.monitoring import process_metrics, get_gradient_norm
-
+from finetunings.finetune_model.monitoring import (get_gradient_norm,
+                                                   process_metrics)
 from finetunings.finetune_model.train import forward_to_embeddings, load_model
-
+from utils.running_averages import RunningAverages
 
 # Settings ===========================================
 
@@ -195,7 +189,9 @@ def _ddp_train(
             with torch.autocast(device_type="cuda"):
                 replica_part = forward_to_embeddings(replica_part, model)
 
-                with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
+                with (
+                    torch.no_grad()
+                ):  # all_gather cannot propagate gradients so make it explicit
                     all_replicas = [
                         torch.zeros_like(replica_part) for _ in range(world_size)
                     ]

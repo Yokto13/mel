@@ -1,12 +1,12 @@
-""" The way tokens are generated changed throughout ages.
+"""The way tokens are generated changed throughout ages.
 
-    This script provides method that checks recursivelly that takes two directories and recursively checks
-    that contents of subdirectories are equal.
-    The leaf directories are expected to contain npz files.
-    These files are expected to contain tokens and qids.
-    To leaf directories are equal if data from all files are equal.
-    To check that we sort data by qid.
-    To inner node directories are equal if all their children are equal.
+This script provides method that checks recursivelly that takes two directories and recursively checks
+that contents of subdirectories are equal.
+The leaf directories are expected to contain npz files.
+These files are expected to contain tokens and qids.
+To leaf directories are equal if data from all files are equal.
+To check that we sort data by qid.
+To inner node directories are equal if all their children are equal.
 """
 
 import os

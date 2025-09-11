@@ -1,6 +1,6 @@
+import logging
 from collections import Counter
 from enum import Enum
-import logging
 
 import numba as nb
 import numpy as np

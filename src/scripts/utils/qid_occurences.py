@@ -1,8 +1,9 @@
 import os
 from collections import Counter
+
+import fire
 import numpy as np
 from tqdm import tqdm
-import fire
 
 """
 Given a path to a directory of multilingual dataset, calculates qid occurrence frequencies.

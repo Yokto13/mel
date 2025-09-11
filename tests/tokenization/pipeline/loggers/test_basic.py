@@ -1,8 +1,5 @@
-from tokenization.pipeline.loggers.basic import (
-    _identity,
-    CountingLogger,
-    StatisticsLogger,
-)
+from tokenization.pipeline.loggers.basic import (CountingLogger,
+                                                 StatisticsLogger, _identity)
 
 
 def test_counting_logger_counts_each_item(capsys):

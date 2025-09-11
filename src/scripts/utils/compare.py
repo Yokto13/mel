@@ -6,6 +6,7 @@ Usage:  python compare_qids.py <DIR_A> <DIR_B>
 
 import sys
 from pathlib import Path
+
 import numpy as np
 
 

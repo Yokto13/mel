@@ -2,39 +2,34 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-from fire import Fire
 import gin
 import wandb
+from fire import Fire
 
-from baselines.string_alias_tables.all_languages import all_languages
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from baselines.olpeat.olpeat import olpeat
-from finetunings.evaluation.evaluate import evaluate, run_recall_calculation
+from baselines.string_alias_tables.all_languages import all_languages
+from finetunings.evaluation.evaluate import evaluate
 from finetunings.evaluation.find_recall import find_candidates
-from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
+from finetunings.file_processing.gathers import (move_tokens,
+                                                 remove_duplicates, rename)
 from finetunings.finetune_model.train import train
 from finetunings.finetune_model.train_ddp import train_ddp
-from finetunings.generate_epochs.embed_links_for_generation import (
-    embed_links_for_generation,
-)
+from finetunings.generate_epochs.embed_links_for_generation import \
+    embed_links_for_generation
 from finetunings.generate_epochs.generate import generate
 from multilingual_dataset.combine_embs import combine_embs_by_qid
-from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
-from tokenization.runner import (
-    run_damuel_description_context,
-    run_damuel_description_mention,
-    run_damuel_link_context,
-    run_damuel_link_mention,
-    run_damuel_mention,
-    run_mewsli_context,
-    run_mewsli_mention,
-)
+from multilingual_dataset.creator import (create_multilingual_dataset,
+                                          run_kb_creator)
+from tokenization.runner import (run_damuel_description_context,
+                                 run_damuel_description_mention,
+                                 run_damuel_link_context,
+                                 run_damuel_link_mention, run_damuel_mention,
+                                 run_mewsli_context, run_mewsli_mention)
 from utils.arg_names import get_args_names
-from utils.embeddings import (
-    embs_from_tokens_and_model_name,
-    embs_from_tokens_model_name_and_state_dict,
-)
+from utils.embeddings import (embs_from_tokens_and_model_name,
+                              embs_from_tokens_model_name_and_state_dict)
 from utils.qid_filter import qid_filter
 from utils.validate_tokens import validate_tokens
 
@@ -55,8 +50,6 @@ def choose_action(action):
             return evaluate
         case "copy":
             return move_tokens
-        case "recalls":
-            return run_recall_calculation
         case "rename":
             return rename
         case "remove_duplicates":

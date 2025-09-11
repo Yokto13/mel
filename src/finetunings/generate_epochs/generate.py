@@ -5,21 +5,19 @@ from pathlib import Path
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
 
 import gin
-from tqdm import tqdm
 import numpy as np
 import torch
+from tqdm import tqdm
 
-from utils.calculate_qids_distribution import calculate_qids_distribution_from_links
-from utils.multifile_dataset import MultiFileDataset
+from finetunings.generate_epochs.datasets import (BatcherDataset,
+                                                  DamuelNeighborsIterator)
+from models.batch_sampler import BatchSampler
 from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import DPBruteForceSearcher
-from models.batch_sampler import BatchSampler
+from utils.calculate_qids_distribution import \
+    calculate_qids_distribution_from_links
 from utils.loaders import load_embs_and_qids
-
-from finetunings.generate_epochs.datasets import (
-    BatcherDataset,
-    DamuelNeighborsIterator,
-)
+from utils.multifile_dataset import MultiFileDataset
 
 _logger = logging.getLogger("finetunings.generate_epochs.generate")
 

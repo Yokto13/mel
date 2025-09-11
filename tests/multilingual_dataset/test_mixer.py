@@ -4,6 +4,7 @@ from unittest.mock import patch
 import gin
 import numpy as np
 import pytest
+
 from multilingual_dataset.mixer import Mixer, ParallelMixer
 
 gin.add_config_file_search_path("configs/general.gin")

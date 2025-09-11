@@ -1,11 +1,12 @@
 import sys
 
 sys.stdout.reconfigure(line_buffering=True, write_through=True)
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from pathlib import Path
-import wandb
 
 import fire
+import wandb
+
 from utils.loaders import AliasTableLoader
 
 damuels = [

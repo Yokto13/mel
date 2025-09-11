@@ -3,14 +3,12 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import torch
+from transformers import AutoTokenizer
 
 from finetunings.finetune_model.data import (
-    LightWeightDataset,
-    LinksAndDescriptionsTogetherDataset,
-)
+    LightWeightDataset, LinksAndDescriptionsTogetherDataset)
 from finetunings.finetune_model.train import forward_to_embeddings
 from finetunings.finetune_model.train_ddp import construct_labels
-from transformers import AutoTokenizer
 from utils.model_factory import ModelFactory
 
 

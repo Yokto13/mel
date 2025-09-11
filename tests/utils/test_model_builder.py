@@ -1,9 +1,10 @@
 import pytest
-from models.change_dim_wrapper import ChangeDimWrapper
-from models.pooling_wrappers import PoolerOutputWrapper, SentenceTransformerWrapper
-from src.utils.model_builder import ModelBuilder, ModelOutputType
-
 from transformers import AutoTokenizer
+
+from models.change_dim_wrapper import ChangeDimWrapper
+from models.pooling_wrappers import (PoolerOutputWrapper,
+                                     SentenceTransformerWrapper)
+from src.utils.model_builder import ModelBuilder, ModelOutputType
 
 
 @pytest.fixture

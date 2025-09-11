@@ -4,17 +4,15 @@ from typing import List
 
 import numpy as np
 import pytest
-
-from tokenization.pipeline.pipelines import (
-    DamuelDescriptionContextPipeline,
-    DamuelDescriptionMentionPipeline,
-    DamuelLinkContextPipeline,
-    DamuelLinkMentionPipeline,
-    MewsliContextPipeline,
-    MewsliMentionPipeline,
-    DamuelAliasTablePipeline,
-)
 from transformers import AutoTokenizer
+
+from tokenization.pipeline.pipelines import (DamuelAliasTablePipeline,
+                                             DamuelDescriptionContextPipeline,
+                                             DamuelDescriptionMentionPipeline,
+                                             DamuelLinkContextPipeline,
+                                             DamuelLinkMentionPipeline,
+                                             MewsliContextPipeline,
+                                             MewsliMentionPipeline)
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 

@@ -1,7 +1,7 @@
-from collections.abc import Iterator
-from itertools import cycle
 import logging
 import sys
+from collections.abc import Iterator
+from itertools import cycle
 from pathlib import Path
 
 from models.batch_sampler import BatchSampler

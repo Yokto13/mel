@@ -1,8 +1,8 @@
 """Utils for embedding tokens."""
 
-from collections.abc import Generator
 import itertools
 import logging
+from collections.abc import Generator
 from pathlib import Path
 
 import gin

@@ -1,17 +1,15 @@
+from pathlib import PosixPath
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from pathlib import PosixPath
 import torch
 
 from finetunings.finetune_model.data import _load_epoch_npz
-from finetunings.finetune_model.monitoring import (
-    batch_recall,
-    get_gradient_norm,
-    _get_wandb_logs,
-    process_metrics,
-)
+from finetunings.finetune_model.monitoring import (_get_wandb_logs,
+                                                   batch_recall,
+                                                   get_gradient_norm,
+                                                   process_metrics)
 from utils.running_averages import RunningAverages
 
 

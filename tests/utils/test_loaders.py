@@ -1,19 +1,14 @@
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-import pandas as pd
 
 import numpy as np
+import pandas as pd
 import pytest
 
-from utils.loaders import (
-    load_embs_and_qids,
-    load_embs_qids_tokens,
-    load_mentions,
-    load_qids,
-    AliasTableLoader,
-    load_qids_npy,
-)
+from utils.loaders import (AliasTableLoader, load_embs_and_qids,
+                           load_embs_qids_tokens, load_mentions, load_qids,
+                           load_qids_npy)
 
 
 def mock_remap_qids(qids, _):

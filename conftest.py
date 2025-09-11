@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 
 def configure_redirects() -> None:
@@ -47,7 +47,7 @@ def set_qids_remap_json_config(config_path: str, remap_path: str) -> None:
 
 
 # configure_redirects()
-from numba import jit, config
+from numba import config, jit
 
 config.DISABLE_JIT = True
 

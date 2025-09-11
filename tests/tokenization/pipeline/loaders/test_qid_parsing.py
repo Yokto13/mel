@@ -1,4 +1,5 @@
 import pytest
+
 from tokenization.pipeline.loaders.qid_parsing import parse_qid
 
 

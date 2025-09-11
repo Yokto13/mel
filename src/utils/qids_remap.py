@@ -5,7 +5,6 @@ from typing import Any, Callable, Tuple
 
 import gin
 import numpy as np
-
 import orjson
 
 _logger = logging.getLogger("utils.qids_remap")

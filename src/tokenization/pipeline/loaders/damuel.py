@@ -1,8 +1,8 @@
 import bz2
 import lzma
 import os
-from collections.abc import Generator
 import random
+from collections.abc import Generator
 
 import orjson
 from tqdm.auto import tqdm

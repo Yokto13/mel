@@ -1,6 +1,5 @@
 import lzma
 import pickle
-
 import sys
 from collections import defaultdict
 from math import inf

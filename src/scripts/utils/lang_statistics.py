@@ -6,9 +6,10 @@ Assumes that the directory contains files with suffix <lang>_<number>.npz
 """
 
 import os
-import numpy as np
 from collections import defaultdict
+
 import fire
+import numpy as np
 from tqdm import tqdm
 
 

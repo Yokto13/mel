@@ -1,4 +1,5 @@
 import json
+
 import numpy as np
 
 IN_PATH = "/lnet/work/home-students-external/farhan/troja/qid_type_agnostic2.json"

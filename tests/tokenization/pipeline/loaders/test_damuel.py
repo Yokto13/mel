@@ -3,11 +3,9 @@ import lzma
 import pytest
 
 from tokenization.pipeline.loaders import DaMuELStartLoader
-from tokenization.pipeline.loaders.damuel import (
-    DaMuELDescriptionProcessor,
-    DaMuELPageTypeProcessor,
-    DaMuELPageTypeLoader,
-)
+from tokenization.pipeline.loaders.damuel import (DaMuELDescriptionProcessor,
+                                                  DaMuELPageTypeLoader,
+                                                  DaMuELPageTypeProcessor)
 
 
 class TestDaMuELStartLoader:

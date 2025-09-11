@@ -3,7 +3,6 @@ import tempfile
 from unittest.mock import patch
 
 import gin
-
 import numpy as np
 import pytest
 
@@ -29,7 +28,10 @@ def random_embs_and_qids():
 
 @pytest.fixture
 def temp_dirs():
-    with tempfile.TemporaryDirectory() as input_dir, tempfile.TemporaryDirectory() as output_dir:
+    with (
+        tempfile.TemporaryDirectory() as input_dir,
+        tempfile.TemporaryDirectory() as output_dir,
+    ):
         yield input_dir, output_dir
 
 

@@ -1,9 +1,7 @@
 import logging
 
 from finetunings.evaluation.find_recall import (
-    find_recall_with_searcher,
-    load_embs_and_qids_with_normalization,
-)
+    find_recall_with_searcher, load_embs_and_qids_with_normalization)
 from models.searchers.brute_force_searcher import BruteForceSearcher
 
 _RECALLS = [1, 10, 100]
@@ -18,11 +16,6 @@ def _construct_mewsli_path(root_dir: str, finetuning_round: int, lang: str) -> s
 def _construct_damuel_path(root_dir: str, finetuning_round: int) -> str:
     next_finetuning_round = finetuning_round + 1
     return f"{root_dir}/damuel_for_index_{next_finetuning_round}"
-
-
-def run_recall_calculation(damuel_dir, mewsli_dir, recall=None):
-    recalls = _RECALLS if recall is None else [recall]
-    find_recall(damuel_dir, mewsli_dir, recalls)
 
 
 def evaluate(

@@ -4,10 +4,13 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from torch.utils.data import DataLoader
-from utils.multifile_dataset import _npz_loader, MultiFileDataset
+
+from utils.multifile_dataset import MultiFileDataset, _npz_loader
+
 
 def mock_remap_qids(qids, _):
     return qids
+
 
 @pytest.fixture
 def temp_data_dir(tmp_path):

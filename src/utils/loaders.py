@@ -2,18 +2,14 @@ import functools
 import os
 from pathlib import Path
 
-
 import gin
-
 import numpy as np
 import pandas as pd
 
 # from tokenization.pipeline import DamuelAliasTablePipeline
 from tokenization.runner import run_alias_table_damuel
-
-from utils.qids_remap import remap_qids_decorator
 from utils.qid_filter import qid_filter
-
+from utils.qids_remap import remap_qids_decorator
 
 current_file_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))

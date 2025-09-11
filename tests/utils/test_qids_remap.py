@@ -1,12 +1,12 @@
 import json
 import logging
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 
-from utils.qids_remap import load_qids_remap, qids_remap, remap_qids_decorator
 import utils.qids_remap as qr  # to reset the internal cache
+from utils.qids_remap import load_qids_remap, qids_remap, remap_qids_decorator
 
 
 def test_load_qids_remap(tmp_path):

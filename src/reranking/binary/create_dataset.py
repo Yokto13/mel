@@ -3,10 +3,8 @@ from pathlib import Path
 
 import numba as nb
 import numpy as np
-
 import torch
 import torch.utils.data
-
 from tqdm import tqdm
 
 sys.path.append("/lnet/work/home-students-external/farhan/mel-reborn/src")
@@ -134,6 +132,7 @@ def create_binary_dataset(
         y=y,
     )
 
+
 def create_multiclass_dataset(
     index_embs_dir: Path,
     index_tokens_path: Path,
@@ -183,11 +182,16 @@ def create_multiclass_dataset(
                 create_attention_mask(B_tokens).to(device),
             ).cpu()
 
-        top_qids = searcher.find(B_embs.numpy().astype(np.float16), num_neighbors=total_classes)
+        top_qids = searcher.find(
+            B_embs.numpy().astype(np.float16), num_neighbors=total_classes
+        )
         for i, qid in enumerate(B_qids.numpy()):
             if qid in top_qids[i]:
                 idx = top_qids[i].index(qid)
-                top_qids[i][idx], top_qids[i][total_classes - 1] = top_qids[i][total_classes - 1], top_qids[i][idx]
+                top_qids[i][idx], top_qids[i][total_classes - 1] = (
+                    top_qids[i][total_classes - 1],
+                    top_qids[i][idx],
+                )
             else:
                 top_qids[i][total_classes - 1] = qid
         link_tokens.extend(B_tokens.numpy())

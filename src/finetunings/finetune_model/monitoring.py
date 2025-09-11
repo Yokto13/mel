@@ -1,4 +1,5 @@
 from typing import Any
+
 import torch
 
 from utils.running_averages import RunningAverages
@@ -9,7 +10,7 @@ def _get_wandb_logs(
     r_at_1: float,
     r_at_10: float,
     running_averages: RunningAverages,
-    **kwargs
+    **kwargs,
 ) -> dict:
     logs = {
         "loss": loss_item,

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from models.recall_calculator import _get_unique_n, RecallCalculator
+from models.recall_calculator import RecallCalculator, _get_unique_n
 from models.searchers import ScaNNSearcher, SimplifiedBruteForceSearcher
 
 

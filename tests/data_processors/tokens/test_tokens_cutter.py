@@ -2,9 +2,11 @@ import logging
 
 import numpy as np
 import pytest
-from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
-from data_processors.tokens.tokens_cutter import fast_token_mention_span, TokensCutter
 from transformers import BertTokenizerFast
+
+from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
+from data_processors.tokens.tokens_cutter import (TokensCutter,
+                                                  fast_token_mention_span)
 
 
 class TestTokensCutter:

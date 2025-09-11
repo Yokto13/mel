@@ -1,9 +1,10 @@
 from pathlib import Path
 
-from pytest import fixture
 import numpy as np
+from pytest import fixture
 
-from utils.calculate_qids_distribution import calculate_qids_distribution_from_links
+from utils.calculate_qids_distribution import \
+    calculate_qids_distribution_from_links
 
 
 @fixture

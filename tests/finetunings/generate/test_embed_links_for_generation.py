@@ -1,8 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from finetunings.generate_epochs.embed_links_for_generation import (
-    embed_links_for_generation,
-)
+from finetunings.generate_epochs.embed_links_for_generation import \
+    embed_links_for_generation
 
 
 # horrible amount of mocking...
@@ -18,18 +17,23 @@ def test_embed_links_for_generation():
     mock_model = MagicMock()
     mock_embs, mock_qids, mock_tokens = MagicMock(), MagicMock(), MagicMock()
 
-    with patch(
-        "finetunings.generate_epochs.embed_links_for_generation._get_dataset",
-        return_value=mock_dataset,
-    ) as mock_get_dataset, patch(
-        "finetunings.generate_epochs.embed_links_for_generation.load_model",
-        return_value=mock_model,
-    ) as mock_load_model, patch(
-        "finetunings.generate_epochs.embed_links_for_generation.embed_generator",
-        return_value=[(mock_embs, mock_qids, mock_tokens)],
-    ) as mock_embed_generator, patch(
-        "finetunings.generate_epochs.embed_links_for_generation._save"
-    ) as mock_save:
+    with (
+        patch(
+            "finetunings.generate_epochs.embed_links_for_generation._get_dataset",
+            return_value=mock_dataset,
+        ) as mock_get_dataset,
+        patch(
+            "finetunings.generate_epochs.embed_links_for_generation.load_model",
+            return_value=mock_model,
+        ) as mock_load_model,
+        patch(
+            "finetunings.generate_epochs.embed_links_for_generation.embed_generator",
+            return_value=[(mock_embs, mock_qids, mock_tokens)],
+        ) as mock_embed_generator,
+        patch(
+            "finetunings.generate_epochs.embed_links_for_generation._save"
+        ) as mock_save,
+    ):
 
         embed_links_for_generation(
             links_tokens_dir_path,

@@ -1,20 +1,14 @@
 import json
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
-from pathlib import Path
-from unittest.mock import Mock
 
 from finetunings.evaluation.find_recall import (
-    get_brute_force_searcher,
-    get_faiss_searcher,
-    get_scann_searcher,
-    load_embs_and_qids_with_normalization,
-    find_candidates,
-)
+    find_candidates, get_brute_force_searcher, get_faiss_searcher,
+    get_scann_searcher, load_embs_and_qids_with_normalization)
 from models.searchers.brute_force_searcher import BruteForceSearcher
-from models.searchers.faiss_searcher import FaissSearcher
 from models.searchers.scann_searcher import ScaNNSearcher
 
 
@@ -59,10 +53,13 @@ def test_get_brute_force_searcher(dummy_data):
     assert isinstance(searcher, BruteForceSearcher)
 
 
+@pytest.mark.skip(reason="We do not support FAISS currently")
 @pytest.mark.slow
 def test_get_faiss_searcher(dummy_data):
     embs, qids = dummy_data
     searcher = get_faiss_searcher(embs, qids)
+    from models.searchers.faiss_searcher import FaissSearcher
+
     assert isinstance(searcher, FaissSearcher)
 
 
@@ -75,13 +72,15 @@ def test_find_candidates(tmp_path: Path) -> None:
     candidates_path = str(tmp_path / "candidates.npz")
 
     # Mock the dependencies
-    with patch(
-        "finetunings.evaluation.find_recall.load_embs_and_qids_with_normalization"
-    ) as mock_load, patch(
-        "finetunings.evaluation.find_recall.BruteForceSearcher"
-    ) as mock_searcher_cls, patch(
-        "finetunings.evaluation.find_recall.RecallCalculator"
-    ) as mock_rc_cls:
+    with (
+        patch(
+            "finetunings.evaluation.find_recall.load_embs_and_qids_with_normalization"
+        ) as mock_load,
+        patch(
+            "finetunings.evaluation.find_recall.BruteForceSearcher"
+        ) as mock_searcher_cls,
+        patch("finetunings.evaluation.find_recall.RecallCalculator") as mock_rc_cls,
+    ):
 
         # Setup the mocks
         mock_load.side_effect = [(mock_embs, mock_qids), (mock_embs, mock_qids)]

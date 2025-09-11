@@ -1,16 +1,13 @@
-from enum import Enum
 import logging
+from enum import Enum
 from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from models.negative_sampler import (
-    _get_sampler,
-    _sample_shuffling_numba,
-    _sample_top_numba,
-    NegativeSampler,
-    NegativeSamplingType,
-)
+
+from models.negative_sampler import (NegativeSampler, NegativeSamplingType,
+                                     _get_sampler, _sample_shuffling_numba,
+                                     _sample_top_numba)
 from models.searchers import ScaNNSearcher, SimplifiedBruteForceSearcher
 
 

@@ -5,12 +5,9 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from multilingual_dataset.creator import (
-    _KBCreator,
-    _LinksCreator,
-    DamuelPaths,
-    MultilingualDatasetCreator,
-)
+from multilingual_dataset.creator import (DamuelPaths,
+                                          MultilingualDatasetCreator,
+                                          _KBCreator, _LinksCreator)
 
 
 def mock_remap_qids(qids, _):

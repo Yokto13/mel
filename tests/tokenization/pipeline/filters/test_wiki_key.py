@@ -1,4 +1,5 @@
 import pytest
+
 from tokenization.pipeline.filters.wiki_key import WikiKeyFilter
 
 

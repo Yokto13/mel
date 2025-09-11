@@ -5,18 +5,15 @@ import os
 from typing import Any, List
 
 import gin
-from tokenization.pipeline.pipelines import (
-    DamuelDescriptionContextPipeline,
-    DamuelDescriptionMentionPipeline,
-    DamuelLinkContextPipeline,
-    DamuelLinkMentionPipeline,
-    MewsliContextPipeline,
-    MewsliMentionPipeline,
-    Pipeline,
-    DamuelAliasTablePipeline,
-)
-
 from transformers import AutoTokenizer
+
+from tokenization.pipeline.pipelines import (DamuelAliasTablePipeline,
+                                             DamuelDescriptionContextPipeline,
+                                             DamuelDescriptionMentionPipeline,
+                                             DamuelLinkContextPipeline,
+                                             DamuelLinkMentionPipeline,
+                                             MewsliContextPipeline,
+                                             MewsliMentionPipeline, Pipeline)
 
 logging.basicConfig(level=logging.INFO)
 

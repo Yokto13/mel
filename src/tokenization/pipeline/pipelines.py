@@ -1,5 +1,4 @@
 from .base import Pipeline
-
 from .loaders import DaMuELDescriptionLoader, DaMuELLinkLoader, MewsliLoader
 from .loggers import LoggerStep, StatisticsLogger
 from .savers import NPZSaver, NPZSaverIncremental

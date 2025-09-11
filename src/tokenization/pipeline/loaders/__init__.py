@@ -1,9 +1,5 @@
-from .damuel import (
-    DaMuELDescriptionLoader,
-    DaMuELLinkLoader,
-    DaMuELStartLoader,
-    DaMuELPageTypeLoader,
-)
+from .damuel import (DaMuELDescriptionLoader, DaMuELLinkLoader,
+                     DaMuELPageTypeLoader, DaMuELStartLoader)
 from .mewsli import MewsliLoader
 
 __all__ = [
