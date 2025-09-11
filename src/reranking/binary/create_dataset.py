@@ -134,6 +134,75 @@ def create_binary_dataset(
         y=y,
     )
 
+def create_multiclass_dataset(
+    index_embs_dir: Path,
+    index_tokens_path: Path,
+    link_tokens_path: Path,
+    model_name: str,
+    embedding_model_path_dict: Path,
+    output_path: Path,
+    total_classes: int,
+    target_dim: int = None,
+    batch_size: int = 512,
+):
+    assert total_classes > 1
+    index_embs, index_qids = load_embs_and_qids(index_embs_dir)
+    index_qids_set = set(index_qids)
+    index_embs = index_embs.astype(np.float16)
+    index_tokens, _ = load_mentions_from_dir(index_tokens_path)
+    print(index_tokens.shape)
+    print(len(index_qids_set))
+
+    qid_to_index = {qid: i for i, qid in enumerate(index_qids)}
+
+    # Create BruteForceSearcher
+    searcher = BruteForceSearcher(index_embs, index_qids)
+
+    # Load link tokens and qids
+    link_tokens, link_qids = load_mentions_from_dir(link_tokens_path)
+    # Load embedding model
+    model = ModelFactory.auto_load_from_file(
+        model_name,
+        embedding_model_path_dict,
+        target_dim=target_dim,
+    )
+    model.eval()
+    model.to(device)
+
+    # Create dataset and dataloader from link_tokens and link_qids
+    dataset = list(zip(link_tokens, link_qids))
+    dataloader = torch.utils.data.DataLoader(
+        dataset, batch_size=batch_size, pin_memory=True
+    )
+
+    link_tokens, qids = [], []
+    for B_tokens, B_qids in tqdm(dataloader, desc="Creating dataset"):
+        with torch.no_grad():
+            B_embs = model(
+                B_tokens.to(device).to(torch.int64),
+                create_attention_mask(B_tokens).to(device),
+            ).cpu()
+
+        top_qids = searcher.find(B_embs.numpy().astype(np.float16), num_neighbors=total_classes)
+        for i, qid in enumerate(B_qids.numpy()):
+            if qid in top_qids[i]:
+                idx = top_qids[i].index(qid)
+                top_qids[i][idx], top_qids[i][total_classes - 1] = top_qids[i][total_classes - 1], top_qids[i][idx]
+            else:
+                top_qids[i][total_classes - 1] = qid
+        link_tokens.extend(B_tokens.numpy())
+        qids.extend(top_qids)
+    link_tokens = np.array(link_tokens)
+    qids = np.array(qids)
+    print(link_tokens.shape)
+    print(qids.shape)
+
+    np.savez(
+        output_path,
+        link_tokens=link_tokens,
+        qids=qids,
+    )
+
 
 if __name__ == "__main__":
     index_embs_dir = Path(
@@ -155,11 +224,12 @@ if __name__ == "__main__":
         "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
     )
 
-    create_binary_dataset(
+    create_multiclass_dataset(
         index_embs_dir,
         index_tokens_path,
         link_tokens_path,
         model_name,
         embedding_model_path,
         output_path,
+        total_classes=10,
     )
