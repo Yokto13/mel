@@ -35,7 +35,5 @@ class TestTokenizationPipeline:
         pipeline.add(step1)
         pipeline.add(step2)
 
-        expected_str = (
-            "Tokenization Pipeline Steps:\n" "1. SimpleTokenizer\n" "2. NPZSaver"
-        )
+        expected_str = "Tokenization Pipeline Steps:\n" "1. SimpleTokenizer\n" "2. NPZSaver"
         assert str(pipeline) == expected_str

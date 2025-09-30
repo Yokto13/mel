@@ -62,9 +62,7 @@ class _LinksCreator:
         self._remove_often_qids(out_file_paths)
         self.standard_mixer.mix(out_file_paths, n_of_mixings=10, compress_output=True)
 
-    def _copy_files(
-        self, source_file_paths: Iterable[Path], dest_file_path: Path
-    ) -> None:
+    def _copy_files(self, source_file_paths: Iterable[Path], dest_file_path: Path) -> None:
         def load_file(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
             return load_mentions(file_path)
 
@@ -104,9 +102,7 @@ class _LinksCreator:
                 qids=np.array(qids_filtered),
             )
 
-        _logger.info(
-            f"Removed QIDs that occurred more than {self.max_samples_per_qid} times."
-        )
+        _logger.info(f"Removed QIDs that occurred more than {self.max_samples_per_qid} times.")
 
 
 class _KBCreator:
@@ -164,9 +160,7 @@ class _KBCreator:
                 qids=chosen_qids,
             )
 
-    def _group_qids_by_lang(
-        self, qid_lang_mapping: dict[int, str]
-    ) -> dict[str, list[int]]:
+    def _group_qids_by_lang(self, qid_lang_mapping: dict[int, str]) -> dict[str, list[int]]:
         lang_qid_lists = defaultdict(list)
         for qid, langs in tqdm(
             qid_lang_mapping.items(),
@@ -231,9 +225,7 @@ class _KBCreator:
                 lang_counts.items(), key=lambda x: (-x[1], -lang_sizes[x[0]])
             )
             n_of_langs_to_choose = min(self.langs_per_qid, len(items_by_importance))
-            choosen_langs = [
-                item[0] for item in items_by_importance[:n_of_langs_to_choose]
-            ]
+            choosen_langs = [item[0] for item in items_by_importance[:n_of_langs_to_choose]]
             qid_lang_mapping[qid] = choosen_langs
 
         return qid_lang_mapping
@@ -241,9 +233,7 @@ class _KBCreator:
     def _init_qid_lang_counts(self) -> dict[int, dict[str, int]]:
         qid_lang_counts = defaultdict(lambda: defaultdict(int))
         for lang in self.langs:
-            for descs_file_path in self._get_file_paths(
-                self.damuel_paths.get_pages([lang])
-            ):
+            for descs_file_path in self._get_file_paths(self.damuel_paths.get_pages([lang])):
                 qids = load_qids(descs_file_path)
                 for qid in qids:
                     qid_lang_counts[qid][lang] += 1
@@ -251,9 +241,7 @@ class _KBCreator:
 
     def _get_file_paths(self, dir_paths: list[Path]) -> list[Path]:
         return [
-            dir_path / file_path.name
-            for dir_path in dir_paths
-            for file_path in dir_path.iterdir()
+            dir_path / file_path.name for dir_path in dir_paths for file_path in dir_path.iterdir()
         ]
 
 
@@ -296,9 +284,7 @@ def create_multilingual_dataset(
     dest_dir: Union[str, Path],
     max_links_per_qid: int,
 ) -> None:
-    MultilingualDatasetCreator(
-        Path(source_dir), langs, Path(dest_dir), max_links_per_qid
-    ).run()
+    MultilingualDatasetCreator(Path(source_dir), langs, Path(dest_dir), max_links_per_qid).run()
 
 
 def run_kb_creator(

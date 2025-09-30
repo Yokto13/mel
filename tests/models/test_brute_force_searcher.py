@@ -2,8 +2,10 @@ import numpy as np
 import pytest
 import torch
 
-from models.searchers.brute_force_searcher import (BruteForceSearcher,
-                                                   DPBruteForceSearcher)
+from models.searchers.brute_force_searcher import (
+    BruteForceSearcher,
+    DPBruteForceSearcher,
+)
 
 # torch.compiler.disable(BruteForceSearcher.find)
 # torch.compiler.disable(DPBruteForceSearcher.find)
@@ -113,9 +115,7 @@ class TestDPBruteForceSearcher:
 
     def test_device_selection(self, small_embs):
         searcher = DPBruteForceSearcher(small_embs, np.arange(len(small_embs)))
-        expected_device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
+        expected_device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         assert searcher.device == expected_device
 
     def test_changing_num_neighbors(self, small_embs):
@@ -127,7 +127,5 @@ class TestDPBruteForceSearcher:
 
     def test_dataparallel_initialization(self, small_embs):
         searcher = DPBruteForceSearcher(small_embs, np.arange(len(small_embs)))
-        searcher.find(
-            np.random.random((1, 3)), 2
-        )  # This should initialize module_searcher
+        searcher.find(np.random.random((1, 3)), 2)  # This should initialize module_searcher
         assert isinstance(searcher.module_searcher, torch.nn.DataParallel)

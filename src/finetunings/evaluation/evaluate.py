@@ -1,7 +1,9 @@
 import logging
 
 from finetunings.evaluation.find_recall import (
-    find_recall_with_searcher, load_embs_and_qids_with_normalization)
+    find_recall_with_searcher,
+    load_embs_and_qids_with_normalization,
+)
 from models.searchers.brute_force_searcher import BruteForceSearcher
 
 _RECALLS = [1, 10, 100]

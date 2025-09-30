@@ -65,12 +65,8 @@ if __name__ == "__main__":
             # Warm-up for Numba
             create_unique_qid_index_numba(base_index, qids, batch_size)
 
-            array_time = run_benchmark(
-                create_unique_qid_index_numba, base_index, qids, batch_size
-            )
-            set_time = run_benchmark(
-                create_unique_qid_index_set, base_index, qids, batch_size
-            )
+            array_time = run_benchmark(create_unique_qid_index_numba, base_index, qids, batch_size)
+            set_time = run_benchmark(create_unique_qid_index_set, base_index, qids, batch_size)
 
             print(f"Size: {size}, Batch Size: {batch_size}")
             print(f"Array-based time: {array_time:.6f} seconds")

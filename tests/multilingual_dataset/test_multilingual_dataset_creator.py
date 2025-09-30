@@ -5,9 +5,12 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from multilingual_dataset.creator import (DamuelPaths,
-                                          MultilingualDatasetCreator,
-                                          _KBCreator, _LinksCreator)
+from multilingual_dataset.creator import (
+    DamuelPaths,
+    MultilingualDatasetCreator,
+    _KBCreator,
+    _LinksCreator,
+)
 
 
 def mock_remap_qids(qids, _):
@@ -44,9 +47,7 @@ def setup_teardown(tmpdir, sample_langs):
             example_lines = np.array([1, 1, 1, 1])
             # each qid can appear at most once
             start_qid = i * 1000
-            example_qids = np.array(
-                [start_qid, start_qid + 1, start_qid + 2, start_qid + 3]
-            )
+            example_qids = np.array([start_qid, start_qid + 1, start_qid + 2, start_qid + 3])
 
             np.savez(
                 tmpdir / f"{lang}/descs_pages/mentions_{i}.npz",
@@ -104,10 +105,7 @@ class Test_LinksCreator:
             all_qids.extend(qids)
 
         # check that files are at least a little bit shuffled
-        assert any(
-            not np.all(prev_qids[i] == prev_qids[i + 1])
-            for i in range(len(prev_qids) - 1)
-        )
+        assert any(not np.all(prev_qids[i] == prev_qids[i + 1]) for i in range(len(prev_qids) - 1))
 
         assert set(all_qids) == {0, 1, 2}
 
@@ -162,9 +160,7 @@ class Test_KBCreator:
     def test_run_with_langs_per_qid_2(
         self, mock_qids_remap, damuel_paths, sample_langs, output_dir
     ):
-        kb_creator = _KBCreator(
-            damuel_paths, sample_langs, Path(output_dir), langs_per_qid=2
-        )
+        kb_creator = _KBCreator(damuel_paths, sample_langs, Path(output_dir), langs_per_qid=2)
         output_dir = Path(output_dir) / "descs_pages"
 
         assert not any(output_dir.iterdir())
@@ -194,9 +190,7 @@ class Test_KBCreator:
 class TestMultilingualDatasetCreator:
     @pytest.fixture
     def dataset_creator(self, sample_langs, output_dir, tmp_path):
-        return MultilingualDatasetCreator(
-            Path(tmp_path), sample_langs, Path(output_dir), 10
-        )
+        return MultilingualDatasetCreator(Path(tmp_path), sample_langs, Path(output_dir), 10)
 
     @patch("multilingual_dataset.creator._KBCreator.run")
     @patch("multilingual_dataset.creator._LinksCreator.run")

@@ -6,8 +6,9 @@ from typing import Any
 import numpy as np
 import torch
 import torch.nn as nn
-import wandb
 from torch.utils.data import Dataset, IterableDataset
+
+import wandb
 
 _logger = logging.getLogger("finetuning.finetune_model.data")
 
@@ -72,9 +73,7 @@ class LinksAndDescriptionsTogetherDataset(Dataset):
 
 
 class LightWeightDataset(Dataset):
-    def __init__(
-        self, dataset_dir: Path, epoch: int, rank: int = 1, world_size: int = 1
-    ) -> None:
+    def __init__(self, dataset_dir: Path, epoch: int, rank: int = 1, world_size: int = 1) -> None:
         super().__init__()
         self._world_size = world_size
         self._rank = rank
@@ -154,9 +153,7 @@ class LightWeightDataset(Dataset):
 
 
 class LightWeightIterableDataset(IterableDataset):
-    def __init__(
-        self, dataset_dir: Path, epoch: int, rank: int = 1, world_size: int = 1
-    ) -> None:
+    def __init__(self, dataset_dir: Path, epoch: int, rank: int = 1, world_size: int = 1) -> None:
         super().__init__()
         self._world_size = world_size
         self._rank = rank
@@ -182,8 +179,6 @@ class LightWeightIterableDataset(IterableDataset):
         return self._dataset.descriptions_cnt
 
     def _load_next(self) -> LightWeightDataset:
-        dataset = LightWeightDataset(
-            self._dataset_dir, self._epoch, self._rank, self._world_size
-        )
+        dataset = LightWeightDataset(self._dataset_dir, self._epoch, self._rank, self._world_size)
         self._epoch += 1
         return dataset

@@ -155,9 +155,7 @@ def test_qid_filter_assert_raises_value_error_idx(mock_qids_remap, idx, tmp_path
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_qid_filter_raises_value_error_for_none_index_with_tuple(
-    mock_qids_remap, tmp_path
-):
+def test_qid_filter_raises_value_error_for_none_index_with_tuple(mock_qids_remap, tmp_path):
     to_filter = np.array([1, 3])
     filter_file = tmp_path / "filter.npy"
     np.save(filter_file, to_filter)

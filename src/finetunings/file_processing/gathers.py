@@ -31,9 +31,7 @@ def move_tokens(source, dest, m=1, r=0, max_to_copy=float("inf")):
     source = Path(source)
     dest = Path(dest)
     already_copied = 0
-    print(
-        f"Moving tokens from {source} to {dest} with m={m}, r={r}, max_to_copy={max_to_copy}"
-    )
+    print(f"Moving tokens from {source} to {dest} with m={m}, r={r}, max_to_copy={max_to_copy}")
     print(os.listdir(source))
     for fn in sorted(os.listdir(source)):
         if not _wanted_fn(fn, m, r):

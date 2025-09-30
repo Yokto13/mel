@@ -6,10 +6,12 @@ import pytest
 import torch
 
 from finetunings.finetune_model.data import _load_epoch_npz
-from finetunings.finetune_model.monitoring import (_get_wandb_logs,
-                                                   batch_recall,
-                                                   get_gradient_norm,
-                                                   process_metrics)
+from finetunings.finetune_model.monitoring import (
+    _get_wandb_logs,
+    batch_recall,
+    get_gradient_norm,
+    process_metrics,
+)
 from utils.running_averages import RunningAverages
 
 
@@ -75,9 +77,7 @@ class TestBatchRecall:
         """Test recall when k is very large, such as 100."""
         outputs = torch.tensor(np.arange(int(10**6)).reshape(1000, 1000))
 
-        target = torch.zeros_like(outputs).scatter_(
-            1, torch.zeros((10, 1), dtype=torch.long), 1
-        )
+        target = torch.zeros_like(outputs).scatter_(1, torch.zeros((10, 1), dtype=torch.long), 1)
 
         recall = batch_recall(outputs, target, k=100)
 
@@ -127,9 +127,7 @@ class TestWandbLogs:
 
     def test_with_kwargs(self, loss_item, r_at_1, r_at_10, mock_running_averages):
         extra_kwargs = {"extra_metric": 0.95, "another_metric": 0.85}
-        logs = _get_wandb_logs(
-            loss_item, r_at_1, r_at_10, mock_running_averages, **extra_kwargs
-        )
+        logs = _get_wandb_logs(loss_item, r_at_1, r_at_10, mock_running_averages, **extra_kwargs)
 
         expected_logs = {
             "loss": loss_item,

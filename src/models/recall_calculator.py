@@ -57,9 +57,7 @@ class RecallCalculator:
         Returns:
             Recall@k score between 0 and 1
         """
-        qid_was_present, candidate_qids = self._process_for_recall(
-            mewsli_embs, mewsli_qids, k
-        )
+        qid_was_present, candidate_qids = self._process_for_recall(mewsli_embs, mewsli_qids, k)
         recall = self._calculate_recall(qid_was_present)
         if verbose:
             return recall, np.array(candidate_qids)
@@ -105,8 +103,6 @@ class RecallCalculator:
             # TODO: This should be reworked to batching solution
             negihboring_qids = self._get_neighboring_qids(np.array([emb]), k)
             qid_was_present.append(qid in negihboring_qids[0])
-            candidate_qids.append(
-                negihboring_qids[0] + [-1] * (k - len(negihboring_qids[0]))
-            )
+            candidate_qids.append(negihboring_qids[0] + [-1] * (k - len(negihboring_qids[0])))
 
         return qid_was_present, candidate_qids

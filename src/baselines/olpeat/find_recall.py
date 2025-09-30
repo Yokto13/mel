@@ -10,8 +10,8 @@ sys.stdout.reconfigure(line_buffering=True, write_through=True)
 from collections.abc import Iterable
 
 import numpy as np
-import wandb
 
+import wandb
 from models.recall_calculator import RecallCalculator
 from models.searchers.brute_force_searcher import BruteForceSearcher
 from utils.argument_wrappers import paths_exist
@@ -102,9 +102,7 @@ class _DamuelLoader:
 
         tokens_embs = self._get_tokens_embs_mapping()
         searcher_items_cnt = get_cnt_of_searcher_items()
-        embs = np.empty(
-            (searcher_items_cnt, len(first(tokens_embs.values()))), dtype=np.float16
-        )
+        embs = np.empty((searcher_items_cnt, len(first(tokens_embs.values()))), dtype=np.float16)
         qids = np.empty(searcher_items_cnt, dtype=np.int32)
 
         idx = 0
@@ -158,9 +156,7 @@ class OLPEAT:
         mewsli_loader = _MewsliLoader(mewsli_embs_path)
         self.mewsli_embs, self.mewsli_qids = mewsli_loader.get_data()
 
-        self._damuel_loader = _DamuelLoader(
-            descs_embs_path, links_embs_path, damuel_tokens_path
-        )
+        self._damuel_loader = _DamuelLoader(descs_embs_path, links_embs_path, damuel_tokens_path)
 
     def find_recall(self, R: int) -> float:
         damuel_embs, damuel_qids = self._damuel_loader.get_data(R)

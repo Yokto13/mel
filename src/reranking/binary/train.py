@@ -118,9 +118,7 @@ def main():
     dataset = TensorDataset(together_tokens, attention_mask, labels)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size]
-    )
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
     batch_size = 128
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)

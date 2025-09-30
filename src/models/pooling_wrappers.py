@@ -42,9 +42,7 @@ class SentenceTransformerWrapper(PoolingWrapper):
 
     def _mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output.last_hidden_state
-        input_mask_expanded = (
-            attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-        )
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(
             input_mask_expanded.sum(1), min=1e-9
         )

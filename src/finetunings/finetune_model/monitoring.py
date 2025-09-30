@@ -60,9 +60,7 @@ def get_gradient_norm(model: torch.nn.Module, norm_type: float = 2.0) -> float |
         float: The calculated gradient norm or None if no gradients are found in the model params.
     """
     grads = [
-        param.grad.detach().flatten()
-        for param in model.parameters()
-        if param.grad is not None
+        param.grad.detach().flatten() for param in model.parameters() if param.grad is not None
     ]
     if len(grads) == 0:
         return None
@@ -81,14 +79,10 @@ def _update_metrics(running_averages, loss_item, r_at_1, r_at_10):
     running_averages.update_recall(r_at_1, r_at_10)
 
 
-def _log_metrics_to_wandb(
-    loss_item, r_at_1, r_at_10, running_averages, additional_metrics={}
-):
+def _log_metrics_to_wandb(loss_item, r_at_1, r_at_10, running_averages, additional_metrics={}):
     import wandb
 
-    wand_dict = _get_wandb_logs(
-        loss_item, r_at_1, r_at_10, running_averages, **additional_metrics
-    )
+    wand_dict = _get_wandb_logs(loss_item, r_at_1, r_at_10, running_averages, **additional_metrics)
     wandb.log(wand_dict)
 
 
@@ -101,6 +95,4 @@ def process_metrics(
 ):
     r_at_1, r_at_10 = _calculate_recalls(outputs, labels)
     _update_metrics(running_averages, loss_item, r_at_1, r_at_10)
-    _log_metrics_to_wandb(
-        loss_item, r_at_1, r_at_10, running_averages, additional_metrics
-    )
+    _log_metrics_to_wandb(loss_item, r_at_1, r_at_10, running_averages, additional_metrics)

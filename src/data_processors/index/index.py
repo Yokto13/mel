@@ -48,9 +48,7 @@ class Index:
             embs = np.load(embs_fn)
             qids = np.load(qids_fn)
 
-            embs, qids = cls.filter_based_on_max_per_qid(
-                embs, qids, max_per_qid, qid_counter
-            )
+            embs, qids = cls.filter_based_on_max_per_qid(embs, qids, max_per_qid, qid_counter)
 
             all_embs.append(embs)
             all_qids.append(qids)
@@ -128,12 +126,8 @@ class Index:
     ):
         training_sample_size = int(min(0.5 * len(self.embs), training_sample_size))
         num_leaves = min(num_leaves, training_sample_size)
-        n_of_clusters = min(
-            training_sample_size, 100
-        )  # so we can test with tiny datasets
-        builder = scann.scann_ops_pybind.builder(
-            self.embs, n_of_clusters, "dot_product"
-        ).tree(
+        n_of_clusters = min(training_sample_size, 100)  # so we can test with tiny datasets
+        builder = scann.scann_ops_pybind.builder(self.embs, n_of_clusters, "dot_product").tree(
             num_leaves=num_leaves,
             num_leaves_to_search=num_leaves_to_search,
             training_sample_size=training_sample_size,

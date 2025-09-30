@@ -21,23 +21,13 @@ class DaMuELStartLoader(LoaderStep):
         self.remainder = remainder
         self.mod = mod
 
-    def process(
-        self, input_gen: Generator[str, None, None] = None
-    ) -> Generator[str, None, None]:
+    def process(self, input_gen: Generator[str, None, None] = None) -> Generator[str, None, None]:
         if input_gen is not None:
             raise ValueError("DaMuELStartLoader does not support input generator")
-        file_list = [
-            filename
-            for filename in os.listdir(self.path)
-            if filename.startswith("part-")
-        ]
+        file_list = [filename for filename in os.listdir(self.path) if filename.startswith("part-")]
 
         if self.mod is not None:
-            file_list = [
-                filename
-                for filename in file_list
-                if self._should_process_file(filename)
-            ]
+            file_list = [filename for filename in file_list if self._should_process_file(filename)]
 
         tqdm_position = self.remainder if self.remainder is not None else 0
         tqdm_desc = f"Processing DaMuEL files {self.path[-6:]}"
@@ -83,9 +73,7 @@ class DaMuELLinkProcessor(PipelineStep):
         self.use_context = use_context
         self.require_wiki_origin = require_wiki_origin
 
-    def process(
-        self, input_gen: Generator[dict, None, None]
-    ) -> Generator[tuple, None, None]:
+    def process(self, input_gen: Generator[dict, None, None]) -> Generator[tuple, None, None]:
         for damuel_entry in input_gen:
             if "wiki" not in damuel_entry:
                 continue
@@ -99,9 +87,7 @@ class DaMuELLinkProcessor(PipelineStep):
         start = link["start"]
         end = link["end"] - 1
         try:
-            mention_slice_chars = slice(
-                wiki["tokens"][start]["start"], wiki["tokens"][end]["end"]
-            )
+            mention_slice_chars = slice(wiki["tokens"][start]["start"], wiki["tokens"][end]["end"])
         except IndexError:
             print("Index Error, skipping")
             return
@@ -126,9 +112,7 @@ class DaMuELDescriptionProcessor(PipelineStep):
         if use_context and label_token is None:
             raise ValueError("Label token must be provided for context mode")
 
-    def process(
-        self, input_gen: Generator[dict, None, None]
-    ) -> Generator[tuple, None, None]:
+    def process(self, input_gen: Generator[dict, None, None]) -> Generator[tuple, None, None]:
         if self.use_context:
             yield from self._process_with_context(input_gen)
         else:
@@ -186,9 +170,7 @@ class DaMuELDescriptionProcessor(PipelineStep):
     def construct_text_from_title_and_description(
         cls, title: str, description: str, original_title: str | None = None
     ) -> str:
-        if original_title is not None and description.strip().startswith(
-            original_title.strip()
-        ):
+        if original_title is not None and description.strip().startswith(original_title.strip()):
             return f"{title}\n{description[len(original_title):]}"
         return f"{title}\n{description}"
 

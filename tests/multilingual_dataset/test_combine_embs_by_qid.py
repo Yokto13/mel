@@ -83,6 +83,4 @@ def test_all_qids_present(mock_qids_remap, temp_dirs, random_embs_and_qids):
     combine_embs_by_qid(input_dir, output_dir)
     _, output_qids = load_output(output_dir)
 
-    assert set(output_qids) == set(
-        qids
-    ), "Not all original QIDs are present in the output"
+    assert set(output_qids) == set(qids), "Not all original QIDs are present in the output"

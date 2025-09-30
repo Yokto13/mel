@@ -31,9 +31,7 @@ def fast_token_mention_span(all_tokens, label_token_id):
 
 
 class TokensCutter:
-    def __init__(
-        self, text, tokenizer_wrapper, expected_size, label_token, padding_token_id=0
-    ):
+    def __init__(self, text, tokenizer_wrapper, expected_size, label_token, padding_token_id=0):
         self.text = text
         # self.tokenizer = tokenizer
         self.tokenizer_wrapper = tokenizer_wrapper
@@ -57,9 +55,7 @@ class TokensCutter:
         )[0]
 
     def cut_mention_with_context(self):
-        entity_name_slice_in_tokens = fast_token_mention_span(
-            self.all_tokens, self.label_token_id
-        )
+        entity_name_slice_in_tokens = fast_token_mention_span(self.all_tokens, self.label_token_id)
         if self._is_entity_name_too_large(
             entity_name_slice_in_tokens, self.size_without_special_tokens - 2
         ):
@@ -71,16 +67,14 @@ class TokensCutter:
             entity_name_slice_in_tokens.start,
             min(
                 entity_name_slice_in_tokens.stop,
-                entity_name_slice_in_tokens.start
-                + self.size_without_special_tokens
-                - 2,
+                entity_name_slice_in_tokens.start + self.size_without_special_tokens - 2,
             ),
         )
         print(self.offset_mapping[entity_name_slice_in_tokens.start])
         text = self.text[
-            self.offset_mapping[entity_name_slice_in_tokens.start][
-                0
-            ] : self.offset_mapping[entity_name_slice_in_tokens.stop - 1][1]
+            self.offset_mapping[entity_name_slice_in_tokens.start][0] : self.offset_mapping[
+                entity_name_slice_in_tokens.stop - 1
+            ][1]
         ]
         text += self.tokenizer_wrapper.tokenizer.decode([self.label_token_id])
         return self.tokenizer_wrapper.tokenize(text, max_length=self.expected_size)
@@ -89,9 +83,7 @@ class TokensCutter:
     def size_without_special_tokens(self):
         return self.expected_size - 2
 
-    def _is_entity_name_too_large(
-        self, entity_name_slice_in_tokens, max_entity_name_tokens
-    ):
+    def _is_entity_name_too_large(self, entity_name_slice_in_tokens, max_entity_name_tokens):
         return (
             entity_name_slice_in_tokens.stop - entity_name_slice_in_tokens.start
             > max_entity_name_tokens
@@ -107,13 +99,9 @@ class TokensCutter:
         )
 
     def _choose_cut_method(self, entity_name_slice_in_tokens):
-        remains_for_context = self._count_remaining_for_context(
-            entity_name_slice_in_tokens
-        )
+        remains_for_context = self._count_remaining_for_context(entity_name_slice_in_tokens)
 
-        left_context_start = (
-            entity_name_slice_in_tokens.start - remains_for_context // 2
-        )
+        left_context_start = entity_name_slice_in_tokens.start - remains_for_context // 2
         right_context_end = entity_name_slice_in_tokens.stop + (
             remains_for_context - remains_for_context // 2
         )
@@ -140,9 +128,7 @@ class TokensCutter:
         )
 
     def _more_on_right_cut(self):
-        end_tok_candidate = min(
-            self.size_without_special_tokens - 1, len(self.all_tokens) - 1
-        )
+        end_tok_candidate = min(self.size_without_special_tokens - 1, len(self.all_tokens) - 1)
         char_end = self.be_of_all.token_to_chars(end_tok_candidate)
         return self.tokenizer_wrapper.tokenize(
             self.text[: char_end.end],
@@ -150,9 +136,7 @@ class TokensCutter:
         )
 
     def _more_on_left_cut(self):
-        start_tok_candidate = max(
-            0, len(self.all_tokens) - self.size_without_special_tokens
-        )
+        start_tok_candidate = max(0, len(self.all_tokens) - self.size_without_special_tokens)
         char_start = self.be_of_all.token_to_chars(start_tok_candidate)
         return self.tokenizer_wrapper.tokenize(
             self.text[char_start.start :],

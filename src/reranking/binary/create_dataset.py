@@ -66,9 +66,7 @@ def create_binary_dataset(
     dataset = torch.utils.data.Subset(
         dataset, [i for i, (tokens, qid) in enumerate(dataset) if qid in index_qids_set]
     )
-    dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, shuffle=True
-    )
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Initialize dataset arrays
     description_tokens = []
@@ -99,9 +97,7 @@ def create_binary_dataset(
 
         positive_mask = [index_qid_to_index[qid] for qid in batch_qids.numpy()]
         data_size = len(batch_tokens)
-        description_tokens[output_index : output_index + data_size] = index_tokens[
-            positive_mask
-        ]
+        description_tokens[output_index : output_index + data_size] = index_tokens[positive_mask]
         link_tokens_list[output_index : output_index + data_size] = batch_tokens.numpy()
         y[output_index : output_index + data_size] = 1
 
@@ -110,9 +106,7 @@ def create_binary_dataset(
         neg_qids = get_neg_qids(top_qids, set(batch_qids.numpy()))
 
         negative_mask = [index_qid_to_index[qid] for qid in neg_qids]
-        description_tokens[output_index : output_index + data_size] = index_tokens[
-            negative_mask
-        ]
+        description_tokens[output_index : output_index + data_size] = index_tokens[negative_mask]
         link_tokens_list[output_index : output_index + data_size] = batch_tokens.numpy()
         y[output_index : output_index + data_size] = 0
 
@@ -170,9 +164,7 @@ def create_multiclass_dataset(
 
     # Create dataset and dataloader from link_tokens and link_qids
     dataset = list(zip(link_tokens, link_qids))
-    dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, pin_memory=True
-    )
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, pin_memory=True)
 
     link_tokens, qids = [], []
     for B_tokens, B_qids in tqdm(dataloader, desc="Creating dataset"):
@@ -182,9 +174,7 @@ def create_multiclass_dataset(
                 create_attention_mask(B_tokens).to(device),
             ).cpu()
 
-        top_qids = searcher.find(
-            B_embs.numpy().astype(np.float16), num_neighbors=total_classes
-        )
+        top_qids = searcher.find(B_embs.numpy().astype(np.float16), num_neighbors=total_classes)
         for i, qid in enumerate(B_qids.numpy()):
             if qid in top_qids[i]:
                 idx = top_qids[i].index(qid)
@@ -224,9 +214,7 @@ if __name__ == "__main__":
     output_path = Path(
         "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test/reranker_dataset.npz"
     )
-    model_name = (
-        "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
-    )
+    model_name = "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 
     create_multiclass_dataset(
         index_embs_dir,

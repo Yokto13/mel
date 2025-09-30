@@ -3,9 +3,11 @@ import lzma
 import pytest
 
 from tokenization.pipeline.loaders import DaMuELStartLoader
-from tokenization.pipeline.loaders.damuel import (DaMuELDescriptionProcessor,
-                                                  DaMuELPageTypeLoader,
-                                                  DaMuELPageTypeProcessor)
+from tokenization.pipeline.loaders.damuel import (
+    DaMuELDescriptionProcessor,
+    DaMuELPageTypeLoader,
+    DaMuELPageTypeProcessor,
+)
 
 
 class TestDaMuELStartLoader:
@@ -148,18 +150,14 @@ class TestDaMuELPageTypeLoader:
         data_dir.mkdir()
 
         file1 = data_dir / "part-00000"
-        file1.write_text(
-            '{"qid": "Q1", "text": "Hello"}\n{"qid": "Q2", "text": "World"}'
-        )
+        file1.write_text('{"qid": "Q1", "text": "Hello"}\n{"qid": "Q2", "text": "World"}')
 
         file2 = data_dir / "part-00001"
         file2.write_text('{"qid": "Q3", "text": "Foo"}\n{"qid": "Q4", "text": "Bar"}')
 
         compressed_file = data_dir / "part-00002.xz"
         with lzma.open(compressed_file, "wt") as f:
-            f.write(
-                '{"qid": "Q5", "text": "Compressed"}\n{"qid": "Q6", "text": "Data"}'
-            )
+            f.write('{"qid": "Q5", "text": "Compressed"}\n{"qid": "Q6", "text": "Data"}')
 
         return str(data_dir)
 

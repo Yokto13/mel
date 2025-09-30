@@ -136,9 +136,7 @@ class AliasTableLoader:
     TODO: Move as much logic as possible to the pipeline. Probably just get rid of this class.
     """
 
-    def __init__(
-        self, mewsli_root_path: Path, damuel_root_path: Path, lowercase: bool = False
-    ):
+    def __init__(self, mewsli_root_path: Path, damuel_root_path: Path, lowercase: bool = False):
         self.mewsli_root_path = mewsli_root_path
         self.damuel_root_path = damuel_root_path
         self.lowercase = lowercase

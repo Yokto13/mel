@@ -82,9 +82,7 @@ def test_initial_shuffle(mock_load_fn, dir_with_npz_files):
     batcher = BatcherDataset(dir_with_npz_files, known_qids, batch_size)
     second_batch = next(iter(batcher))
 
-    assert not np.array_equal(
-        first_batch[0], second_batch[0]
-    ), "Initial shuffle did not occur"
+    assert not np.array_equal(first_batch[0], second_batch[0]), "Initial shuffle did not occur"
 
 
 @patch(
@@ -100,12 +98,8 @@ def test_no_qid_repetition_in_batch(mock_load_fn, dir_with_npz_files):
         qids_in_batch = batch[1]
         unique_qids = np.unique(qids_in_batch)
 
-        assert len(qids_in_batch) == len(
-            unique_qids
-        ), "QIDs are repeating within a batch"
-        assert (
-            len(qids_in_batch) == batch_size
-        ), "Batch size doesn't match expected size"
+        assert len(qids_in_batch) == len(unique_qids), "QIDs are repeating within a batch"
+        assert len(qids_in_batch) == batch_size, "Batch size doesn't match expected size"
 
         if i == 10:
             break

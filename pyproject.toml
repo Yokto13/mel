@@ -19,3 +19,11 @@ dependencies = [
     "transformers>=4.56.1",
     "wandb>=0.21.3",
 ]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100

@@ -41,9 +41,7 @@ def shuffle_batch_sampler(random_embs, qids):
     )
 
 
-@pytest.mark.parametrize(
-    "batch_sampler_fixture", ["top_batch_sampler", "shuffle_batch_sampler"]
-)
+@pytest.mark.parametrize("batch_sampler_fixture", ["top_batch_sampler", "shuffle_batch_sampler"])
 def test_positive_and_negatives_differ(batch_sampler_fixture, request, data_size):
     batch_sampler = request.getfixturevalue(batch_sampler_fixture)
 

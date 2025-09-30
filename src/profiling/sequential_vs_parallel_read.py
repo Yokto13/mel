@@ -51,20 +51,18 @@ def read_qids_parallel_process(directory):
 def benchmark_reading_methods(directory):
     sequential_time = timeit.timeit(lambda: read_qids_sequential(directory), number=1)
     parallel_time = timeit.timeit(lambda: read_qids_parallel(directory), number=1)
-    parallel_process_time = timeit.timeit(
-        lambda: read_qids_parallel_process(directory), number=1
-    )
+    parallel_process_time = timeit.timeit(lambda: read_qids_parallel_process(directory), number=1)
     print(f"Sequential reading time: {sequential_time:.2f} seconds")
     print(f"Parallel reading time: {parallel_time:.2f} seconds")
     print(f"Parallel process reading time: {parallel_process_time:.2f} seconds")
     speedup = sequential_time / parallel_time
     print(f"Parallel reading is {speedup:.2f} times faster than sequential reading")
     speedup = sequential_time / parallel_process_time
-    print(
-        f"Parallel process reading is {speedup:.2f} times faster than sequential reading"
-    )
+    print(f"Parallel process reading is {speedup:.2f} times faster than sequential reading")
 
 
 # Usage example
-directory = "/lnet/work/home-students-external/farhan/troja/outputs/tokens_damuel_finetuning/en/links"
+directory = (
+    "/lnet/work/home-students-external/farhan/troja/outputs/tokens_damuel_finetuning/en/links"
+)
 benchmark_reading_methods(directory)

@@ -73,6 +73,4 @@ np_isin_result = bench_np_isin()
 in1d_vec_nb_result = bench_in1d_vec_nb()
 custom_isin_set_result = bench_custom_isin_set()
 print(f"Results are identical: {np.array_equal(np_isin_result, in1d_vec_nb_result)}")
-print(
-    f"Results are identical: {np.array_equal(np_isin_result, custom_isin_set_result)}"
-)
+print(f"Results are identical: {np.array_equal(np_isin_result, custom_isin_set_result)}")

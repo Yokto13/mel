@@ -35,9 +35,7 @@ def test_qids_remap():
         assert np.array_equal(remapped_qids, expected_output)
 
 
-@pytest.mark.parametrize(
-    "dtype", [np.int16, np.int32, np.int64, np.uint16, np.uint32, np.uint64]
-)
+@pytest.mark.parametrize("dtype", [np.int16, np.int32, np.int64, np.uint16, np.uint32, np.uint64])
 def test_qids_remap_preserve_dtype(dtype):
     mock_qid_map = {1: 10, 2: 20, 3: 30}
     with patch("utils.qids_remap.load_qids_remap", return_value=mock_qid_map):

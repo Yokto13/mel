@@ -97,9 +97,7 @@ def embed(
     with torch.no_grad():
         for batch_toks, batch_qids in data_loader:
             if torch.cuda.is_available():
-                batch_toks = batch_toks.to(
-                    dtype=torch.int64, non_blocking=True, device="cuda"
-                )
+                batch_toks = batch_toks.to(dtype=torch.int64, non_blocking=True, device="cuda")
             attention_mask = create_attention_mask(batch_toks)
             if torch.cuda.is_available():
                 attention_mask = attention_mask.cuda()
@@ -193,9 +191,7 @@ def embs_from_tokens_and_model_name(
 ):
     builder = ModelBuilder(model_name)
     output_type = (
-        ModelOutputType(output_type)
-        if output_type is not None
-        else ModelOutputType.PoolerOutput
+        ModelOutputType(output_type) if output_type is not None else ModelOutputType.PoolerOutput
     )
     builder.set_output_type(output_type)
     model = builder.build()

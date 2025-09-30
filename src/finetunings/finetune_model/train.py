@@ -4,13 +4,16 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import wandb
 from fire import Fire
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+import wandb
 from finetunings.finetune_model.data import (
-    LinksAndDescriptionsTogetherDataset, SaveInformation, save_model)
+    LinksAndDescriptionsTogetherDataset,
+    SaveInformation,
+    save_model,
+)
 from finetunings.finetune_model.monitoring import _get_wandb_logs, batch_recall
 from utils.argument_wrappers import ensure_datatypes
 from utils.embeddings import create_attention_mask
@@ -58,9 +61,7 @@ def load_model(
     target_dim: int | None,
     output_type: str | None = None,
 ) -> nn.Module:
-    return ModelFactory.auto_load_from_file(
-        model_path, state_dict_path, target_dim, output_type
-    )
+    return ModelFactory.auto_load_from_file(model_path, state_dict_path, target_dim, output_type)
 
 
 # Training ===========================================
@@ -105,9 +106,7 @@ def train(
 
         _logger.debug(f"EPOCH: {epoch}")
         dataset = LinksAndDescriptionsTogetherDataset(DATASET_DIR, epoch)
-        dataloader = DataLoader(
-            dataset, batch_size=None, num_workers=2, pin_memory=True
-        )
+        dataloader = DataLoader(dataset, batch_size=None, num_workers=2, pin_memory=True)
 
         for i, (together, labels) in enumerate(tqdm(dataloader, total=len(dataset))):
             # assert i <= 100

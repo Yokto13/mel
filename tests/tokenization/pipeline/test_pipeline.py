@@ -6,13 +6,15 @@ import numpy as np
 import pytest
 from transformers import AutoTokenizer
 
-from tokenization.pipeline.pipelines import (DamuelAliasTablePipeline,
-                                             DamuelDescriptionContextPipeline,
-                                             DamuelDescriptionMentionPipeline,
-                                             DamuelLinkContextPipeline,
-                                             DamuelLinkMentionPipeline,
-                                             MewsliContextPipeline,
-                                             MewsliMentionPipeline)
+from tokenization.pipeline.pipelines import (
+    DamuelAliasTablePipeline,
+    DamuelDescriptionContextPipeline,
+    DamuelDescriptionMentionPipeline,
+    DamuelLinkContextPipeline,
+    DamuelLinkMentionPipeline,
+    MewsliContextPipeline,
+    MewsliMentionPipeline,
+)
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,13 +39,9 @@ def tokenizer_with_label():
     ],
 )
 @pytest.mark.slow
-def test_run_mewsli_mention(
-    expected_size: int, compress: bool, standard_tokenizer
-) -> None:
+def test_run_mewsli_mention(expected_size: int, compress: bool, standard_tokenizer) -> None:
     mewsli_tsv_path = os.path.join(THIS_DIR, "data", "mentions.tsv")
-    assert os.path.exists(
-        mewsli_tsv_path
-    ), f"Mewsli file not found at {mewsli_tsv_path}"
+    assert os.path.exists(mewsli_tsv_path), f"Mewsli file not found at {mewsli_tsv_path}"
     tokenizer = standard_tokenizer
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -76,9 +74,7 @@ def test_run_mewsli_mention(
             tokens.dtype, np.integer
         ), f"Expected tokens to be integer type, but got {tokens.dtype}"
 
-        assert (
-            qids.ndim == 1
-        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert qids.ndim == 1, f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
         assert (
             qids.shape[0] == tokens.shape[0]
         ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"
@@ -100,9 +96,7 @@ def test_run_mewsli_mention_context(
 ) -> None:
     label_token = "[M]"
     mewsli_tsv_path = os.path.join(THIS_DIR, "data", "mentions.tsv")
-    assert os.path.exists(
-        mewsli_tsv_path
-    ), f"Mewsli file not found at {mewsli_tsv_path}"
+    assert os.path.exists(mewsli_tsv_path), f"Mewsli file not found at {mewsli_tsv_path}"
     tokenizer = tokenizer_with_label
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -136,9 +130,7 @@ def test_run_mewsli_mention_context(
             tokens.dtype, np.integer
         ), f"Expected tokens to be integer type, but got {tokens.dtype}"
 
-        assert (
-            qids.ndim == 1
-        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert qids.ndim == 1, f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
         assert (
             qids.shape[0] == tokens.shape[0]
         ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"
@@ -163,9 +155,7 @@ def test_run_mewsli_mention_context(
     ],
 )
 @pytest.mark.slow
-def test_run_damuel_link_mention(
-    expected_size: int, compress: bool, standard_tokenizer
-) -> None:
+def test_run_damuel_link_mention(expected_size: int, compress: bool, standard_tokenizer) -> None:
     damuel_path = os.path.join(THIS_DIR, "data", "damuel")
     assert os.path.exists(damuel_path), f"DaMuEL file not found at {damuel_path}"
     tokenizer = standard_tokenizer
@@ -200,9 +190,7 @@ def test_run_damuel_link_mention(
             tokens.dtype, np.integer
         ), f"Expected tokens to be integer type, but got {tokens.dtype}"
 
-        assert (
-            qids.ndim == 1
-        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert qids.ndim == 1, f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
         assert (
             qids.shape[0] == tokens.shape[0]
         ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"
@@ -257,9 +245,7 @@ def test_run_damuel_link_context(
             tokens.dtype, np.integer
         ), f"Expected tokens to be integer type, but got {tokens.dtype}"
 
-        assert (
-            qids.ndim == 1
-        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert qids.ndim == 1, f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
         assert (
             qids.shape[0] == tokens.shape[0]
         ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"
@@ -315,9 +301,7 @@ def test_run_damuel_description_mention(
             tokens.dtype, np.integer
         ), f"Expected tokens to be integer type, but got {tokens.dtype}"
 
-        assert (
-            qids.ndim == 1
-        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert qids.ndim == 1, f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
         assert (
             qids.shape[0] == tokens.shape[0]
         ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"
@@ -369,9 +353,7 @@ def test_run_damuel_description_context(
             tokens.dtype, np.integer
         ), f"Expected tokens to be integer type, but got {tokens.dtype}"
 
-        assert (
-            qids.ndim == 1
-        ), f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
+        assert qids.ndim == 1, f"Expected qids to be 1-dimensional, but got {qids.ndim} dimensions"
         assert (
             qids.shape[0] == tokens.shape[0]
         ), f"Expected qids to have same length as tokens, but got {qids.shape[0]} vs {tokens.shape[0]}"

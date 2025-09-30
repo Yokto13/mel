@@ -174,17 +174,13 @@ class NegativeSampler:
             )
             # performance seems comparable with _get_neighbors_mask_set_arr
             # by the Occams razor _get_neighbors_mask_set is better.
-            wanted_neighbors_mask = _get_neighbors_mask_set(
-                batch_qids, self.qids[neighbors]
-            )
+            wanted_neighbors_mask = _get_neighbors_mask_set(batch_qids, self.qids[neighbors])
 
             enough_negatives_found = True
 
             if self._limit_negs is not None:
                 mask = self.neg_qids <= self.pos_qids * self._limit_negs
-                wanted_neighbors_mask = torch.from_numpy(wanted_neighbors_mask).to(
-                    self.device
-                )
+                wanted_neighbors_mask = torch.from_numpy(wanted_neighbors_mask).to(self.device)
                 wanted_neighbors_mask &= mask[
                     self.qids_t[torch.from_numpy(neighbors).to(self.device)]
                 ]
@@ -192,9 +188,7 @@ class NegativeSampler:
                 enough_negatives_found = torch.all(row_sums >= negative_cnts).item()
                 wanted_neighbors_mask = wanted_neighbors_mask.cpu().numpy()
 
-        sampled = self.sample_f(
-            batch_qids, negative_cnts, neighbors, wanted_neighbors_mask
-        )
+        sampled = self.sample_f(batch_qids, negative_cnts, neighbors, wanted_neighbors_mask)
         if self._should_sample_randomly():
             randomly_sampled = self._sample_randomly(batch_qids)
             sampled = np.concatenate([sampled, randomly_sampled], axis=1)

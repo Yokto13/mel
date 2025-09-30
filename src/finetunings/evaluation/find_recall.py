@@ -4,11 +4,12 @@ from pathlib import Path
 
 import fire
 import numpy as np
-import wandb
 
+import wandb
 from data_processors.index.index import Index
 from models.recall_calculator import RecallCalculator
 from models.searchers.brute_force_searcher import BruteForceSearcher
+
 # from models.searchers.faiss_searcher import FaissSearcher
 from models.searchers.scann_searcher import ScaNNSearcher
 from utils.argument_wrappers import paths_exist
@@ -67,9 +68,7 @@ def find_recall(
     damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_entities)
     mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
 
-    _logger.info(
-        f"Shapes: damuel_embs={damuel_embs.shape}, damuel_qids={damuel_qids.shape}"
-    )
+    _logger.info(f"Shapes: damuel_embs={damuel_embs.shape}, damuel_qids={damuel_qids.shape}")
     # searcher = get_scann_searcher(damuel_embs, damuel_qids)
     # searcher = get_faiss_searcher(damuel_embs, damuel_qids)
     searcher = get_brute_force_searcher(damuel_embs, damuel_qids)
@@ -99,9 +98,7 @@ def find_recall_with_searcher(
         _logger.info(f"Recall at {R}: {recall}")
 
 
-def find_candidates(
-    damuel_entities: str, candidates_path: str, mewsli: str, recall: int
-) -> None:
+def find_candidates(damuel_entities: str, candidates_path: str, mewsli: str, recall: int) -> None:
     damuel_embs, damuel_qids = load_embs_and_qids_with_normalization(damuel_entities)
     mewsli_embs, mewsli_qids = load_embs_and_qids_with_normalization(mewsli)
     searcher = get_brute_force_searcher(damuel_embs, damuel_qids)

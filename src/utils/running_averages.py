@@ -18,9 +18,7 @@ class RunningAverages:
 
     def update_recall(self, recall_1, recall_10):
         self._update_deques(recall_1, self.recall_running_1, self.recall_running_1_big)
-        self._update_deques(
-            recall_10, self.recall_running_10, self.recall_running_10_big
-        )
+        self._update_deques(recall_10, self.recall_running_10, self.recall_running_10_big)
 
     def update_all(self, loss, recall_1, recall_10):
         self.update_loss(loss)

@@ -10,9 +10,7 @@ class NPZSaver(PipelineStep):
         self.filename = filename
         self.compress = compress
 
-    def process(
-        self, input_gen: Generator[tuple, None, None]
-    ) -> Generator[None, None, None]:
+    def process(self, input_gen: Generator[tuple, None, None]) -> Generator[None, None, None]:
         tokens_list = []
         qids_list = []
         for tokens, qids in input_gen:
@@ -42,9 +40,7 @@ class NPZSaverIncremental(NPZSaver):
         self.save_every = save_every
         self.counter = 0
 
-    def process(
-        self, input_gen: Generator[tuple, None, None]
-    ) -> Generator[None, None, None]:
+    def process(self, input_gen: Generator[tuple, None, None]) -> Generator[None, None, None]:
         tokens_list = []
         qids_list = []
         for tokens, qids in input_gen:

@@ -4,9 +4,7 @@ from collections.abc import Generator
 
 class PipelineStep(ABC):
     @abstractmethod
-    def process(
-        self, input_gen: Generator[str, None, None] = None
-    ) -> Generator[str, None, None]:
+    def process(self, input_gen: Generator[str, None, None] = None) -> Generator[str, None, None]:
         pass
 
 
@@ -17,9 +15,7 @@ class Pipeline(PipelineStep):
     def add(self, step: PipelineStep) -> None:
         self.steps.append(step)
 
-    def process(
-        self, input_gen: Generator[str, None, None] = None
-    ) -> Generator[str, None, None]:
+    def process(self, input_gen: Generator[str, None, None] = None) -> Generator[str, None, None]:
         if input_gen is None:
             input_gen = self.steps[0].process()
         for step in self.steps[1:]:
@@ -35,9 +31,6 @@ class Pipeline(PipelineStep):
         return "\n".join(
             [
                 "Tokenization Pipeline Steps:",
-                *[
-                    f"{i}. {step.__class__.__name__}"
-                    for i, step in enumerate(self.steps, 1)
-                ],
+                *[f"{i}. {step.__class__.__name__}" for i, step in enumerate(self.steps, 1)],
             ]
         )

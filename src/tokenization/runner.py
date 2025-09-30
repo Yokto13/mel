@@ -7,13 +7,16 @@ from typing import Any, List
 import gin
 from transformers import AutoTokenizer
 
-from tokenization.pipeline.pipelines import (DamuelAliasTablePipeline,
-                                             DamuelDescriptionContextPipeline,
-                                             DamuelDescriptionMentionPipeline,
-                                             DamuelLinkContextPipeline,
-                                             DamuelLinkMentionPipeline,
-                                             MewsliContextPipeline,
-                                             MewsliMentionPipeline, Pipeline)
+from tokenization.pipeline.pipelines import (
+    DamuelAliasTablePipeline,
+    DamuelDescriptionContextPipeline,
+    DamuelDescriptionMentionPipeline,
+    DamuelLinkContextPipeline,
+    DamuelLinkMentionPipeline,
+    MewsliContextPipeline,
+    MewsliMentionPipeline,
+    Pipeline,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -49,9 +52,7 @@ def run_alias_table_damuel(
     remainder_mod: int,
 ) -> list[Any]:
     pipelines = [
-        DamuelAliasTablePipeline(
-            damuel_path=path, remainder=i, mod=remainder_mod, logger=None
-        )
+        DamuelAliasTablePipeline(damuel_path=path, remainder=i, mod=remainder_mod, logger=None)
         for i in range(remainder_mod)
     ]
     results = process_pipelines(pipelines, num_processes)

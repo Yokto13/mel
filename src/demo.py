@@ -6,8 +6,12 @@ from utils.loaders import load_embs_and_qids
 from utils.model_factory import ModelFactory
 
 model_path = "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
-state_dict_path = "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/models_2/final.pth"
-index_path = "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/damuel_for_index_3"
+state_dict_path = (
+    "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/models_2/final.pth"
+)
+index_path = (
+    "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/damuel_for_index_3"
+)
 
 model = ModelFactory.auto_load_from_file(model_path, state_dict_path, None, None)
 tokenizer = AutoTokenizer.from_pretrained(model_path)

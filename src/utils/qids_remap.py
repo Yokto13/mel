@@ -69,16 +69,12 @@ def remap_qids_decorator(qids_index: int | None, json_path: str) -> Callable:
 
                 # Check if the qids element is a numpy array
                 remapped_qids = qids_remap(qids, json_path)
-                updated_result = (
-                    result[:qids_index] + (remapped_qids,) + result[qids_index + 1 :]
-                )
+                updated_result = result[:qids_index] + (remapped_qids,) + result[qids_index + 1 :]
                 return updated_result
             elif qids_index is None:
                 return qids_remap(result, json_path)
             else:
-                raise ValueError(
-                    f"Invalid qids_index {qids_index} for the returned tuple."
-                )
+                raise ValueError(f"Invalid qids_index {qids_index} for the returned tuple.")
 
         return wrapper
 

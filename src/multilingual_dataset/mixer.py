@@ -81,9 +81,7 @@ class Mixer:
     def __init__(self, buffer_size: int = 10) -> None:
         self.buffer_size = buffer_size
 
-    def mix(
-        self, file_paths: list[Path], n_of_mixings: int = 10, compress_output=True
-    ) -> None:
+    def mix(self, file_paths: list[Path], n_of_mixings: int = 10, compress_output=True) -> None:
         print("mixxing")
         file_paths = deepcopy(file_paths)
         for i in tqdm(range(n_of_mixings)):
@@ -120,9 +118,7 @@ class ParallelMixer(Mixer):
         np.random.shuffle(file_paths)
         chunks = list(self._chunk(file_paths, self.buffer_size))
 
-        process_chunk_with_compression = partial(
-            mix_chunk, compress_output=compress_output
-        )
+        process_chunk_with_compression = partial(mix_chunk, compress_output=compress_output)
 
         with mp.Pool(processes=self.n_workers) as pool:
             list(

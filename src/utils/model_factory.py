@@ -52,9 +52,7 @@ class ModelFactory:
         if target_dim is not None:
             builder.set_dim(target_dim)
         model = builder.build()
-        if (
-            state_dict_path is not None and state_dict_path != "None"
-        ):  # sometimes arg parsing fails
+        if state_dict_path is not None and state_dict_path != "None":  # sometimes arg parsing fails
             model = cls._add_state_dict_to_model(state_dict_path, model)
         return model
 
@@ -76,9 +74,7 @@ class ModelFactory:
         try:
             model.load_state_dict(d)
         except RuntimeError as e:
-            _logger.warning(
-                f"Failed to load state dict: {e}, trying to load it the old way."
-            )
+            _logger.warning(f"Failed to load state dict: {e}, trying to load it the old way.")
             if isinstance(model, PoolingWrapper):
                 model.model.load_state_dict(d)
                 _logger.warning("Loaded state dict into base model.")

@@ -6,9 +6,7 @@ from .searcher import Searcher
 
 
 class SimplifiedBruteForceSearcher(Searcher):
-    def __init__(
-        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
-    ):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True):
         super().__init__(embs, results, run_build_from_init)
 
     def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:

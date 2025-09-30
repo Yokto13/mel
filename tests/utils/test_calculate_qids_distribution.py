@@ -3,8 +3,7 @@ from pathlib import Path
 import numpy as np
 from pytest import fixture
 
-from utils.calculate_qids_distribution import \
-    calculate_qids_distribution_from_links
+from utils.calculate_qids_distribution import calculate_qids_distribution_from_links
 
 
 @fixture
@@ -22,15 +21,9 @@ def test_calculate_qids_distribution_from_links(data):
 
 def test_calculate_qids_distribution_from_links_with_transform(data):
     qids_dist1 = calculate_qids_distribution_from_links(Path(data), np.arange(100))
-    qids_dist2 = calculate_qids_distribution_from_links(
-        Path(data), np.arange(100), lambda x: x**2
-    )
-    qids_dist3 = calculate_qids_distribution_from_links(
-        Path(data), np.arange(100), lambda x: x**3
-    )
-    qids_dist4 = calculate_qids_distribution_from_links(
-        Path(data), np.arange(100), lambda x: x**x
-    )
+    qids_dist2 = calculate_qids_distribution_from_links(Path(data), np.arange(100), lambda x: x**2)
+    qids_dist3 = calculate_qids_distribution_from_links(Path(data), np.arange(100), lambda x: x**3)
+    qids_dist4 = calculate_qids_distribution_from_links(Path(data), np.arange(100), lambda x: x**x)
 
     for dist in [qids_dist1, qids_dist2, qids_dist3, qids_dist4]:
         assert np.allclose(dist.sum(), 1)

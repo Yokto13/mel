@@ -11,9 +11,7 @@ class SimpleDataset(Dataset):
     def __init__(self, texts, qids):
         self.texts = texts
         self.qids = qids
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            "hf-internal-testing/tiny-random-BertModel"
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-BertModel")
 
     def __len__(self):
         return len(self.texts)

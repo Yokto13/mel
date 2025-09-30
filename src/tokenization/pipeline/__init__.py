@@ -1,8 +1,11 @@
-from .pipelines import (DamuelAliasTablePipeline,
-                        DamuelDescriptionContextPipeline,
-                        DamuelDescriptionMentionPipeline,
-                        DamuelLinkContextPipeline, MewsliContextPipeline,
-                        MewsliMentionPipeline)
+from .pipelines import (
+    DamuelAliasTablePipeline,
+    DamuelDescriptionContextPipeline,
+    DamuelDescriptionMentionPipeline,
+    DamuelLinkContextPipeline,
+    MewsliContextPipeline,
+    MewsliMentionPipeline,
+)
 
 __all__ = [
     "MewsliMentionPipeline",

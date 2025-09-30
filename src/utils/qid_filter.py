@@ -54,9 +54,7 @@ def qid_filter(qids_index: int | None, filter_path: str | None = None):
             elif qids_index is None and not isinstance(result, tuple):
                 updated_result = result[keep]
             else:
-                raise ValueError(
-                    f"Invalid qids_index {qids_index} for the returned tuple."
-                )
+                raise ValueError(f"Invalid qids_index {qids_index} for the returned tuple.")
             return updated_result
 
         return wrapper

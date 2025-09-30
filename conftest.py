@@ -21,10 +21,7 @@ def configure_redirects() -> None:
 def is_qids_remap_json_configured(config_path: str) -> bool:
     with open(config_path, "r") as f:
         for line in f:
-            if (
-                line.strip().startswith("qids_remap_json")
-                and len(line.split("=")[1].strip()) > 4
-            ):
+            if line.strip().startswith("qids_remap_json") and len(line.split("=")[1].strip()) > 4:
                 return True
     return False
 

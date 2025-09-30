@@ -58,9 +58,7 @@ class BatcherDataset(IterableDataset):
             embs, qids, tokens = embs[p], qids[p], tokens[p]
 
             base_index = np.arange(len(embs))
-            data_index = self._create_unique_qid_index(
-                base_index, qids, self.batch_size
-            )
+            data_index = self._create_unique_qid_index(base_index, qids, self.batch_size)
             max_idx = len(data_index) // self.batch_size
 
             for batch_idx in range(max_idx):
@@ -118,9 +116,9 @@ def prepare_batch(batch_size, line_size, toks_size, sampler_tokens, positive, ne
         together_line[together_line_idx] = sampler_tokens[pos_idx]
         together_line_idx += 1
 
-        together_line[together_line_idx : together_line_idx + len(neg_ids)] = (
-            sampler_tokens[neg_ids]
-        )
+        together_line[together_line_idx : together_line_idx + len(neg_ids)] = sampler_tokens[
+            neg_ids
+        ]
         together_line_idx += len(neg_ids)
 
     return together_line
@@ -149,9 +147,7 @@ class DamuelNeighborsIterator:
         for embs, qids, toks in self.batcher_dataset:
             batch = toks
 
-            positive, negative = self.batch_sampler.sample(
-                embs, qids, self.negative_cnt
-            )
+            positive, negative = self.batch_sampler.sample(embs, qids, self.negative_cnt)
             together_line = prepare_batch(
                 self.batch_size,
                 line_size,

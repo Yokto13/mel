@@ -5,8 +5,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import fire
-import wandb
 
+import wandb
 from utils.loaders import AliasTableLoader
 
 damuels = [
@@ -70,9 +70,7 @@ assert len(damuels) == 53
 mewslis = ["ar", "de", "en", "es", "fa", "ja", "sr", "ta", "tr"]
 
 
-def all_languages(
-    damuel: str, mewsli: str, only_wiki_links: bool, R: int, lowercase=False
-):
+def all_languages(damuel: str, mewsli: str, only_wiki_links: bool, R: int, lowercase=False):
     wandb.init(
         project="alias-table-all-languages",
         config={

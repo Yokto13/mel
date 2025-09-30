@@ -6,17 +6,13 @@ from .base import TokenizerStep
 
 
 class CuttingTokenizer(TokenizerStep):
-    def __init__(
-        self, tokenizer, expected_size, label_token, expected_chars_per_token=11
-    ):
+    def __init__(self, tokenizer, expected_size, label_token, expected_chars_per_token=11):
         super().__init__(tokenizer, expected_size)
         self.label_token = label_token
         self.expected_chars_per_token = expected_chars_per_token
         self.char_window = expected_chars_per_token * expected_size
 
-    def process(
-        self, input_gen: Generator[tuple, None, None]
-    ) -> Generator[tuple, None, None]:
+    def process(self, input_gen: Generator[tuple, None, None]) -> Generator[tuple, None, None]:
         for mention_slice, text, qid in input_gen:
             text, mention_slice_chars = self._apply_char_window(text, mention_slice)
             text, mention_slice_chars = self._add_token_around_mention(
@@ -41,9 +37,7 @@ class CuttingTokenizer(TokenizerStep):
         elif end == len(text):
             start = max(start - self.char_window // 2, 0)
         new_text = text[start:end]
-        new_slice_chars = slice(
-            mention_slice_chars.start - start, mention_slice_chars.stop - start
-        )
+        new_slice_chars = slice(mention_slice_chars.start - start, mention_slice_chars.stop - start)
         assert text[mention_slice_chars] == new_text[new_slice_chars]
         return new_text, new_slice_chars
 

@@ -56,9 +56,7 @@ class TestWikiKeyFilter:
             ),
         ],
     )
-    def test_wiki_key_filter(
-        self, input_data: list[dict], expected_output: list[dict]
-    ) -> None:
+    def test_wiki_key_filter(self, input_data: list[dict], expected_output: list[dict]) -> None:
         filter_step = WikiKeyFilter()
         output = list(filter_step.process(iter(input_data)))
         assert output == expected_output

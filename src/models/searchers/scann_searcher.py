@@ -4,15 +4,11 @@ from models.searchers.searcher import Searcher
 
 
 class ScaNNSearcher(Searcher):
-    def __init__(
-        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
-    ):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True):
         super().__init__(embs, results, run_build_from_init)
 
     def find(self, batch, num_neighbors) -> np.ndarray:
-        neighbors, _ = self.searcher.search_batched(
-            batch, final_num_neighbors=num_neighbors
-        )
+        neighbors, _ = self.searcher.search_batched(batch, final_num_neighbors=num_neighbors)
         return self.results[neighbors]
 
     def build(self):
@@ -30,12 +26,8 @@ class ScaNNSearcher(Searcher):
 
         training_sample_size = int(min(0.5 * len(self.embs), training_sample_size))
         num_leaves = min(num_leaves, training_sample_size)
-        n_of_clusters = min(
-            training_sample_size, 100
-        )  # so we can test with tiny datasets
-        builder = scann.scann_ops_pybind.builder(
-            self.embs, n_of_clusters, "dot_product"
-        ).tree(
+        n_of_clusters = min(training_sample_size, 100)  # so we can test with tiny datasets
+        builder = scann.scann_ops_pybind.builder(self.embs, n_of_clusters, "dot_product").tree(
             num_leaves=num_leaves,
             num_leaves_to_search=num_leaves_to_search,
             training_sample_size=training_sample_size,

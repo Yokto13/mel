@@ -24,9 +24,7 @@ def _file_qid_counts(path):
 
 def calculate_qid_statistics(directory_path=".", workers: int | None = None):
     npz_files = [
-        os.path.join(directory_path, f)
-        for f in os.listdir(directory_path)
-        if f.endswith(".npz")
+        os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith(".npz")
     ]
     if not npz_files:
         print("No .npz files found.")

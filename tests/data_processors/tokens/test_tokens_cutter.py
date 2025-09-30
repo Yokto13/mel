@@ -5,16 +5,13 @@ import pytest
 from transformers import BertTokenizerFast
 
 from data_processors.tokens.tokenizer_wrapper import TokenizerWrapper
-from data_processors.tokens.tokens_cutter import (TokensCutter,
-                                                  fast_token_mention_span)
+from data_processors.tokens.tokens_cutter import TokensCutter, fast_token_mention_span
 
 
 class TestTokensCutter:
     @pytest.fixture(scope="class")
     def tokenizer(self) -> BertTokenizerFast:
-        tokenizer = BertTokenizerFast.from_pretrained(
-            "hf-internal-testing/tiny-random-BertModel"
-        )
+        tokenizer = BertTokenizerFast.from_pretrained("hf-internal-testing/tiny-random-BertModel")
         tokenizer.add_tokens(["[M]"])
         return tokenizer
 
@@ -22,9 +19,7 @@ class TestTokensCutter:
     def label_token(self) -> str:
         return "[M]"
 
-    def test_cut_mention_with_context(
-        self, tokenizer: BertTokenizerFast, label_token: str
-    ):
+    def test_cut_mention_with_context(self, tokenizer: BertTokenizerFast, label_token: str):
         text = "This is a test text with a mention of [M]John Smith[M]."
         tokenizer_wrapper = TokenizerWrapper(tokenizer, expected_size=10)
         tokens_cutter = TokensCutter(

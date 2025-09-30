@@ -14,9 +14,7 @@ _logger = logging.getLogger("models.searchers.brute_force_searcher")
 
 
 class BruteForceSearcher(Searcher):
-    def __init__(
-        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
-    ):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True):
         if torch.cuda.is_available():
             _logger.info("Running on CUDA.")
             self.device: torch.device = torch.device("cuda")
@@ -58,9 +56,7 @@ class _WrappedSearcher(nn.Module):
 
 
 class DPBruteForceSearcher(Searcher):
-    def __init__(
-        self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True
-    ):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True):
         if torch.cuda.is_available():
             _logger.info("Running on CUDA.")
             self.device: torch.device = torch.device("cuda")

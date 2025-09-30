@@ -41,17 +41,13 @@ def embed_for_at_to(
     dataset = MultiFileDataset(source_dir)
     dataset = OnlyOnceDataset(dataset)
     print("embedding...")
-    embs, tokens = embed(
-        dataset, model, batch_size, return_tokens=True, return_qids=False
-    )
+    embs, tokens = embed(dataset, model, batch_size, return_tokens=True, return_qids=False)
 
     np.savez_compressed(output_dir / "embs_tokens.npz", embs=embs, tokens=tokens)
 
 
 @gin.configurable
-def embs_from_tokens_and_model_name_at(
-    source, model_name, batch_size, dest, output_type: str
-):
+def embs_from_tokens_and_model_name_at(source, model_name, batch_size, dest, output_type: str):
     print("Building model...")
     output_type = ModelOutputType(output_type)
     builder = ModelBuilder(model_name)

@@ -24,9 +24,7 @@ class BatchSampler:
         )
         self.qids_to_idx = {qid: i for i, qid in enumerate(qids)}
 
-    def sample(
-        self, batch_embs, batch_qids, negative_cnt
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def sample(self, batch_embs, batch_qids, negative_cnt) -> tuple[np.ndarray, np.ndarray]:
         negative = self.negative_sampler.sample(batch_embs, batch_qids, negative_cnt)
         positive = np.array([self.qids_to_idx[qid] for qid in batch_qids])
         return positive, negative

@@ -46,9 +46,7 @@ def load_npz_content(file_path):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_changes_file_contents(
-    mock_qids_remap, create_dummy_npz_files, mixer_factory
-):
+def test_mix_changes_file_contents(mock_qids_remap, create_dummy_npz_files, mixer_factory):
     file_paths = create_dummy_npz_files
     original_contents = [load_npz_content(path) for path in file_paths]
 
@@ -64,9 +62,7 @@ def test_mix_changes_file_contents(
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_preserves_total_content(
-    mock_qids_remap, create_dummy_npz_files, mixer_factory
-):
+def test_mix_preserves_total_content(mock_qids_remap, create_dummy_npz_files, mixer_factory):
     file_paths = create_dummy_npz_files
     original_tokens = np.concatenate([load_npz_content(path)[0] for path in file_paths])
     original_qids = np.concatenate([load_npz_content(path)[1] for path in file_paths])
@@ -77,9 +73,7 @@ def test_mix_preserves_total_content(
     new_tokens = np.concatenate([load_npz_content(path)[0] for path in file_paths])
     new_qids = np.concatenate([load_npz_content(path)[1] for path in file_paths])
 
-    assert np.array_equal(
-        np.sort(original_tokens.flatten()), np.sort(new_tokens.flatten())
-    )
+    assert np.array_equal(np.sort(original_tokens.flatten()), np.sort(new_tokens.flatten()))
     assert np.array_equal(np.sort(original_qids), np.sort(new_qids))
 
 
@@ -139,9 +133,7 @@ def test_mix_single_file(mock_qids_remap, tmp_path, mixer_factory):
 
 
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_mix_preserves_consistency(
-    mock_qids_remap, create_dummy_npz_files, mixer_factory
-):
+def test_mix_preserves_consistency(mock_qids_remap, create_dummy_npz_files, mixer_factory):
     file_paths = create_dummy_npz_files
     original_shapes = [load_npz_content(path)[0].shape for path in file_paths]
 

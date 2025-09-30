@@ -8,9 +8,7 @@ class LoggerStep(PipelineStep, ABC):
     def __init__(self):
         super().__init__()
 
-    def process(
-        self, input_gen: Generator[str, None, None] = None
-    ) -> Generator[str, None, None]:
+    def process(self, input_gen: Generator[str, None, None] = None) -> Generator[str, None, None]:
         self.introduce()
         for item in input_gen:
             self.logging_func(item)

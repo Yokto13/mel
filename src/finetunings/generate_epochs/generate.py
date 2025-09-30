@@ -9,13 +9,11 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from finetunings.generate_epochs.datasets import (BatcherDataset,
-                                                  DamuelNeighborsIterator)
+from finetunings.generate_epochs.datasets import BatcherDataset, DamuelNeighborsIterator
 from models.batch_sampler import BatchSampler
 from models.negative_sampler import NegativeSamplingType
 from models.searchers.brute_force_searcher import DPBruteForceSearcher
-from utils.calculate_qids_distribution import \
-    calculate_qids_distribution_from_links
+from utils.calculate_qids_distribution import calculate_qids_distribution_from_links
 from utils.loaders import load_embs_and_qids
 from utils.multifile_dataset import MultiFileDataset
 
@@ -37,21 +35,13 @@ def reorder_data_to_match_qids(tokens, wrong_qids, correct_qids):
     if not np.array_equal(np.unique(wrong_qids), np.unique(correct_qids)):
         diff = np.setdiff1d(np.unique(wrong_qids), np.unique(correct_qids))
         print(f"Size of difference: {len(diff)}")
-        print(
-            f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}"
-        )
-        print(
-            f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}"
-        )
+        print(f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}")
+        print(f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}")
 
         diff = np.setdiff1d(np.unique(correct_qids), np.unique(wrong_qids))
         print(f"Size of difference: {len(diff)}")
-        print(
-            f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}"
-        )
-        print(
-            f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}"
-        )
+        print(f"Smallest value in difference: {np.min(diff) if len(diff) > 0 else 'N/A'}")
+        print(f"Greatest value in difference: {np.max(diff) if len(diff) > 0 else 'N/A'}")
         raise ValueError("Qids contain different elements")
 
     # find the index of the correct qids in the wrong qids
@@ -96,8 +86,8 @@ def generate(
 
     negative_sampler_kwargs = {}
     if "distribution" in NEGATIVE_SAMPLING_TYPE:
-        negative_sampler_kwargs["qids_distribution"] = (
-            calculate_qids_distribution_from_links(LINKS_EMBS_DIR, index_qids)
+        negative_sampler_kwargs["qids_distribution"] = calculate_qids_distribution_from_links(
+            LINKS_EMBS_DIR, index_qids
         )
         negative_sampler_kwargs["randomly_sampled_cnt"] = 1
     negative_sampler_kwargs["limit_negs"] = 10
@@ -125,9 +115,7 @@ def generate(
     if not are_qids_same:
         _logger.warning("Qids are not the same")
         if len(qids) != len(batch_sampler.qids):
-            raise ValueError(
-                "Qids are not the same, and they don't have the same length"
-            )
+            raise ValueError("Qids are not the same, and they don't have the same length")
         _logger.warning(f"Reordering qids and tokens to match the batch sampler")
         tokens = reorder_data_to_match_qids(tokens, qids, batch_sampler.qids)
     _logger.debug("Tokens created")

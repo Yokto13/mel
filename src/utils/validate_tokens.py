@@ -114,9 +114,7 @@ def _compare_leaf_directories(dir1: str, dir2: str) -> bool:
             are_equal = False
             not_equal_tokens_cnt += 1
 
-    print(
-        f"Ratio of not equal tokens: {not_equal_tokens_cnt / len(tokens2) * 100:.2f}%"
-    )
+    print(f"Ratio of not equal tokens: {not_equal_tokens_cnt / len(tokens2) * 100:.2f}%")
 
     if not are_equal:
         print("Failing in the following directories:")

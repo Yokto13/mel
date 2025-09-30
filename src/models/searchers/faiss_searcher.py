@@ -58,9 +58,7 @@ class FaissSearcher(Searcher):
 
         # Create CPU index first
         cpu_quantizer = faiss.IndexFlatL2(self.d)
-        cpu_index = faiss.IndexIVFPQ(
-            cpu_quantizer, self.d, self.nlist, self.m, self.nbits
-        )
+        cpu_index = faiss.IndexIVFPQ(cpu_quantizer, self.d, self.nlist, self.m, self.nbits)
 
         # Convert to GPU
         if self.ngpu == 1:

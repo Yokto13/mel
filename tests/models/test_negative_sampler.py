@@ -5,9 +5,13 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from models.negative_sampler import (NegativeSampler, NegativeSamplingType,
-                                     _get_sampler, _sample_shuffling_numba,
-                                     _sample_top_numba)
+from models.negative_sampler import (
+    NegativeSampler,
+    NegativeSamplingType,
+    _get_sampler,
+    _sample_shuffling_numba,
+    _sample_top_numba,
+)
 from models.searchers import ScaNNSearcher, SimplifiedBruteForceSearcher
 
 

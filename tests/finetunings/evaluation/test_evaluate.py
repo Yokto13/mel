@@ -31,9 +31,7 @@ def test_evaluate(monkeypatch, mock_logger):
     def fake_find_recall_with_searcher(searcher, mewsli_path, recalls):
         calls.append((searcher, mewsli_path, recalls))
 
-    monkeypatch.setattr(
-        evaluate, "find_recall_with_searcher", fake_find_recall_with_searcher
-    )
+    monkeypatch.setattr(evaluate, "find_recall_with_searcher", fake_find_recall_with_searcher)
     evaluate.evaluate("/root", 1, langs=langs)
     assert len(calls) == len(langs)
     for i, lang in enumerate(langs):

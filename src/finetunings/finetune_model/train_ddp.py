@@ -13,15 +13,17 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.optim as optim
-import wandb
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 
-from finetunings.finetune_model.data import (LightWeightDataset,
-                                             SaveInformation, save_model)
+import wandb
+from finetunings.finetune_model.data import (
+    LightWeightDataset,
+    SaveInformation,
+    save_model,
+)
 from finetunings.finetune_model.ddp import cleanup, setup
-from finetunings.finetune_model.monitoring import (get_gradient_norm,
-                                                   process_metrics)
+from finetunings.finetune_model.monitoring import get_gradient_norm, process_metrics
 from finetunings.finetune_model.train import forward_to_embeddings, load_model
 from utils.running_averages import RunningAverages
 
@@ -66,9 +68,7 @@ def construct_labels(dataset: LightWeightDataset) -> np.ndarray:
 
 
 @torch.compile
-def _calculate_loss(
-    links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion
-):
+def _calculate_loss(links_embedded, descs_embedded, labels, LOGIT_MULTIPLIER, criterion):
     outputs = torch.mm(links_embedded, descs_embedded.t())
     outputs = outputs * LOGIT_MULTIPLIER
     loss = criterion(outputs, labels) + criterion(outputs.t(), labels.t())
@@ -189,12 +189,8 @@ def _ddp_train(
             with torch.autocast(device_type="cuda"):
                 replica_part = forward_to_embeddings(replica_part, model)
 
-                with (
-                    torch.no_grad()
-                ):  # all_gather cannot propagate gradients so make it explicit
-                    all_replicas = [
-                        torch.zeros_like(replica_part) for _ in range(world_size)
-                    ]
+                with torch.no_grad():  # all_gather cannot propagate gradients so make it explicit
+                    all_replicas = [torch.zeros_like(replica_part) for _ in range(world_size)]
                     torch.distributed.all_gather(all_replicas, replica_part)
 
                 # Allow gradients propagation for the slice owned by the current process

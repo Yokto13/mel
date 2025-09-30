@@ -6,9 +6,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from utils.loaders import (AliasTableLoader, load_embs_and_qids,
-                           load_embs_qids_tokens, load_mentions, load_qids,
-                           load_qids_npy)
+from utils.loaders import (
+    AliasTableLoader,
+    load_embs_and_qids,
+    load_embs_qids_tokens,
+    load_mentions,
+    load_qids,
+    load_qids_npy,
+)
 
 
 def mock_remap_qids(qids, _):
@@ -71,9 +76,7 @@ def test_load_mentions_with_string_path(mock_qids_remap):
 )
 @pytest.mark.parametrize("use_string_path", [True, False])
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_embs_qids_loaders(
-    mock_qids_remap, loader_func, file_name, test_data, use_string_path
-):
+def test_embs_qids_loaders(mock_qids_remap, loader_func, file_name, test_data, use_string_path):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:
@@ -118,9 +121,7 @@ def test_embs_qids_loaders(
     reason="Sorting is currently disabled because it interferes with MultifileDataset"
 )
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_loaders_sort(
-    mock_qids_remap, loader_func, file_name, test_data, use_string_path
-):
+def test_loaders_sort(mock_qids_remap, loader_func, file_name, test_data, use_string_path):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:
@@ -180,9 +181,7 @@ def test_loaders_sort_corresponding(
 
         loaded_data = loader_func(dir_path)
 
-        qid_emb_test_data = {
-            qid: emb for qid, emb in zip(test_data["qids"], test_data["embs"])
-        }
+        qid_emb_test_data = {qid: emb for qid, emb in zip(test_data["qids"], test_data["embs"])}
 
         for emb, qid in zip(loaded_data[0], loaded_data[1]):
             assert np.array_equal(emb, qid_emb_test_data[qid])
@@ -215,9 +214,7 @@ def test_loaders_sort_corresponding(
     reason="Sorting is currently disabled because it interferes with MultifileDataset"
 )
 @patch("utils.qids_remap.qids_remap", side_effect=mock_remap_qids)
-def test_loaders_sort_stable(
-    mock_qids_remap, loader_func, file_name, test_data, use_string_path
-):
+def test_loaders_sort_stable(mock_qids_remap, loader_func, file_name, test_data, use_string_path):
     with tempfile.TemporaryDirectory() as temp_dir:
         dir_path = Path(temp_dir)
         if use_string_path:

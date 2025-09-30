@@ -17,9 +17,7 @@ def combine_embs_by_qid(input_dir_path: str, output_dir_path: str) -> None:
 
     qid_to_embs = {}
 
-    for emb, qid in tqdm(
-        zip(embs, qids), total=len(qids), desc="Grouping embeddings by qid"
-    ):
+    for emb, qid in tqdm(zip(embs, qids), total=len(qids), desc="Grouping embeddings by qid"):
         if qid not in qid_to_embs:
             qid_to_embs[qid] = []
         qid_to_embs[qid].append(emb)

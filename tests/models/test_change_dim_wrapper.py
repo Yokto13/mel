@@ -70,9 +70,7 @@ def test_smaller_dim_with_real_model(target_dim, model_name):
 
 @pytest.mark.parametrize("target_dim", [16, 128, 256, 512])
 def test_smaller_dim_with_hf_simple_model(target_dim):
-    _test_smaller_dim_with_real_model(
-        target_dim, "hf-internal-testing/tiny-random-BertModel"
-    )
+    _test_smaller_dim_with_real_model(target_dim, "hf-internal-testing/tiny-random-BertModel")
 
 
 def _test_smaller_dim_with_real_model(target_dim, model_name):

@@ -6,7 +6,9 @@ import torch
 from transformers import AutoTokenizer
 
 from finetunings.finetune_model.data import (
-    LightWeightDataset, LinksAndDescriptionsTogetherDataset)
+    LightWeightDataset,
+    LinksAndDescriptionsTogetherDataset,
+)
 from finetunings.finetune_model.train import forward_to_embeddings
 from finetunings.finetune_model.train_ddp import construct_labels
 from utils.model_factory import ModelFactory
@@ -61,12 +63,8 @@ class TestForwardToEmbeddings:
     @pytest.fixture(scope="module")
     def model_and_tokenizer(self):
         # Load the model and tokenizer
-        model = ModelFactory.auto_load_from_file(
-            "hf-internal-testing/tiny-random-BertModel"
-        )
-        tokenizer = AutoTokenizer.from_pretrained(
-            "hf-internal-testing/tiny-random-BertModel"
-        )
+        model = ModelFactory.auto_load_from_file("hf-internal-testing/tiny-random-BertModel")
+        tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-BertModel")
         return model, tokenizer
 
     @pytest.fixture(scope="module")
@@ -80,9 +78,7 @@ class TestForwardToEmbeddings:
     def test_forward_to_embeddings(self, model_and_tokenizer, sample_texts):
         model, tokenizer = model_and_tokenizer
 
-        inputs = tokenizer(
-            sample_texts, padding=True, truncation=True, return_tensors="pt"
-        )
+        inputs = tokenizer(sample_texts, padding=True, truncation=True, return_tensors="pt")
         input_ids = inputs["input_ids"]
 
         result = forward_to_embeddings(input_ids, model)
@@ -100,9 +96,7 @@ class TestForwardToEmbeddings:
 class TestLightWeightDataset:
     @pytest.fixture
     def mock_data(self):
-        links = np.array(
-            [[1, 2, 3, 4, 5, 0], [6, 7, 8, 9, 10, 0], [11, 12, 13, 14, 15, 0]]
-        )
+        links = np.array([[1, 2, 3, 4, 5, 0], [6, 7, 8, 9, 10, 0], [11, 12, 13, 14, 15, 0]])
         descriptions = np.array(
             [
                 [101, 102, 103, 104, 105, 0],
@@ -147,9 +141,7 @@ class TestLightWeightDataset:
 
     def test_getitem_basic(self, mock_dataset):
         item = mock_dataset[1]
-        expected_item = np.concatenate(
-            ([6, 7, 8, 9, 10, 0], [106, 107, 108, 109, 110, 0])
-        )
+        expected_item = np.concatenate(([6, 7, 8, 9, 10, 0], [106, 107, 108, 109, 110, 0]))
         assert np.array_equal(item, expected_item)
 
     def test_getitem_rank_0(self, mock_dataset_rank_0):

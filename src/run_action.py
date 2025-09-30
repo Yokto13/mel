@@ -3,26 +3,27 @@ from functools import partial
 
 logging.basicConfig(level=logging.INFO)
 
-import wandb
 from fire import Fire
 
+import wandb
 from baselines.olpeat.at_embeddings import embs_from_tokens_and_model_name_at
 from baselines.olpeat.find_recall import find_recall as find_recall_olpeat
 from baselines.string_alias_tables.all_languages import all_languages
 from finetunings.evaluation.evaluate import evaluate
-from finetunings.file_processing.gathers import (move_tokens,
-                                                 remove_duplicates, rename)
+from finetunings.file_processing.gathers import move_tokens, remove_duplicates, rename
 from finetunings.finetune_model.train import train
 from finetunings.finetune_model.train_ddp import train_ddp
-from finetunings.generate_epochs.embed_links_for_generation import \
-    embed_links_for_generation
+from finetunings.generate_epochs.embed_links_for_generation import (
+    embed_links_for_generation,
+)
 from finetunings.generate_epochs.generate import generate
 from multilingual_dataset.combine_embs import combine_embs_by_qid
-from multilingual_dataset.creator import (create_multilingual_dataset,
-                                          run_kb_creator)
+from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
 from utils.arg_names import get_args_names
-from utils.embeddings import (embs_from_tokens_and_model_name,
-                              embs_from_tokens_model_name_and_state_dict)
+from utils.embeddings import (
+    embs_from_tokens_and_model_name,
+    embs_from_tokens_model_name_and_state_dict,
+)
 from utils.validate_tokens import validate_tokens
 
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"

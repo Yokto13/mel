@@ -39,9 +39,7 @@ def test_small(generate_data):
 def test_large(generate_data):
     from models.searchers.faiss_searcher import FaissSearcher
 
-    embs, queries, results = generate_data(
-        num_points=10000, dim=64, num_queries=50, seed=123
-    )
+    embs, queries, results = generate_data(num_points=10000, dim=64, num_queries=50, seed=123)
     bf = BruteForceSearcher(embs, results)
     fs = FaissSearcher(embs, results)
     # fs.build()
