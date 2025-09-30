@@ -5,6 +5,7 @@ from pathlib import Path
 import gin
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 # from tokenization.pipeline import DamuelAliasTablePipeline
 from tokenization.runner import run_alias_table_damuel
@@ -114,20 +115,29 @@ def load_qids_npy(file_path: str | Path) -> np.ndarray:
 @_sort_by_output(1)
 @qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
-def load_tokens_qids_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+def load_tokens_qids_from_dir(dir_path: str | Path, verbose=False) -> tuple[np.ndarray, np.ndarray]:
     """
     Loads mention tokens and query IDs from all .npz files in a given directory.
 
     Args:
         dir_path (str | Path): Path to the directory containing .npz files.
+        verbose (bool): If True, displays a progress bar while loading files.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: A tuple containing two numpy arrays:
             - tokens: Array of mention tokens loaded from the files.
             - qids: Array of query IDs loaded from the files.
     """
+    if type(dir_path) == str:
+        dir_path = Path(dir_path)
     tokens, qids = [], []
-    for file in dir_path.iterdir():
+    iterator = dir_path.iterdir()
+    if verbose:
+        total = sum(1 for itm in dir_path.iterdir() if itm.is_file() and itm.suffix == ".npz")
+        iterator = tqdm(
+            dir_path.iterdir(), desc=f"Loading tokens and qids from {dir_path}", total=total
+        )
+    for file in iterator:
         if file.is_file() and file.suffix == ".npz":
             d = np.load(file)
             tokens.extend(d["tokens"])
