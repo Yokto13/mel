@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 from tqdm import tqdm
 
-from utils.loaders import load_mentions
+from utils.loaders import load_tokens_qids
 
 
 def _shuffle(tokens: np.ndarray, qids: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -22,7 +22,7 @@ def _load_tokens_and_qids(chunk: list[Path]) -> tuple[np.ndarray, np.ndarray]:
     """Load tokens and qids from a chunk of files."""
 
     def load_file(file_path):
-        return load_mentions(file_path)
+        return load_tokens_qids(file_path)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         results = list(executor.map(load_file, chunk))

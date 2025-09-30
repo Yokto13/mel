@@ -10,9 +10,9 @@ from utils.loaders import (
     AliasTableLoader,
     load_embs_and_qids,
     load_embs_qids_tokens,
-    load_mentions,
     load_qids,
     load_qids_npy,
+    load_tokens_qids,
 )
 
 
@@ -30,7 +30,7 @@ def test_load_mentions_with_path_object(mock_qids_remap):
 
         np.savez_compressed(file_path, tokens=test_tokens, qids=test_qids)
 
-        loaded_tokens, loaded_qids = load_mentions(file_path)
+        loaded_tokens, loaded_qids = load_tokens_qids(file_path)
 
         assert np.array_equal(loaded_tokens, test_tokens)
         assert np.array_equal(loaded_qids, test_qids)
@@ -46,7 +46,7 @@ def test_load_mentions_with_string_path(mock_qids_remap):
 
         np.savez_compressed(file_path, tokens=test_tokens, qids=test_qids)
 
-        loaded_tokens, loaded_qids = load_mentions(file_path)
+        loaded_tokens, loaded_qids = load_tokens_qids(file_path)
 
         assert np.array_equal(loaded_tokens, test_tokens)
         assert np.array_equal(loaded_qids, test_qids)

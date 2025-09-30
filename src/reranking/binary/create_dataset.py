@@ -11,7 +11,7 @@ sys.path.append("/lnet/work/home-students-external/farhan/mel-reborn/src")
 
 from models.searchers.brute_force_searcher import BruteForceSearcher
 from utils.embeddings import create_attention_mask
-from utils.loaders import load_embs_and_qids, load_mentions_from_dir
+from utils.loaders import load_embs_and_qids, load_tokens_qids_from_dir
 from utils.model_factory import ModelFactory
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,7 +42,7 @@ def create_binary_dataset(
     index_embs, index_qids = load_embs_and_qids(index_embs_dir)
     index_qids_set = set(index_qids)
     index_embs = index_embs.astype(np.float16)
-    index_tokens, _ = load_mentions_from_dir(index_tokens_path)
+    index_tokens, _ = load_tokens_qids_from_dir(index_tokens_path)
     print(index_tokens.shape)
     print(len(index_qids_set))
 
@@ -50,7 +50,7 @@ def create_binary_dataset(
     searcher = BruteForceSearcher(index_embs, index_qids)
 
     # Load link tokens and qids
-    link_tokens, link_qids = load_mentions_from_dir(link_tokens_path)
+    link_tokens, link_qids = load_tokens_qids_from_dir(link_tokens_path)
     # Loaders order by qids which is not necessarily what we want
     print(link_tokens.shape)
     # Load embedding model
@@ -142,7 +142,7 @@ def create_multiclass_dataset(
     index_embs, index_qids = load_embs_and_qids(index_embs_dir)
     index_qids_set = set(index_qids)
     index_embs = index_embs.astype(np.float16)
-    index_tokens, _ = load_mentions_from_dir(index_tokens_path)
+    index_tokens, _ = load_tokens_qids_from_dir(index_tokens_path)
     print(index_tokens.shape)
     print(len(index_qids_set))
 
@@ -152,7 +152,7 @@ def create_multiclass_dataset(
     searcher = BruteForceSearcher(index_embs, index_qids)
 
     # Load link tokens and qids
-    link_tokens, link_qids = load_mentions_from_dir(link_tokens_path)
+    link_tokens, link_qids = load_tokens_qids_from_dir(link_tokens_path)
     # Load embedding model
     model = ModelFactory.auto_load_from_file(
         model_name,

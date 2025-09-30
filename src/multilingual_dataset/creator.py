@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from multilingual_dataset.mixer import Mixer, ParallelMixer
 from utils.damuel_paths import DamuelPaths
-from utils.loaders import load_mentions, load_qids
+from utils.loaders import load_qids, load_tokens_qids
 
 _logger = logging.getLogger("multilingual_dataset.creator")
 
@@ -64,7 +64,7 @@ class _LinksCreator:
 
     def _copy_files(self, source_file_paths: Iterable[Path], dest_file_path: Path) -> None:
         def load_file(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
-            return load_mentions(file_path)
+            return load_tokens_qids(file_path)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             results = list(executor.map(load_file, source_file_paths))
@@ -87,7 +87,7 @@ class _LinksCreator:
     def _remove_often_qids(self, file_paths: list[Path]):
         qid_counter = Counter()
         for file_path in tqdm(file_paths, desc="Counting QIDs", total=len(file_paths)):
-            tokens, qids = load_mentions(file_path)
+            tokens, qids = load_tokens_qids(file_path)
 
             tokens_filtered, qids_filtered = [], []
             for token, qid in zip(tokens, qids):
@@ -145,7 +145,7 @@ class _KBCreator:
         self, wanted_qids: list[int], filepaths: list[Path], lang: str
     ) -> None:
         for i, descs_file_path in enumerate(filepaths):
-            tokens, qids = load_mentions(descs_file_path)
+            tokens, qids = load_tokens_qids(descs_file_path)
 
             index = np.isin(qids, list(wanted_qids))
             chosen_tokens = tokens[index]
