@@ -115,7 +115,9 @@ def load_qids_npy(file_path: str | Path) -> np.ndarray:
 @_sort_by_output(1)
 @qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
-def load_tokens_qids_from_dir(dir_path: str | Path, verbose=False) -> tuple[np.ndarray, np.ndarray]:
+def load_tokens_qids_from_dir(
+    dir_path: str | Path, verbose=False, max_items_to_load: int | None = None
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Loads mention tokens and query IDs from all .npz files in a given directory.
 
@@ -142,6 +144,8 @@ def load_tokens_qids_from_dir(dir_path: str | Path, verbose=False) -> tuple[np.n
             d = np.load(file)
             tokens.extend(d["tokens"])
             qids.extend(d["qids"])
+        if max_items_to_load is not None and len(tokens) >= max_items_to_load:
+            break
     return np.array(tokens), np.array(qids)
 
 
