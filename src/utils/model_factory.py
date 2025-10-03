@@ -45,6 +45,18 @@ class ModelFactory:
         target_dim: int | None = None,
         output_type: ModelOutputType | None = None,
     ) -> torch.nn.Module:
+        """
+        Automatically loads a model from a specified file, optionally applying a state dictionary, target dimension, and output type.
+
+        Args:
+            file_path (str): Path to the model definition file.
+            state_dict_path (str | None, optional): Path to the state dictionary file to load model weights. If None, weights are not loaded.
+            target_dim (int | None, optional): Target output dimension for the model. If None, uses the default dimension.
+            output_type (ModelOutputType | None, optional): Type of model output. If None, defaults to ModelOutputType.PoolerOutput.
+
+        Returns:
+            torch.nn.Module: The constructed and optionally weight-loaded model instance.
+        """
         builder = ModelBuilder(file_path)
         if output_type is None:
             output_type = ModelOutputType.PoolerOutput  # the original/old default

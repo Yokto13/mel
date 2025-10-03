@@ -7,8 +7,6 @@ import torch
 import torch.utils.data
 from tqdm import tqdm
 
-sys.path.append("/lnet/work/home-students-external/farhan/mel-reborn/src")
-
 from models.searchers.brute_force_searcher import BruteForceSearcher
 from utils.embeddings import create_attention_mask
 from utils.loaders import load_embs_and_qids, load_tokens_qids_from_dir
@@ -40,17 +38,15 @@ def create_binary_dataset(
 ) -> None:
     # Load index embeddings, qids, and tokens
     index_embs, index_qids = load_embs_and_qids(index_embs_dir)
-    index_qids_set = set(index_qids)
     index_embs = index_embs.astype(np.float16)
     index_tokens, _ = load_tokens_qids_from_dir(index_tokens_path)
     print(index_tokens.shape)
-    print(len(index_qids_set))
 
     # Create BruteForceSearcher
     searcher = BruteForceSearcher(index_embs, index_qids)
 
     # Load link tokens and qids
-    link_tokens, link_qids = load_tokens_qids_from_dir(link_tokens_path)
+    link_tokens, link_qids = load_tokens_qids_from_dir(link_tokens_path, max_items_to_load=10**7)
     # Loaders order by qids which is not necessarily what we want
     print(link_tokens.shape)
     # Load embedding model
@@ -61,11 +57,19 @@ def create_binary_dataset(
     )
     model.eval()
     model.to(device)
+
+    index_qids_set = set(index_qids)
+    known_qids_mask = np.array([q in index_qids_set for q in link_qids])
+
+    link_tokens = link_tokens[known_qids_mask]
+    link_qids = link_qids[known_qids_mask]
+
     # Create DataLoader
-    dataset = list(zip(link_tokens, link_qids))
-    dataset = torch.utils.data.Subset(
-        dataset, [i for i, (tokens, qid) in enumerate(dataset) if qid in index_qids_set]
-    )
+    link_tokens = torch.from_numpy(link_tokens)
+    link_qids = torch.from_numpy(link_qids)
+
+    link_tokens = link_tokens.to(torch.int64)
+    dataset = torch.utils.data.TensorDataset(link_tokens, link_qids)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Initialize dataset arrays
@@ -95,7 +99,7 @@ def create_binary_dataset(
         # Find top matches
         top_qids = searcher.find(batch_embs.numpy().astype(np.float16), num_neighbors=2)
 
-        positive_mask = [index_qid_to_index[qid] for qid in batch_qids.numpy()]
+        positive_mask = [index_qid_to_index[int(qid)] for qid in batch_qids.numpy()]
         data_size = len(batch_tokens)
         description_tokens[output_index : output_index + data_size] = index_tokens[positive_mask]
         link_tokens_list[output_index : output_index + data_size] = batch_tokens.numpy()
@@ -200,28 +204,27 @@ def create_multiclass_dataset(
 
 if __name__ == "__main__":
     index_embs_dir = Path(
-        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/damuel_for_index_3"
+        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/damuel_for_index_6"
     )
     index_tokens_path = Path(
-        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/damuel_descs_together_tokens"
+        "/lnet/work/home-students-external/farhan/troja/outputs/v2_normal_filtered/descs_pages"
     )
     link_tokens_path = Path(
-        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/damuel_links_together_tokens_0"
+        "/lnet/work/home-students-external/farhan/troja/outputs/v2_normal_filtered/links"
     )
     embedding_model_path = Path(
-        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/ml9/models_2/final.pth"
+        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
     )
     output_path = Path(
         "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test/reranker_dataset.npz"
     )
     model_name = "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
 
-    create_multiclass_dataset(
+    create_binary_dataset(
         index_embs_dir,
         index_tokens_path,
         link_tokens_path,
         model_name,
         embedding_model_path,
         output_path,
-        total_classes=10,
     )
