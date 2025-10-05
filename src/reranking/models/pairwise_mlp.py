@@ -58,6 +58,7 @@ class PairwiseMLPReranker(BaseRerankingModel):
             target_dim=target_dim,
             output_type=resolved_output_type,
         )
+        self.base_model.eval()
 
         self.embedding_dim = _infer_output_dim(self.base_model)
         hidden_dim = mlp_hidden_dim or self.embedding_dim
@@ -102,13 +103,12 @@ class PairwiseMLPReranker(BaseRerankingModel):
         return loss
 
     def train(self):
-        self.super().train()
+        super().train()
+        # Make sure that base model is never trained.
         self.base_model.eval()
 
     @torch.inference_mode()
     def score(self, mention: str, entity_description: str) -> float:
-        self.eval()
-
         mention_tokens = self.tokenizer(
             mention,
             padding=True,

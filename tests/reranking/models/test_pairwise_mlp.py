@@ -178,3 +178,27 @@ def test_pairwise_mlp_with_lealla_backbone() -> None:
     positive_probability = torch.sigmoid(results["manual_logits"][0]).item()
     assert 0.0 <= results["score"] <= 1.0
     assert math.isclose(results["score"], positive_probability, rel_tol=1e-5)
+
+
+@pytest.mark.slow
+def test_pairwise_mlp_with_lealla_backbone_more_iters() -> None:
+    model = PairwiseMLPReranker(
+        "setu4993/LEALLA-base",
+        mlp_hidden_dim=1,
+        dropout=0.0,
+    )
+
+    for _ in range(3):
+        labels = _prepare_labels(len(MENTION_TEXTS))
+        results = _run_common_checks(model, MENTION_TEXTS, ENTITY_TEXTS, labels)
+
+        assert torch.allclose(
+            results["encode"],
+            results["manual_mention_embeddings"],
+        )
+
+        assert torch.allclose(results["loss"], results["expected_loss"], atol=1e-6)
+
+        positive_probability = torch.sigmoid(results["manual_logits"][0]).item()
+        assert 0.0 <= results["score"] <= 1.0
+        assert math.isclose(results["score"], positive_probability, rel_tol=1e-5)
