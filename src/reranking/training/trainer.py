@@ -1,42 +1,25 @@
 import logging
 import os
-from copy import deepcopy
-from pathlib import Path
 
 import numpy as np
 import torch
-
-from reranking.models.pairwise_mlp import _to_device
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import gin
 import torch.distributed as dist
 import torch.multiprocessing as mp
-import torch.nn as nn
-import torch.optim as optim
-import wandb
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
-from finetunings.finetune_model.data import (
-    LightWeightDataset,
-    SaveInformation,
-    save_model,
-)
 from finetunings.finetune_model.ddp import cleanup, setup
-from finetunings.finetune_model.monitoring import get_gradient_norm, process_metrics
-from finetunings.finetune_model.train import forward_to_embeddings, load_model
-from reranking.models.base import BaseRerankingModel
-from reranking.models.pairwise_mlp import PairwiseMLPReranker
-from utils.running_averages import RunningAverages
+from reranking.training.training_configs import TrainingConfig, pairwise_mlp
 
 # Settings ===========================================
 
-_RUNNING_AVERAGE_SMALL = 100
-_RUNNING_AVERAGE_BIG = 1000
 
-_logger = logging.getLogger("finetuning.finetune_model.train_ddp")
+_logger = logging.getLogger("reranking.train.trainer")
 
 
 if torch.cuda.is_available():
@@ -66,13 +49,25 @@ torch.manual_seed(SEED)
 def _ddp_train(
     rank: int,
     world_size: int,
-    model: BaseRerankingModel,
-    dataloader,
-    optimizer,
+    training_config: TrainingConfig,
     epochs,
     gradient_clip=1.0,
 ):
     setup(rank, world_size)
+
+    model = training_config.model
+    dataset = training_config.dataset
+    optimizer = training_config.optimizer
+
+    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True)
+
+    dataloader = DataLoader(
+        dataset,
+        batch_size=training_config.batch_size,
+        sampler=sampler,
+        pin_memory=True,
+        num_workers=2,
+    )
 
     model = DDP(model.to(rank), device_ids=[rank])
     model = torch.compile(model)
@@ -97,12 +92,23 @@ def _ddp_train(
         if is_the_main_process:
             _logger.info(f"Starting epoch {epoch + 1}/{epochs}")
 
-        for batch in dataloader:
+        for links, entities, labels in dataloader:
             global_step += 1
+            links = links.to(rank, non_blocking=True)
+            entities = entities.to(rank, non_blocking=True)
+            labels = labels.to(rank, non_blocking=True)
+
+            batch_data = {
+                "mention_tokens": links,
+                "entity_tokens": entities,
+                "labels": labels,
+            }
 
             with torch.autocast(device_type="cuda"):
-                loss = model.train_step(_to_device(batch, rank))
+                loss = model.train_step(batch_data)
             step()
+            if is_the_main_process and global_step % 10 == 0:
+                _logger.info(f"Step {global_step}, loss: {loss.item():.4f}")
 
     cleanup()
 
@@ -112,23 +118,28 @@ def cleanup():
 
 
 # Training ===========================================
-@gin.configurable
 def train_ddp():
-    model = PairwiseMLPReranker(...)
-    dataloader = ...
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    _logger.info("Starting DDP training")
+    gradient_clip = 1.0
     epochs = 10
     world_size = torch.cuda.device_count()
+    _logger.debug(f"Using {world_size} GPUs for training")
+
+    _logger.info("Loading training configuration")
+    training_config = pairwise_mlp()
+    _logger.info(f"Training configuration loaded: {training_config.config_name}")
 
     mp.spawn(
         _ddp_train,
         args=(
             world_size,
-            model,
-            dataloader,
-            optimizer,
+            training_config,
             epochs,
             gradient_clip,
         ),
         nprocs=world_size,
     )
+
+
+if __name__ == "__main__":
+    train_ddp()
