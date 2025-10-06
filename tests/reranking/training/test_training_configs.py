@@ -12,6 +12,7 @@ def test_get_output_path_creates_directory(tmp_path):
         model=MagicMock(),
         dataset=MagicMock(),
         optimizer=MagicMock(),
+        save_each=100,
         batch_size=1,
         output_dir=str(output_root),
     )

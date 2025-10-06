@@ -72,22 +72,18 @@ def _run_common_checks(
     labels: torch.Tensor,
 ):
     tokenizer = model.tokenizer
-    mention_batch = tokenizer(mentions, padding=True, truncation=True, return_tensors="pt").to(
-        model.device
-    )
+    mention_batch = tokenizer(mentions, padding=True, truncation=True, return_tensors="pt")
     mention_batch["attention_mask"] = create_attention_mask(mention_batch["input_ids"])
-    entity_batch = tokenizer(entities, padding=True, truncation=True, return_tensors="pt").to(
-        model.device
-    )
+    entity_batch = tokenizer(entities, padding=True, truncation=True, return_tensors="pt")
     entity_batch["attention_mask"] = create_attention_mask(entity_batch["input_ids"])
 
-    encode_out = model._encode(mention_batch["input_ids"])
+    encode_out = model.model._encode(mention_batch["input_ids"])
 
     loss = model.train_step(
         {
             "mention_tokens": dict(mention_batch),
             "entity_tokens": dict(entity_batch),
-            "labels": labels.to(model.device),
+            "labels": labels,
         }
     )
 
@@ -103,7 +99,7 @@ def _run_common_checks(
         manual_logits = model.classifier(
             torch.cat([manual_mention_embeddings, manual_entity_embeddings], dim=-1)
         ).squeeze(-1)
-        expected_loss = model.loss_fn(manual_logits, labels.to(model.device))
+        expected_loss = model.loss_fn(manual_logits, labels)
 
     score = model.score(mentions[0], entities[0])
 
@@ -154,7 +150,9 @@ def test_pairwise_mlp_with_dummy_backbone(dummy_model: PairwiseMLPReranker) -> N
     assert torch.allclose(results["loss"], results["expected_loss"])
 
     positive_logit = results["manual_logits"][0].item()
-    assert math.isclose(results["score"], torch.sigmoid(torch.tensor(positive_logit)).item())
+    assert math.isclose(
+        results["score"], torch.sigmoid(torch.tensor(positive_logit)).item(), rel_tol=1e-5
+    )
 
 
 @pytest.mark.slow

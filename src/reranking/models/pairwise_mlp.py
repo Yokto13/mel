@@ -29,10 +29,6 @@ def _infer_output_dim(model: nn.Module) -> int:
     raise ValueError("Unable to infer output dimension from the provided base model.")
 
 
-def _to_device(batch: Mapping[str, torch.Tensor], device: torch.device) -> Dict[str, torch.Tensor]:
-    return {k: v.to(device) for k, v in batch.items()}
-
-
 class PairwiseMLPReranker(BaseRerankingModel):
     """Reranking model that augments a LEALLA encoder with an MLP head."""
 
@@ -46,10 +42,8 @@ class PairwiseMLPReranker(BaseRerankingModel):
         tokenizer_name_or_path: str | None = None,
         mlp_hidden_dim: int | None = None,
         dropout: float = 0.1,
-        device: torch.device | str = "cpu",
     ) -> None:
         super().__init__()
-        self.device = torch.device(device)
 
         resolved_output_type = _maybe_convert_output_type(output_type)
         self.base_model = ModelFactory.auto_load_from_file(
@@ -59,53 +53,43 @@ class PairwiseMLPReranker(BaseRerankingModel):
             output_type=resolved_output_type,
         )
         self.base_model.eval()
+        self.base_model.requires_grad_(False)
 
         self.embedding_dim = _infer_output_dim(self.base_model)
         hidden_dim = mlp_hidden_dim or self.embedding_dim
 
         self.classifier = nn.Sequential(
-            nn.Linear(self.embedding_dim * 2, hidden_dim),
-            nn.ReLU(),
+            nn.Linear(self.embedding_dim * 2, hidden_dim * 4),
+            nn.GELU(),
+            nn.Linear(4 * hidden_dim, hidden_dim),
+            nn.GELU(),
             nn.Dropout(p=dropout),
             nn.Linear(hidden_dim, 1),
         )
+
+        self.model = _PairwiseMLPReranker(self.base_model, self.classifier)
 
         tokenizer_id = tokenizer_name_or_path or model_name_or_path
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
         self.loss_fn = nn.BCEWithLogitsLoss()
 
-        self.to(self.device)
-
     def forward(
         self,
-        mention_tokens: Mapping[str, torch.Tensor],
-        entity_tokens: Mapping[str, torch.Tensor],
+        mention_tokens: torch.Tensor,
+        entity_tokens: torch.Tensor,
     ) -> torch.Tensor:
-        mention_tokens = _to_device(mention_tokens, self.device)
-        entity_tokens = _to_device(entity_tokens, self.device)
-
-        mention_embeddings = self._encode(mention_tokens)
-        entity_embeddings = self._encode(entity_tokens)
-
-        combined = torch.cat([mention_embeddings, entity_embeddings], dim=-1)
-        logits = self.classifier(combined).squeeze(-1)
-        return logits
+        return self.model.forward(mention_tokens, entity_tokens)
 
     def train_step(self, data: Dict[str, Any]) -> torch.Tensor:
         self.train()
 
         mention_tokens = data["mention_tokens"]
         entity_tokens = data["entity_tokens"]
-        labels = data["labels"].to(self.device).float().view(-1)
+        labels = data["labels"].float().view(-1)
 
         logits = self.forward(mention_tokens, entity_tokens).view(-1)
         loss = self.loss_fn(logits, labels)
         return loss
-
-    def train(self):
-        super().train()
-        # Make sure that base model is never trained.
-        self.base_model.eval()
 
     @torch.inference_mode()
     def score(self, mention: str, entity_description: str) -> float:
@@ -114,22 +98,36 @@ class PairwiseMLPReranker(BaseRerankingModel):
             padding=True,
             truncation=True,
             return_tensors="pt",
-        ).to(self.device)
+        )["input_ids"]
         entity_tokens = self.tokenizer(
             entity_description,
             padding=True,
             truncation=True,
             return_tensors="pt",
-        ).to(self.device)
-        mention_tokens["attention_mask"] = create_attention_mask(mention_tokens["input_ids"])
-        entity_tokens["attention_mask"] = create_attention_mask(entity_tokens["input_ids"])
-
-        logits = self.forward(
-            {k: v for k, v in mention_tokens.items()},
-            {k: v for k, v in entity_tokens.items()},
-        )
+        )["input_ids"]
+        logits = self.model.forward(mention_tokens, entity_tokens)
         probability = torch.sigmoid(logits).item()
         return probability
+
+
+class _PairwiseMLPReranker(nn.Module):
+    def __init__(self, base_model: nn.Module, classifier: nn.Module) -> None:
+        super().__init__()
+        self.base_model = base_model
+        self.classifier = classifier
+
+    def forward(
+        self,
+        mention_tokens: torch.Tensor,
+        entity_tokens: torch.Tensor,
+    ) -> torch.Tensor:
+
+        mention_embeddings = self._encode(mention_tokens)
+        entity_embeddings = self._encode(entity_tokens)
+
+        combined = torch.cat([mention_embeddings, entity_embeddings], dim=-1)
+        logits = self.classifier(combined).squeeze(-1)
+        return logits
 
     @torch.inference_mode()
     def _encode(self, tokens: Mapping[str, torch.Tensor] | torch.Tensor) -> torch.Tensor:
@@ -143,3 +141,9 @@ class PairwiseMLPReranker(BaseRerankingModel):
             attention_mask = create_attention_mask(tokens)
 
         return self.base_model(input_ids=input_ids, attention_mask=attention_mask)
+
+    def train(self, mode: bool = True) -> _PairwiseMLPReranker:
+        super().train(mode)
+        # Make sure that base model is never trained.
+        self.base_model.eval()
+        return self

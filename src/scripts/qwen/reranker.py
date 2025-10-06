@@ -7,27 +7,32 @@ class Reranker:
 
     _DEFAULT_INSTRUCTION = (
         "Your task is to determine if the provided Wikipedia description correctly corresponds "
-        "to the entity mention found in the query. The entity mention is marked by <M> and </M>. "
+        "to the entity mention found in the query. The entity mention is marked by [M] and [M]. "
         "Check if the description matches the entity. Answer strictly with 'yes' or 'no'.\n"
+        "Note that the language of the query and description may differ.\n"
+        "Do NOT consider the language; the goal is to tell whether description matches the entity in the query.\n"
         "Example:\n"
-        "  Query: 'What is the capital of <M>France</M>?'\n"
-        "  Description: 'Paris is the capital and largest city of France...'\n"
+        "  Query: 'What is the capital of [M] France [M]?'\n"
+        "  Description: '[M] Paris [M] is the capital and largest city of France...'\n"
         "  Answer: no\n"
-        "  Query: 'What is the <M>capital</M> of France?'\n"
-        "  Description: 'Paris is the capital and largest city of France...'\n"
+        "  Query: 'What is the [M] capital [M] of France?'\n"
+        "  Description: '[M] Paris [M] is the capital and largest city of France...'\n"
         "  Answer: yes"
     )
+    # _DEFAULT_INSTRUCTION = (
+    #     "Given a web search query, retrieve relevant passages that answer the query"
+    # )
     _SYSTEM_PROMPT = (
         "<|im_start|>system\n"
         "Judge whether the Document meets the requirements based on the Query and the Instruct "
         'provided. Note that the answer can only be "yes" or "no".<|im_end|>\n'
         "<|im_start|>user\n"
     )
-    _ASSISTANT_SUFFIX = "<|im_end|>\n" "<|im_start|>assistant\n" "<think>\n\n</think>\n\n"
+    _ASSISTANT_SUFFIX = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
 
     def __init__(
         self,
-        model_name: str = "Qwen/Qwen3-Reranker-0.6B",
+        model_name: str = "Qwen/Qwen3-Reranker-8B",
         max_length: int = 8192,
         instruction: str | None = None,
     ) -> None:
@@ -45,17 +50,11 @@ class Reranker:
 
     def score(self, mention: str, description: str, instruction: str | None = None) -> float:
         """Return probability that description matches mention."""
-        formatted_query = self._format_query(mention)
         formatted_instruction = instruction or self.instruction
-        prompt = self._format_instruction(formatted_instruction, formatted_query, description)
+        prompt = self._format_instruction(formatted_instruction, mention, description)
         inputs = self._process_inputs([prompt])
         probabilities = self._compute_probabilities(inputs)
         return probabilities[0]
-
-    def _format_query(self, mention: str) -> str:
-        has_markers = "<M>" in mention and "</M>" in mention
-        wrapped = mention if has_markers else f"<M>{mention}</M>"
-        return f"Identify the entity referenced by {wrapped}."
 
     def _format_instruction(self, instruction: str, query: str, document: str) -> str:
         return "<Instruct>: {instruction}\n<Query>: {query}\n<Document>: {doc}".format(

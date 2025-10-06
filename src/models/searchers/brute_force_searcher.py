@@ -45,7 +45,8 @@ class BruteForceSearcher(Searcher):
 class _WrappedSearcher(nn.Module):
     def __init__(self, kb_embs, num_neighbors):
         super().__init__()
-        self.kb_embs: torch.Tensor = nn.Parameter(kb_embs)
+        # Replace Parameter with register_buffer
+        self.register_buffer("kb_embs", kb_embs)
         self.num_neighbors: int = num_neighbors
 
     # @torch.compile
@@ -106,6 +107,10 @@ class DPBruteForceSearcher(Searcher):
                     _WrappedSearcher(torch.from_numpy(self.embs), num_neighbors)
                 )
                 self.module_searcher.to(self.device)
+                # Set module to eval() and disable gradients
+                self.module_searcher.eval()
+                for param in self.module_searcher.parameters():
+                    param.requires_grad = False
                 self.required_num_neighbors = num_neighbors
                 top_indices: torch.Tensor = self.module_searcher(
                     torch.from_numpy(batch).to(self.device)
@@ -130,7 +135,6 @@ class DPBruteForceSearcherPT(Searcher):
         self.required_num_neighbors: Optional[int] = None
         super().__init__(embs, results, run_build_from_init)
 
-    @torch.compile
     @torch.inference_mode()
     def find(self, batch: torch.Tensor, num_neighbors: int) -> np.ndarray:
         """
@@ -154,20 +158,25 @@ class DPBruteForceSearcherPT(Searcher):
         # with torch.inference_mode(), torch.autocast(
         #     device_type=self.device.type, dtype=torch.float16
         # ):
-        with torch.no_grad():
-            # A try except trick to avoid the overhead of checking if the module_searcher is None
-            # on every call to find.
-            # This is a bit of a hack, but it should make things faster as we are suggesting that the module_searcher is initialized.
-            try:
-                with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
-                    top_indices: torch.Tensor = self.module_searcher(batch)
-            except TypeError as e:
-                if self.module_searcher is not None:
-                    raise e
-                self.module_searcher = nn.DataParallel(_WrappedSearcher(self.embs, num_neighbors))
-                self.module_searcher.to(self.device)
-                self.required_num_neighbors = num_neighbors
+        # A try except trick to avoid the overhead of checking if the module_searcher is None
+        # on every call to find.
+        # This is a bit of a hack, but it should make things faster as we are suggesting that the module_searcher is initialized.
+        try:
+            with torch.amp.autocast(device_type="cuda"):
                 top_indices: torch.Tensor = self.module_searcher(batch)
+        except TypeError as e:
+            if self.module_searcher is not None:
+                raise e
+            self.module_searcher = torch.compile(
+                nn.DataParallel(_WrappedSearcher(self.embs, num_neighbors))
+            )
+            self.module_searcher.to(self.device)
+            # Set module to eval() and disable gradients
+            self.module_searcher.eval()
+            for param in self.module_searcher.parameters():
+                param.requires_grad = False
+            self.required_num_neighbors = num_neighbors
+            top_indices: torch.Tensor = self.module_searcher(batch)
 
         return self.results[top_indices.cpu().numpy()]
 
