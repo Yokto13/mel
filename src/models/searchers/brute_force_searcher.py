@@ -116,3 +116,60 @@ class DPBruteForceSearcher(Searcher):
 
     def build(self):
         pass
+
+
+class DPBruteForceSearcherPT(Searcher):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True):
+        if torch.cuda.is_available():
+            _logger.info("Running on CUDA.")
+            self.device: torch.device = torch.device("cuda")
+        else:
+            _logger.info("CUDA is not available.")
+            self.device: torch.device = torch.device("cpu")
+        self.module_searcher: Optional[nn.DataParallel] = None
+        self.required_num_neighbors: Optional[int] = None
+        super().__init__(embs, results, run_build_from_init)
+
+    @torch.compile
+    @torch.inference_mode()
+    def find(self, batch: torch.Tensor, num_neighbors: int) -> np.ndarray:
+        """
+        Finds the nearest neighbors for a given batch of input data.
+        CAREFUL: This is an optimized version that comes with potential pitfalls to get better performance.
+        Read Notes for details!
+
+        Args:
+            batch (torch.Tensor): A batch of input data for which neighbors are to be found.
+            num_neighbors (int): The number of nearest neighbors to retrieve.
+        Returns:
+            np.ndarray: An array containing the results corresponding to the nearest neighbors.
+        Raises:
+            TypeError: If `module_searcher` if an unexpected attribute access occurs when using module_searcher.
+        Notes:
+            - It is not possible to change num_neighbors after the first call to find.
+              If you need to do that, you need to reinitialize this object. If you call the find with different
+              num_neighbors, it will not raise an error and will fail silently.
+            - The first call to find will be slow, because the module_searcher will be initialized and torch.compile is called.
+        """
+        # with torch.inference_mode(), torch.autocast(
+        #     device_type=self.device.type, dtype=torch.float16
+        # ):
+        with torch.no_grad():
+            # A try except trick to avoid the overhead of checking if the module_searcher is None
+            # on every call to find.
+            # This is a bit of a hack, but it should make things faster as we are suggesting that the module_searcher is initialized.
+            try:
+                with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
+                    top_indices: torch.Tensor = self.module_searcher(batch)
+            except TypeError as e:
+                if self.module_searcher is not None:
+                    raise e
+                self.module_searcher = nn.DataParallel(_WrappedSearcher(self.embs, num_neighbors))
+                self.module_searcher.to(self.device)
+                self.required_num_neighbors = num_neighbors
+                top_indices: torch.Tensor = self.module_searcher(batch)
+
+        return self.results[top_indices.cpu().numpy()]
+
+    def build(self):
+        pass

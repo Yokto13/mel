@@ -5,6 +5,7 @@ import torch
 from models.searchers.brute_force_searcher import (
     BruteForceSearcher,
     DPBruteForceSearcher,
+    DPBruteForceSearcherPT,
 )
 
 # torch.compiler.disable(BruteForceSearcher.find)
@@ -128,4 +129,61 @@ class TestDPBruteForceSearcher:
     def test_dataparallel_initialization(self, small_embs):
         searcher = DPBruteForceSearcher(small_embs, np.arange(len(small_embs)))
         searcher.find(np.random.random((1, 3)), 2)  # This should initialize module_searcher
+        assert isinstance(searcher.module_searcher, torch.nn.DataParallel)
+
+
+class TestDPBruteForceSearcherPT:
+    @pytest.fixture
+    def small_embs(self):
+        return torch.tensor(
+            [
+                [0.9, 0.9, 0.9],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        )
+
+    def test_search_present(self, small_embs):
+        searcher = DPBruteForceSearcherPT(small_embs, np.arange(4))
+        for i, e in enumerate(small_embs):
+            res = searcher.find(e.unsqueeze(0), 2)
+            assert res[0][0] == i
+            assert res[0][1] != i
+            assert len(res[0]) == 2
+
+    def test_search_missing(self):
+        embs = torch.tensor(
+            [
+                [1.0, 1.0, 1.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        )
+        searcher = DPBruteForceSearcherPT(embs, np.arange(4))
+        res = searcher.find(torch.tensor([[1.0, 0.0, 1.0]]), 2)
+        assert res[0][0] == 0
+
+    def test_device_selection(self, small_embs):
+        searcher = DPBruteForceSearcherPT(small_embs, np.arange(len(small_embs)))
+        expected_device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        assert searcher.device == expected_device
+
+    def test_changing_num_neighbors(self, small_embs):
+        searcher = DPBruteForceSearcherPT(small_embs, np.arange(len(small_embs)))
+        searcher.find(
+            torch.from_numpy(np.random.random((1, 3))).to(torch.float32), 2
+        )  # Initialize with 2 neighbors
+        # with pytest.raises(Exception):
+        # Does nothing:
+        searcher.find(
+            torch.from_numpy(np.random.random((1, 3))).to(torch.float32), 3
+        )  # Try to change to 3 neighbors
+
+    def test_dataparallel_initialization(self, small_embs):
+        searcher = DPBruteForceSearcherPT(small_embs, np.arange(len(small_embs)))
+        searcher.find(
+            torch.from_numpy(np.random.random((1, 3))).to(torch.float32), 2
+        )  # This should initialize module_searcher
         assert isinstance(searcher.module_searcher, torch.nn.DataParallel)
