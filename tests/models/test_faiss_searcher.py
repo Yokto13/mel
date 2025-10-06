@@ -23,6 +23,7 @@ def assert_equal_results(faiss_results, brute_results):
     np.testing.assert_array_equal(faiss_results, brute_results)
 
 
+@pytest.mark.skip(reason="FAISS is not currently supported")
 def test_small(generate_data):
     from models.searchers.faiss_searcher import FaissSearcher
 
@@ -36,6 +37,7 @@ def test_small(generate_data):
     assert_equal_results(faiss_out, brute_out)
 
 
+@pytest.mark.skip(reason="FAISS is not currently supported")
 def test_large(generate_data):
     from models.searchers.faiss_searcher import FaissSearcher
 
