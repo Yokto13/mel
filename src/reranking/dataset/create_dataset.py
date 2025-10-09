@@ -152,6 +152,7 @@ def create_binary_dataset(
         description_tokens=description_tokens,
         link_tokens=link_tokens_list,
         y=y,
+        qids=qids,
     )
 
 
