@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Dict, Mapping, Sequence
+from typing import Any, Dict, Sequence
 
 import torch
+from einops import rearrange
 from torch import nn
 from transformers import AutoTokenizer
 
 from reranking.models.base import BaseRerankingModel
+from reranking.models.context_emb_with_attention import GPTLayer
 from utils.embeddings import create_attention_mask
 from utils.model_factory import ModelFactory, ModelOutputType
 
@@ -30,7 +32,26 @@ def _infer_output_dim(model: nn.Module) -> int:
     raise ValueError("Unable to infer output dimension from the provided base model.")
 
 
-class PairwiseMLPReranker(BaseRerankingModel):
+class _Model(nn.Module):
+    def __init__(self, base_model: nn.Module, embedding_dim: int, dropout: float) -> None:
+        super().__init__()
+        self.base_model = base_model
+        self.embedding_dim = embedding_dim
+        self.gpt_layer = GPTLayer(model_width=embedding_dim, dropout=dropout)
+        self.final_layer = nn.Linear(embedding_dim, 1)
+
+    def forward(self, ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        # print(ids.sh1ape, attention_mask.shape)
+        base_embeddings = self.base_model(ids, attention_mask)
+        # print("base_embeddings", base_embeddings.shape)
+        x = self.gpt_layer(base_embeddings)
+        # print("x", x.shape)
+        logits = self.final_layer(x).squeeze(-1)
+        # print("logits", logits.shape)
+        return logits
+
+
+class FullLEALLAReranker(BaseRerankingModel):
     """Reranking model that augments a LEALLA encoder with an MLP head."""
 
     def __init__(
@@ -38,43 +59,26 @@ class PairwiseMLPReranker(BaseRerankingModel):
         model_name_or_path: str,
         *,
         state_dict_path: str | None = None,
-        target_dim: int | None = None,
-        output_type: ModelOutputType | str | None = None,
         tokenizer_name_or_path: str | None = None,
-        mlp_hidden_dim: int | None = None,
         dropout: float = 0.1,
-        emb_noise: float = 0,
         ema_decay: float = 0.9999,
     ) -> None:
         super().__init__()
 
         self.ema_decay = ema_decay
 
-        resolved_output_type = _maybe_convert_output_type(output_type)
         self.base_model = ModelFactory.auto_load_from_file(
             model_name_or_path,
             state_dict_path=state_dict_path,
-            target_dim=target_dim,
-            output_type=resolved_output_type,
         )
-        self.base_model.eval()
-        self.base_model.requires_grad_(False)
-
         self.embedding_dim = _infer_output_dim(self.base_model)
-        hidden_dim = mlp_hidden_dim or self.embedding_dim
 
-        self.classifier = nn.Sequential(
-            nn.Linear(self.embedding_dim * 2, hidden_dim * 4),
-            nn.GELU(),
-            nn.Linear(4 * hidden_dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(p=dropout),
-            nn.Linear(hidden_dim, 1),
+        self.model = _Model(
+            base_model=self.base_model,
+            embedding_dim=self.embedding_dim,
+            dropout=dropout,
         )
-
-        self.classifier_ema = deepcopy(self.classifier)
-
-        self.model = _PairwiseMLPReranker(self.base_model, self.classifier, emb_noise)
+        self.model_ema = deepcopy(self.model)
 
         tokenizer_id = tokenizer_name_or_path or model_name_or_path
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
@@ -85,38 +89,51 @@ class PairwiseMLPReranker(BaseRerankingModel):
         mention_tokens: torch.Tensor,
         entity_tokens: torch.Tensor,
     ) -> torch.Tensor:
-        return self.model.forward(mention_tokens, entity_tokens)
+        ids, attention_mask = self.prepare_for_forward(mention_tokens, entity_tokens)
+        return self.model(ids, attention_mask)
 
-    def classifier_forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model.classifier_forward(x)
+    def prepare_for_forward(self, mention_tokens: torch.Tensor, entity_tokens: torch.Tensor):
+        ids = rearrange([mention_tokens, entity_tokens], "d b n -> b (d n)")
+        attention_mask = create_attention_mask(ids).to(dtype=ids.dtype, device=ids.device)
+        return ids, attention_mask
 
     def train_step_imp(self, data: Dict[str, Any]) -> torch.Tensor:
         self.train()
 
         mention_tokens = data["mention_tokens"]
         entity_tokens = data["entity_tokens"]
-        labels = data["labels"].float().view(-1)
+        labels = data["labels"].float()
 
-        logits = self.forward(mention_tokens, entity_tokens).view(-1)
+        ids, attention_mask = self.prepare_for_forward(mention_tokens, entity_tokens)
+        logits = self.model(ids, attention_mask)
+
         loss = self.loss_fn(logits, labels)
         return loss
 
     def update_ema(self) -> None:
         with torch.no_grad():
-            for param, ema_param in zip(
-                self.classifier.parameters(), self.classifier_ema.parameters()
-            ):
+            for param, ema_param in zip(self.model.parameters(), self.model_ema.parameters()):
                 ema_param.data.mul_(self.ema_decay).add_(param.data, alpha=1 - self.ema_decay)
 
     def save(self, path: str) -> None:
         ema_path = path.replace(".pth", "_ema.pth")
-        torch.save(self.classifier_ema.state_dict(), ema_path)
-        torch.save(self.classifier.state_dict(), path)
+        torch.save(self.model_ema.state_dict(), ema_path)
+        torch.save(self.model.state_dict(), path)
 
     def load(self, path: str) -> None:
         state_dict = torch.load(path, map_location="cpu")
-        self.classifier_ema.load_state_dict(state_dict)
-        self.classifier.load_state_dict(state_dict)
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith("_orig_mod.module.model."):
+                new_k = k.replace("_orig_mod.module.model.", "")
+            elif k.startswith("module."):
+                new_k = k.replace("module.", "")
+            else:
+                new_k = k
+            new_state_dict[new_k] = v
+        state_dict = new_state_dict
+        self.model_ema.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict)
 
     @torch.inference_mode()
     def score(
@@ -175,69 +192,8 @@ class PairwiseMLPReranker(BaseRerankingModel):
 
     @torch.inference_mode()
     def score_from_tokens(self, mentions: torch.Tensor, entities: torch.Tensor) -> torch.Tensor:
-        logits = self.model.forward(mentions, entities)
+        ids = rearrange([mentions, entities], "d b n -> b (d n)")
+        attention_mask = create_attention_mask(ids).to(dtype=ids.dtype, device=ids.device)
+        logits = self.model(ids, attention_mask)
         probability = torch.sigmoid(logits).reshape(-1)
         return probability
-
-
-class _PairwiseMLPReranker(nn.Module):
-    def __init__(self, base_model: nn.Module, classifier: nn.Module, emb_noise: float) -> None:
-        super().__init__()
-        self.base_model = base_model
-        self.classifier = classifier
-        self.emb_noise = emb_noise
-        self.noise_layer = _GaussianNoiseLayer(emb_noise)
-
-    def forward(
-        self,
-        mention_tokens: torch.Tensor,
-        entity_tokens: torch.Tensor,
-        return_embeddings: bool = False,
-    ) -> torch.Tensor:
-
-        mention_embeddings = self._encode(mention_tokens)
-        entity_embeddings = self._encode(entity_tokens)
-
-        if self.emb_noise > 0:
-            mention_embeddings = self.noise_layer(mention_embeddings)
-            entity_embeddings = self.noise_layer(entity_embeddings)
-
-        combined = torch.cat([mention_embeddings, entity_embeddings], dim=-1)
-        logits = self.classifier(combined).squeeze(-1)
-        if return_embeddings:
-            return logits, mention_embeddings, entity_embeddings
-        return logits
-
-    def train(self, mode: bool = True) -> _PairwiseMLPReranker:
-        super().train(mode)
-        # Make sure that base model is never trained.
-        self.base_model.eval()
-        return self
-
-    def classifier_forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.classifier(x)
-
-    @torch.inference_mode()
-    def _encode(self, tokens: Mapping[str, torch.Tensor] | torch.Tensor) -> torch.Tensor:
-        if isinstance(tokens, Mapping):
-            input_ids = tokens["input_ids"]
-            attention_mask = tokens.get("attention_mask")
-            if attention_mask is None:
-                attention_mask = create_attention_mask(input_ids)
-        else:
-            input_ids = tokens
-            attention_mask = create_attention_mask(tokens)
-
-        return self.base_model(input_ids=input_ids, attention_mask=attention_mask)
-
-
-class _GaussianNoiseLayer(nn.Module):
-    def __init__(self, std):
-        super().__init__()
-        self.std = std
-
-    def forward(self, x):
-        if self.training:
-            noise = torch.randn_like(x) * self.std
-            return noise + x
-        return x

@@ -1,26 +1,17 @@
 import logging
-import os
+from contextlib import nullcontext
 from itertools import islice
 
 import torch
 
 import wandb
-from reranking.models.pairwise_mlp import PairwiseMLPReranker
-from tests.utils.test_embeddings import model
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.benchmark = True
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
-from reranking.training.training_configs import (
-    TrainingConfig,
-    get_config_from_name,
-)
+from reranking.training.training_configs import get_config_from_name
 
 # Settings ===========================================
 
@@ -36,50 +27,17 @@ else:
     device = torch.device("cpu")
 
 
-def setup(rank, world_size, master_port: str = "12355"):
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = master_port
-
-    # initialize the process group
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-
-
-def cleanup():
-    dist.destroy_process_group()
-
-
 SEED = 0
 torch.manual_seed(SEED)
 
 
-def _ddp_train(
-    rank: int,
-    world_size: int,
+def train(
     config_name: str,
-    gradient_clip=1.0,
-    master_port: str = "12355",
+    gradient_clip: float = 1.0,
 ):
-    setup(rank, world_size, master_port)
-
-    is_the_main_process = rank == 0
-
     _logger.info("Loading training configuration")
     training_config = get_config_from_name(config_name)
     _logger.info(f"Training configuration loaded: {training_config.config_name}")
-
-    if is_the_main_process:
-        wandb.init(
-            project="EL-reranking_train_ddp_process_0",
-            config={
-                "config_name": training_config.config_name,
-                "batch_size": training_config.batch_size,
-                "save_each": training_config.save_each,
-                "validate_each": training_config.validate_each,
-                "validation_size": training_config.validation_size,
-                "output_dir": training_config.output_dir,
-                "epochs": training_config.epochs,
-            },
-        )
 
     model = training_config.model
     dataset = training_config.dataset
@@ -96,33 +54,36 @@ def _ddp_train(
     validation_batches = list(islice(iter(dataloader), num_validation_batches))
     val_dataloader = validation_batches
 
-    model.to(rank)
+    model.to(device)
     model = torch.compile(model)
-    model.model = DDP(model.model, device_ids=[rank])
 
-    scaler = torch.amp.GradScaler("cuda")
+    use_amp = device.type == "cuda"
+    scaler = torch.amp.GradScaler(device.type) if use_amp else None
 
-    @torch.compile
     def step(current_loss):
-        scaler.scale(current_loss).backward()
-        scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)
-        scaler.step(optimizer)
-        scaler.update()
+        if scaler is not None:
+            scaler.scale(current_loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            current_loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)
+            optimizer.step()
         optimizer.zero_grad()
 
     global_step = 0
 
     for epoch in range(training_config.epochs):
-        if is_the_main_process:
-            _logger.info(f"Starting epoch {epoch + 1}/{training_config.epochs}")
+        _logger.info(f"Starting epoch {epoch + 1}/{training_config.epochs}")
 
         for links, entities, labels, qids in dataloader:
             global_step += 1
-            links = links.to(rank, non_blocking=True)
-            entities = entities.to(rank, non_blocking=True)
-            labels = labels.to(rank, non_blocking=True)
-            qids = qids.to(rank, non_blocking=True)
+            links = links.to(device, non_blocking=True)
+            entities = entities.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+            qids = qids.to(device, non_blocking=True)
 
             batch_data = {
                 "mention_tokens": links,
@@ -131,17 +92,18 @@ def _ddp_train(
                 "qids": qids,
             }
 
-            with torch.autocast(device_type="cuda"):
+            autocast_context = torch.autocast(device_type="cuda") if use_amp else nullcontext()
+            with autocast_context:
                 loss = model.train_step(batch_data)
             step(loss)
-            if is_the_main_process and global_step % training_config.save_each == 0:
+            if global_step % training_config.save_each == 0:
                 path = training_config.get_output_path(global_step)
                 _logger.info(f"Saving model at step {global_step} to {path}")
                 model.save(path)
-            if is_the_main_process and global_step % 500 == 0:
+            if global_step % 500 == 0:
                 wandb.log({"train/loss": loss.item()}, step=global_step)
                 _logger.info(f"Step {global_step}, loss: {loss.item():.4f}")
-            if is_the_main_process and global_step % training_config.validate_each == 0:
+            if global_step % training_config.validate_each == 0:
                 model.eval()
 
                 correct = 0
@@ -150,10 +112,10 @@ def _ddp_train(
                 total_loss = 0.0
                 val_steps = 0
                 for links, entities, labels, qids in val_dataloader:
-                    links = links.to(rank, non_blocking=True)
-                    entities = entities.to(rank, non_blocking=True)
-                    labels = labels.to(rank, non_blocking=True)
-                    qids = qids.to(rank, non_blocking=True)
+                    links = links.to(device, non_blocking=True)
+                    entities = entities.to(device, non_blocking=True)
+                    labels = labels.to(device, non_blocking=True)
+                    qids = qids.to(device, non_blocking=True)
 
                     val_steps += 1
 
@@ -171,37 +133,31 @@ def _ddp_train(
                         predictions = (probs > 0.5).long()
                         correct += (predictions == labels).sum().item()
                         total += labels.size(0)
-                if is_the_main_process:
-                    _logger.info(f"Validation loss: {total_loss / val_steps:.4f}")
-                    _logger.info(f"Validation accuracy: {correct / total:.4f}")
+                val_loss = total_loss / max(val_steps, 1)
+                accuracy = correct / max(total, 1)
+                _logger.info(f"Validation loss: {val_loss:.4f}")
+                _logger.info(f"Validation accuracy: {accuracy:.4f}")
+                wandb.log(
+                    {
+                        "validation/loss": val_loss,
+                        "validation/accuracy": accuracy,
+                    },
+                    step=global_step,
+                )
 
                 model.train()
 
-        if is_the_main_process:
-            _logger.info(f"Epoch {epoch + 1} finished.")
+        _logger.info(f"Epoch {epoch + 1} finished.")
     model.save(training_config.get_output_path(global_step))
-
-    cleanup()
 
 
 # Training ===========================================
 def train_ddp(config_name: str, master_port: str = "12355"):
-    _logger.info("Starting DDP training")
-    gradient_clip = 1.0
-    world_size = torch.cuda.device_count()
-    _logger.debug(f"Using {world_size} GPUs for training")
-
-    mp.spawn(
-        _ddp_train,
-        args=(
-            world_size,
-            config_name,
-            gradient_clip,
-            master_port,
-        ),
-        nprocs=world_size,
+    _logger.warning(
+        "train_ddp is deprecated and now runs single-device training. master_port is ignored."
     )
+    train(config_name)
 
 
 if __name__ == "__main__":
-    train_ddp("pairwise_mlp")
+    train("pairwise_mlp")

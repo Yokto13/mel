@@ -71,7 +71,7 @@ def main():
         mlp_hidden_dim=2048,
     )
     state_dict = torch.load(
-        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models/pairwise_mlp/100000.pth",
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models/pairwise_mlp_noise/20000.pth",
         map_location=device,
     )
     reranker.load_state_dict(state_dict)
@@ -81,7 +81,7 @@ def main():
     mewsli_tokens = torch.from_numpy(mewsli_tokens)
     mewsli_qids = torch.from_numpy(mewsli_qids)
 
-    decode_mewsli_example = reranking_tokenizer.decode(mewsli_tokens[0])
+    decode_mewsli_example = reranking_tokenizer.decode(mewsli_tokens[0], skip_special_tokens=True)
     print("Decoded mewsli example:", decode_mewsli_example)
 
     # Resolve tokens and embeddings (directories or files)
@@ -123,7 +123,7 @@ def main():
 
     for batch in mewsli_loader:
         mewsli_token = batch[0]
-        qid = batch[1]
+        qid = batch[1].item()  # ensure scalar for a fair comparison with predicted_qid
         # print(f"Processing Mewsli token: {mewsli_token}, QID: {qid}")
 
         tokens = mewsli_token.to(device, dtype=torch.int64)
@@ -140,9 +140,11 @@ def main():
         neighbor_qids = searcher.find(mewsli_emb, num_neighbors=args.num_neighbors)
 
         damuel_candidates = [qid_to_damuel_token[nq] for nq in neighbor_qids[0]]
-        damuel_candidates_str = [reranking_tokenizer.decode(dc) for dc in damuel_candidates]
+        damuel_candidates_str = [
+            reranking_tokenizer.decode(dc, skip_special_tokens=True) for dc in damuel_candidates
+        ]
 
-        mewsli_str = reranking_tokenizer.decode(mewsli_token[0])
+        mewsli_str = reranking_tokenizer.decode(mewsli_token[0], skip_special_tokens=True)
 
         scores = []
         # print("Mewsli mention:", mewsli_str)
@@ -152,7 +154,7 @@ def main():
                 score = reranker.score(mewsli_str, dc)
                 scores.append(score)
         # print(scores)
-        predicted_qid = neighbor_qids[0][scores.index(max(scores))]
+        predicted_qid = int(neighbor_qids[0][scores.index(max(scores))])
         if predicted_qid == qid:
             good += 1
         total += 1
