@@ -89,11 +89,11 @@ def main():
     # )
     # base_embs = torch.from_numpy(base_embs)
 
-    # reranker = PairwiseMLPReranker(
-    #     "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
-    #     state_dict_path=args.reranking_model_path,
-    #     mlp_hidden_dim=2048,
-    # )
+    reranker = PairwiseMLPReranker(
+        "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
+        state_dict_path=args.reranking_model_path,
+        mlp_hidden_dim=2048,
+    )
     # qid_to_paraphrase_emb = {qid: emb for qid, emb in zip(paraphrase_qids, paraphrase_embs)}
     # qid_to_base_emb = {qid: emb for qid, emb in zip(base_qids, base_embs)}
     # reranker = PairwiseMLPRerankerWithLargeContextEmb(
@@ -102,15 +102,15 @@ def main():
     #     qid_to_paraphrase_emb=qid_to_paraphrase_emb,
     #     qid_to_base_emb=qid_to_base_emb,
     # )
-    reranker = FullLEALLAReranker(
-        model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
-    )
-    # reranker.load(
-    #     "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models/pairwise_mlp/70000.pth",
+    # reranker = FullLEALLAReranker(
+    # model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
     # )
     reranker.load(
-        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models/full_lealla/30000.pth",
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models/pairwise_mlp/70000.pth",
     )
+    # reranker.load(
+    # "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models/full_lealla_r/380000.pth",
+    # )
     reranker.eval()
     reranker.to(device)
 
@@ -174,6 +174,7 @@ def main():
         mewsli_loader = DataLoader(mewsli_dataset, batch_size=args.batch_size, shuffle=False)
 
         good = 0
+        upper_bound_hits = 0
         total = 0
 
         for mewsli_tokens_batch, qids_batch in mewsli_loader:
@@ -189,25 +190,28 @@ def main():
             )
             neighbor_qids = torch.as_tensor(neighbor_qids, dtype=torch.long)
 
+            retrieval_hits = (neighbor_qids == qids_batch.view(-1, 1)).any(dim=1)
+            upper_bound_hits += retrieval_hits.sum().item()
+
             candidate_embs_lists = []
             candidate_tokens_lists = []
             for row in neighbor_qids.tolist():
                 for nq in row:
-                    # emb = qid_to_damuel_emb[int(nq)]
+                    emb = qid_to_damuel_emb[int(nq)]
                     token = qid_to_damuel_token[int(nq)]
-                    # candidate_embs_lists.append(emb)
+                    candidate_embs_lists.append(emb)
                     candidate_tokens_lists.append(token)
 
             # assert len(candidate_embs_lists) == neighbor_qids.size(0) * neighbor_qids.size(1)
 
-            # candidate_embs = torch.as_tensor(
-            #     candidate_embs_lists, dtype=torch.float16, device=device
-            # )
-            # together = torch.cat(
-            #     (mewsli_embs.repeat_interleave(neighbor_qids.size(1), dim=0), candidate_embs),
-            #     dim=-1,
-            # )
-            # together = together.to(device)
+            candidate_embs = torch.as_tensor(
+                candidate_embs_lists, dtype=torch.float16, device=device
+            )
+            together = torch.cat(
+                (mewsli_embs.repeat_interleave(neighbor_qids.size(1), dim=0), candidate_embs),
+                dim=-1,
+            )
+            together = together.to(device)
             candidate_tokens = torch.as_tensor(
                 candidate_tokens_lists, dtype=torch.int64, device=device
             )
@@ -230,6 +234,7 @@ def main():
                     )
                 if (
                     isinstance(reranker, PairwiseMLPRerankerWithRetrievalScore)
+                    # or isinstance(reranker, FullLEALLAReranker)
                     # or isinstance(reranker, PairwiseMLPReranker)
                     # or isinstance(reranker, PairwiseMLPRerankerWithLargeContextEmb)
                 ):
@@ -242,7 +247,7 @@ def main():
                             candidate_embs.to(torch.bfloat16),
                             mewsli_embs.to(torch.bfloat16),
                         )
-                        # * LOGIT_MULTIPLIER
+                        * LOGIT_MULTIPLIER
                     )
                     out = out.reshape(neighbor_qids.size(0), neighbor_qids.size(1))
                     scores = (scores + torch.sigmoid(out)) / 2
@@ -258,7 +263,10 @@ def main():
             continue
 
         final_accuracy = round(good / total * 100, 4)
-        print(f"Final accuracy for {language}: {final_accuracy}")
+        retrieval_upper_bound = round(upper_bound_hits / total * 100, 4)
+        print(
+            f"Final accuracy for {language}: {final_accuracy} (retrieval upper bound: {retrieval_upper_bound})"
+        )
 
 
 if __name__ == "__main__":

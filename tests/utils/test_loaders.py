@@ -5,6 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.sparse import csr_matrix
 
 from utils.loaders import (
     AliasTableLoader,
@@ -14,6 +15,7 @@ from utils.loaders import (
     load_qids_npy,
     load_tokens_qids,
     load_tokens_qids_from_dir,
+    map_qids_to_token_matrix,
 )
 
 
@@ -411,6 +413,33 @@ def test_load_qids_npy(mock_qids_remap, use_string_path: bool) -> None:
 
         assert np.array_equal(loaded_qids, test_qids)
         assert isinstance(loaded_qids, np.ndarray)
+
+
+def test_map_qids_to_token_matrix() -> None:
+    """
+    Tests that qids are correctly mapped to their token vectors in a sparse matrix.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dir_path = Path(temp_dir)
+
+        tokens = np.array([[1.0, 1.5], [2.0, 2.5], [3.0, 3.5]])
+        qids = np.array([300, 100, 200])
+        _create_tokens_qids_npz(dir_path, "tokens_qids.npz", tokens, qids)
+
+        token_matrix = map_qids_to_token_matrix(dir_path)
+
+        assert isinstance(token_matrix, csr_matrix)
+        assert token_matrix.shape == (301, 2)
+
+        for i, qid in enumerate(qids):
+            original_vector = tokens[i]
+            retrieved_vector = token_matrix[qid].toarray()[0]
+
+            assert np.array_equal(original_vector, retrieved_vector)
+
+        non_existent_qid = 150
+        zero_vector = token_matrix[non_existent_qid].toarray()[0]
+        assert np.array_equal(zero_vector, np.zeros(tokens.shape[1]))
 
 
 @pytest.mark.parametrize("lowercase", [True, False])

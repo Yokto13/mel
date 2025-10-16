@@ -83,7 +83,7 @@ def train(
             links = links.to(device, non_blocking=True)
             entities = entities.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
-            qids = qids.to(device, non_blocking=True)
+            # qids = qids.to(device, non_blocking=True)
 
             batch_data = {
                 "mention_tokens": links,
@@ -115,7 +115,7 @@ def train(
                     links = links.to(device, non_blocking=True)
                     entities = entities.to(device, non_blocking=True)
                     labels = labels.to(device, non_blocking=True)
-                    qids = qids.to(device, non_blocking=True)
+                    # qids = qids.to(device, non_blocking=True)
 
                     val_steps += 1
 
@@ -124,8 +124,11 @@ def train(
                             training_config.config_name == "pairwise_mlp"
                             or training_config.config_name == "pairwise_mlp_debug"
                             or training_config.config_name == "full_lealla"
+                            or training_config.config_name == "full_lealla_r"
                         ):
                             probs = model.score_from_tokens(links, entities)
+                        elif training_config.config_name == "fusion":
+                            probs = model.score_from_tokens_and_qids(links, entities, qids)
                         else:
                             probs = model.score_from_tokens(links, qids)
                         loss = torch.nn.functional.binary_cross_entropy(probs, labels.float())

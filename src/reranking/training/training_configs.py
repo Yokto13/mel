@@ -8,6 +8,7 @@ import torch
 from reranking.models.base import BaseRerankingModel
 from reranking.models.context_emb_with_attention import ContextEmbWithAttention
 from reranking.models.full_lealla import FullLEALLAReranker
+from reranking.models.fusion import FusionReranker
 from reranking.models.pairwise_mlp import PairwiseMLPReranker
 from reranking.models.pairwise_mlp_with_large_context_emb import (
     PairwiseMLPRerankerWithLargeContextEmb,
@@ -100,9 +101,9 @@ def full_lealla(
 
 
 def full_lealla_r(
-    LR: float = 0.0001,
-    SAVE_EACH: int = 5000,
-    BATCH_SIZE: int = 2048,
+    LR: float = 0.00005,
+    SAVE_EACH: int = 10000,
+    BATCH_SIZE: int = 1300,
     VALIDATE_EACH: int = 10000,
     VALIDATION_SIZE: int = 10000,
     DROPOUT: float = 0.1,
@@ -111,6 +112,103 @@ def full_lealla_r(
     model = FullLEALLAReranker(
         model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
         state_dict_path="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
+        dropout=DROPOUT,
+    )
+
+    dataset = RerankingIterableDataset()
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, fused=True)
+    output_dir = "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models"
+    return TrainingConfig(
+        config_name=name,
+        model=model,
+        dataset=dataset,
+        optimizer=optimizer,
+        output_dir=output_dir,
+        save_each=SAVE_EACH,
+        batch_size=BATCH_SIZE,
+        validate_each=VALIDATE_EACH,
+        validation_size=VALIDATION_SIZE,
+    )
+
+
+def full_lealla_r_128(
+    LR: float = 0.00005,
+    SAVE_EACH: int = 10000,
+    BATCH_SIZE: int = 1300,
+    VALIDATE_EACH: int = 10000,
+    VALIDATION_SIZE: int = 10000,
+    DROPOUT: float = 0.1,
+) -> TrainingConfig:
+    name = "full_lealla_r_128"
+
+    d = np.load("~/troja/outputs/reranking_test/reranker_dataset_with_qids/mentions_5_dataset.npz")
+    description_tokens = d["description_tokens"]
+    assert description_tokens.shape[1] == 128, "Expected description tokens to have length 128"
+
+    model = FullLEALLAReranker(
+        model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
+        state_dict_path="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
+        dropout=DROPOUT,
+    )
+
+    dataset = RerankingIterableDataset()
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, fused=True)
+    output_dir = "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models"
+    return TrainingConfig(
+        config_name=name,
+        model=model,
+        dataset=dataset,
+        optimizer=optimizer,
+        output_dir=output_dir,
+        save_each=SAVE_EACH,
+        batch_size=BATCH_SIZE,
+        validate_each=VALIDATE_EACH,
+        validation_size=VALIDATION_SIZE,
+    )
+
+
+def fusion(
+    LR: float = 0.0001,
+    SAVE_EACH: int = 10000,
+    BATCH_SIZE: int = 128,
+    VALIDATE_EACH: int = 10000,
+    VALIDATION_SIZE: int = 10000,
+    DROPOUT: float = 0.1,
+) -> TrainingConfig:
+    name = "fusion"
+
+    qid_to_para_toks = {}
+    from tqdm import tqdm
+
+    for file in tqdm(
+        os.listdir(
+            "/lnet/work/home-students-external/farhan/troja/outputs/descriptions_paraphrase_after_multiling_dataset/descs_pages"
+        ),
+        total=len(
+            os.listdir(
+                "/lnet/work/home-students-external/farhan/troja/outputs/descriptions_paraphrase_after_multiling_dataset/descs_pages"
+            )
+        ),
+    ):
+        if file.endswith(".npz"):
+            d = np.load(
+                os.path.join(
+                    "/lnet/work/home-students-external/farhan/troja/outputs/descriptions_paraphrase_after_multiling_dataset/descs_pages",
+                    file,
+                )
+            )
+            qids = d["qids"]
+            tokens = torch.from_numpy(d["tokens"]).to(torch.int32)
+            for qid, token in zip(qids, tokens):
+                qid_to_para_toks[qid] = token
+
+    model = FusionReranker(
+        base_model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
+        paraphrase_model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        base_state_dict_path="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
+        qid_to_para_toks=qid_to_para_toks,
         dropout=DROPOUT,
     )
 
@@ -323,5 +421,9 @@ def get_config_from_name(config_name: str) -> TrainingConfig:
         return full_lealla_r()
     if config_name == "full_lealla_debug":
         return full_lealla(VALIDATE_EACH=1000, SAVE_EACH=1000000000000, BATCH_SIZE=128)
+    if config_name == "fusion":
+        return fusion()
+    if config_name == "full_lealla_r_128":
+        return full_lealla_r_128()
     else:
         raise ValueError(f"Unknown training configuration: {config_name}")

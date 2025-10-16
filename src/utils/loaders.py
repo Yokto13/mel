@@ -5,6 +5,7 @@ from pathlib import Path
 import gin
 import numpy as np
 import pandas as pd
+from scipy.sparse import coo_matrix, csr_matrix
 from tqdm import tqdm
 
 # from tokenization.pipeline import DamuelAliasTablePipeline
@@ -154,6 +155,39 @@ def load_tokens_qids_from_dir(
 def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     d = np.load(file_path)
     return d["tokens"], d["qids"]
+
+
+def map_qids_to_token_matrix(
+    dir_path: str | Path, verbose: bool = False, max_items_to_load: int | None = None
+) -> csr_matrix:
+    """Builds a memory-efficient sparse matrix mapping qids to their token vectors.
+
+    Args:
+        dir_path (str | Path): Directory containing data files with 'tokens' and 'qids'.
+        verbose (bool): Forwarded to `load_tokens_qids_from_dir` to toggle progress output.
+        max_items_to_load (int | None): Optional cap on the number of token rows to read.
+
+    Returns:
+        scipy.sparse.csr_matrix: A CSR matrix where a row index corresponds to a qid
+                                 and the row's data is the token vector. Use
+                                 `matrix[qid]` to retrieve a vector.
+    """
+    tokens, qids = load_tokens_qids_from_dir(
+        dir_path=dir_path, verbose=verbose, max_items_to_load=max_items_to_load
+    )
+
+    num_items, vector_len = tokens.shape
+
+    assert num_items == qids.shape[0], "Mismatch between number of token rows and qids"
+
+    row_indices = np.repeat(qids, vector_len)
+    col_indices = np.tile(np.arange(vector_len), num_items)
+    data = tokens.flatten()
+
+    shape = (qids.max() + 1, vector_len)
+
+    coo = coo_matrix((data, (row_indices, col_indices)), shape=shape, dtype=tokens.dtype)
+    return coo.tocsr()
 
 
 class AliasTableLoader:
