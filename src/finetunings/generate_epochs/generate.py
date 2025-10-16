@@ -12,7 +12,7 @@ from tqdm import tqdm
 from finetunings.generate_epochs.datasets import BatcherDataset, DamuelNeighborsIterator
 from models.batch_sampler import BatchSampler
 from models.negative_sampler import NegativeSamplingType
-from models.searchers.brute_force_searcher import DPBruteForceSearcher
+from models.searchers.brute_force_searcher import DPBruteForceSearcher, ManualSyncBruteForceSearcher
 from utils.calculate_qids_distribution import calculate_qids_distribution_from_links
 from utils.loaders import load_embs_and_qids
 from utils.multifile_dataset import MultiFileDataset
@@ -95,8 +95,9 @@ def generate(
     batch_sampler = BatchSampler(
         index_embs,
         index_qids,
-        DPBruteForceSearcher,
+        # DPBruteForceSearcher,
         # BruteForceSearcher,
+        ManualSyncBruteForceSearcher,
         NegativeSamplingType(NEGATIVE_SAMPLING_TYPE),
         **negative_sampler_kwargs,
     )

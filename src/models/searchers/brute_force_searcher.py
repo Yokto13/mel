@@ -182,3 +182,32 @@ class DPBruteForceSearcherPT(Searcher):
 
     def build(self):
         pass
+
+
+class ManualSyncBruteForceSearcher(Searcher):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = False):
+        assert torch.cuda.is_available(), "This class requires CUDA."
+        assert run_build_from_init is False, "This class does not support building from init."
+        self.searchers = []
+        self.num_devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
+        self.cuda_devices = [torch.device(f"cuda:{i}") for i in range(self.num_devices)]
+        super().__init__(torch.from_numpy(embs), results, run_build_from_init)
+
+    @torch.inference_mode()
+    def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
+        if len(self.searchers) == 0:
+            for device in self.cuda_devices:
+                self.searchers.append(
+                    _WrappedSearcher(self.embs, num_neighbors=num_neighbors).to(device)
+                )
+        batch = torch.from_numpy(batch)
+        inputs = nn.parallel.scatter(batch, self.cuda_devices)
+        outputs = [
+            searcher(input_chunk.to(device))
+            for searcher, input_chunk, device in zip(self.searchers, inputs, self.cuda_devices)
+        ]
+        gathered = nn.parallel.gather(outputs, self.cuda_devices[0])
+        return gathered.cpu().numpy()
+
+    def build(self):
+        pass
