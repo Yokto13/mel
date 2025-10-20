@@ -25,7 +25,7 @@ def _create_sparse_matrix(data_dict: dict, shape: tuple[int, int], dtype=np.floa
 
 def test_update_tokens_when_match_exists(tmp_path: Path):
     """
-    Tests that the file is modified and returns True when a qid has a new token.
+    Tests that the file is modified.
     """
     test_file = tmp_path / "data.npz"
     original_tokens = np.array([[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]])
@@ -35,7 +35,9 @@ def test_update_tokens_when_match_exists(tmp_path: Path):
     )
 
     new_token_vector = np.array([99.0, 99.0])
-    update_matrix = _create_sparse_matrix({200: new_token_vector}, shape=(400, 2))
+    update_matrix = _create_sparse_matrix(
+        {100: original_tokens[0], 200: new_token_vector, 300: original_tokens[2]}, shape=(400, 2)
+    )
     update_tokens_in_file(test_file, update_matrix)
 
     loaded_data = np.load(test_file)

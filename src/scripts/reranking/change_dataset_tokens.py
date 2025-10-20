@@ -9,15 +9,26 @@ from utils.loaders import map_qids_to_token_matrix
 
 
 def update_tokens_in_file(file_path: Path, qid_to_new_tokens: csr_matrix) -> None:
-    """Updates tokens in a single .npz file and returns if it was modified."""
+    """Updates tokens in a single .npz file in place.
+
+    Replaces each entry in "description_tokens" with the corresponding row from
+    qid_to_new_tokens indexed by the file's qids. Raises ValueError if a qid has
+    no corresponding tokens in qid_to_new_tokens.
+    """
     with np.load(file_path) as data:
         tokens = data["description_tokens"]
         qids = data["qids"]
         save_data = dict(data)
 
+    tokens = np.empty((tokens.shape[0], qid_to_new_tokens.shape[1]), dtype=tokens.dtype)
+
     for i, qid in enumerate(qids):
         if qid_to_new_tokens[qid].nnz > 0:
+            print(qid_to_new_tokens[qid].toarray()[0])
             tokens[i] = qid_to_new_tokens[qid].toarray()[0]
+        else:
+            # We could also pad/truncate here if needed but this code should not really happen.
+            raise ValueError(f"No new tokens found for qid {qid}")
 
     save_data["description_tokens"] = tokens
     np.savez(file_path, **save_data)
