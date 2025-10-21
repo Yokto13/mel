@@ -15,6 +15,7 @@ def test_get_output_path_creates_directory(tmp_path):
         save_each=100,
         batch_size=1,
         output_dir=str(output_root),
+        validate_each=50,
     )
 
     path = config.get_output_path(step=5)

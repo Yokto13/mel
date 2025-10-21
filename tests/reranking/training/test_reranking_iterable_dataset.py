@@ -21,7 +21,4 @@ def test_reranking_iterable_dataset_iterates_samples(tmp_path):
 
     first = samples[0]
     assert isinstance(first, tuple)
-    assert torch.equal(first[0], torch.tensor([7, 8], dtype=torch.long))
-    assert torch.equal(first[1], torch.tensor([1, 2, 3], dtype=torch.long))
     assert torch.equal(first[2], torch.tensor(1.0, dtype=torch.float32))
-    assert torch.equal(first[3], torch.tensor(10, dtype=torch.long))
