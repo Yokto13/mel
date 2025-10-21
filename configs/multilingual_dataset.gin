@@ -6,3 +6,6 @@ dest_dir="/lnet/work/home-students-external/farhan/troja/outputs/v2_normal/"
 create_multilingual_dataset.source_dir=%source_dir
 create_multilingual_dataset.langs=%langs
 create_multilingual_dataset.dest_dir=%dest_dir
+
+run_kb_creator.langs=%langs
+

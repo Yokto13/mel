@@ -45,7 +45,8 @@ class BruteForceSearcher(Searcher):
 class _WrappedSearcher(nn.Module):
     def __init__(self, kb_embs, num_neighbors):
         super().__init__()
-        self.kb_embs: torch.Tensor = nn.Parameter(kb_embs)
+        # Replace Parameter with register_buffer
+        self.register_buffer("kb_embs", kb_embs)
         self.num_neighbors: int = num_neighbors
 
     # @torch.compile
@@ -106,6 +107,10 @@ class DPBruteForceSearcher(Searcher):
                     _WrappedSearcher(torch.from_numpy(self.embs), num_neighbors)
                 )
                 self.module_searcher.to(self.device)
+                # Set module to eval() and disable gradients
+                self.module_searcher.eval()
+                for param in self.module_searcher.parameters():
+                    param.requires_grad = False
                 self.required_num_neighbors = num_neighbors
                 top_indices: torch.Tensor = self.module_searcher(
                     torch.from_numpy(batch).to(self.device)
@@ -113,6 +118,96 @@ class DPBruteForceSearcher(Searcher):
 
         top_indices_np: np.ndarray = top_indices.cpu().numpy()
         return self.results[top_indices_np]
+
+    def build(self):
+        pass
+
+
+class DPBruteForceSearcherPT(Searcher):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = True):
+        if torch.cuda.is_available():
+            _logger.info("Running on CUDA.")
+            self.device: torch.device = torch.device("cuda")
+        else:
+            _logger.info("CUDA is not available.")
+            self.device: torch.device = torch.device("cpu")
+        self.module_searcher: Optional[nn.DataParallel] = None
+        self.required_num_neighbors: Optional[int] = None
+        super().__init__(embs, results, run_build_from_init)
+
+    @torch.inference_mode()
+    def find(self, batch: torch.Tensor, num_neighbors: int) -> np.ndarray:
+        """
+        Finds the nearest neighbors for a given batch of input data.
+        CAREFUL: This is an optimized version that comes with potential pitfalls to get better performance.
+        Read Notes for details!
+
+        Args:
+            batch (torch.Tensor): A batch of input data for which neighbors are to be found.
+            num_neighbors (int): The number of nearest neighbors to retrieve.
+        Returns:
+            np.ndarray: An array containing the results corresponding to the nearest neighbors.
+        Raises:
+            TypeError: If `module_searcher` if an unexpected attribute access occurs when using module_searcher.
+        Notes:
+            - It is not possible to change num_neighbors after the first call to find.
+              If you need to do that, you need to reinitialize this object. If you call the find with different
+              num_neighbors, it will not raise an error and will fail silently.
+            - The first call to find will be slow, because the module_searcher will be initialized and torch.compile is called.
+        """
+        # with torch.inference_mode(), torch.autocast(
+        #     device_type=self.device.type, dtype=torch.float16
+        # ):
+        # A try except trick to avoid the overhead of checking if the module_searcher is None
+        # on every call to find.
+        # This is a bit of a hack, but it should make things faster as we are suggesting that the module_searcher is initialized.
+        try:
+            with torch.amp.autocast(device_type="cuda"):
+                top_indices: torch.Tensor = self.module_searcher(batch)
+        except TypeError as e:
+            if self.module_searcher is not None:
+                raise e
+            self.module_searcher = torch.compile(
+                nn.DataParallel(_WrappedSearcher(self.embs, num_neighbors))
+            )
+            self.module_searcher.to(self.device)
+            # Set module to eval() and disable gradients
+            self.module_searcher.eval()
+            for param in self.module_searcher.parameters():
+                param.requires_grad = False
+            self.required_num_neighbors = num_neighbors
+            top_indices: torch.Tensor = self.module_searcher(batch)
+
+        return self.results[top_indices.cpu().numpy()]
+
+    def build(self):
+        pass
+
+
+class ManualSyncBruteForceSearcher(Searcher):
+    def __init__(self, embs: np.ndarray, results: np.ndarray, run_build_from_init: bool = False):
+        assert torch.cuda.is_available(), "This class requires CUDA."
+        assert run_build_from_init is False, "This class does not support building from init."
+        self.searchers = []
+        self.num_devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
+        self.cuda_devices = [torch.device(f"cuda:{i}") for i in range(self.num_devices)]
+        super().__init__(torch.from_numpy(embs), results, run_build_from_init)
+
+    @torch.inference_mode()
+    def find(self, batch: np.ndarray, num_neighbors: int) -> np.ndarray:
+        if len(self.searchers) == 0:
+            for device in self.cuda_devices:
+                self.searchers.append(
+                    _WrappedSearcher(self.embs, num_neighbors=num_neighbors).to(device)
+                )
+        batch = torch.from_numpy(batch)
+        inputs = nn.parallel.scatter(batch, self.cuda_devices)
+        outputs = [
+            searcher(input_chunk.to(device))
+            for searcher, input_chunk, device in zip(self.searchers, inputs, self.cuda_devices)
+        ]
+        gathered = nn.parallel.gather(outputs, self.cuda_devices[0])
+        return gathered.cpu().numpy()
 
     def build(self):
         pass

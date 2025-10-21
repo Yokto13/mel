@@ -175,6 +175,9 @@ def run_damuel_description_context(
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
+    print(languages)
+    print(type(languages))
+
     for lang in languages:
         os.makedirs(os.path.join(output_base_dir, lang, "descs_pages"), exist_ok=True)
 
@@ -357,6 +360,33 @@ def run_damuel_mention(
         for file in glob.glob(os.path.join(lang_dir, "tokens_qids_*.npz")):
             new_name = file.replace("tokens_qids_", "tokens_qids_links_")
             os.rename(file, new_name)
+
+
+@gin.configurable
+def run_damuel_description(
+    model_path: str,
+    expected_size: int,
+    output_base_dir: str,
+    languages: List[str],
+    damuel_base_path: str,
+    compress: bool,
+    remainder_mod: int,
+    num_processes: int,
+) -> None:
+    run_damuel_description_context(
+        model_path=model_path,
+        expected_size=expected_size,
+        output_base_dir=output_base_dir,
+        languages=languages,
+        damuel_base_path=damuel_base_path,
+        # The goal of this pipeline is to tokenize descriptions without wrapping anything in the label token (e.g., [M]).
+        # The label token is required by the tokenization class, so we provide an empty string
+        # so that it has no effect.
+        label_token="",
+        compress=compress,
+        remainder_mod=remainder_mod,
+        num_processes=num_processes,
+    )
 
 
 if __name__ == "__main__":

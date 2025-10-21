@@ -284,13 +284,48 @@ def create_multilingual_dataset(
     dest_dir: Union[str, Path],
     max_links_per_qid: int,
 ) -> None:
+    """Create a multilingual dataset by mixing links and building a language-filtered KB.
+
+    - Links: copies and intermixes link shards from the given languages into `dest_dir/links`,
+      limiting per-QID occurrences to `max_links_per_qid`. Outputs NPZ files with arrays
+      `tokens` and `qids`.
+    - KB pages: writes a subset of description/page shards to `dest_dir/descs_pages`,
+      assigning up to one language per QID by default.
+
+    Args:
+        source_dir: Root directory of the DAMUEL dataset to read from.
+        langs: Language codes to include.
+        dest_dir: Output directory; creates `links/` and `descs_pages/` subfolders.
+        max_links_per_qid: Maximum number of link samples retained per QID.
+
+    Notes:
+        Uses parallel mixing and threaded I/O for performance.
+    """
     MultilingualDatasetCreator(Path(source_dir), langs, Path(dest_dir), max_links_per_qid).run()
 
 
+@gin.configurable
 def run_kb_creator(
     source_dir: Union[str, Path],
     langs: list[str],
     dest_dir: Union[str, Path],
     langs_per_qid: int,
 ) -> None:
+    """
+    Build a language-filtered KB (descriptions/pages) subset from a DAMUEL dataset.
+
+    For each QID, selects up to `langs_per_qid` languages ranked by link frequency
+    (ties broken by overall language size), then copies only the chosen language pages
+    into `dest_dir/descs_pages` as compressed NPZ shards named `mentions_{lang}_{i}.npz`.
+
+    Args:
+        source_dir: Root path of the DAMUEL dataset to read (links and pages).
+        langs: List of language codes to consider.
+        dest_dir: Output directory; the 'descs_pages' subfolder is created inside.
+        langs_per_qid: Maximum number of languages to assign to each QID.
+
+    Notes:
+        - Affects KB creation only; link files are not modified.
+        - Uses parallel I/O with ThreadPoolExecutor for speed.
+    """
     _KBCreator(DamuelPaths(source_dir), langs, Path(dest_dir), langs_per_qid).run()

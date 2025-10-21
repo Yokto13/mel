@@ -1,4 +1,4 @@
-training_batch_size=2688
+training_batch_size=3712
 #epochs=300
 epochs=100
 logit_mutliplier=20

@@ -21,7 +21,14 @@ from finetunings.generate_epochs.embed_links_for_generation import (
 from finetunings.generate_epochs.generate import generate
 from multilingual_dataset.combine_embs import combine_embs_by_qid
 from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
+from reranking.dataset.create_dataset import (
+    create_default_binary_dataset,
+    create_default_multiclass_dataset,
+)
+from reranking.training.trainer import train_ddp as reranking_train_ddp
+from reranking.training.trainer_simple import train as reranking_train
 from tokenization.runner import (
+    run_damuel_description,
     run_damuel_description_context,
     run_damuel_description_mention,
     run_damuel_link_context,
@@ -91,10 +98,20 @@ def choose_action(action):
             return run_damuel_link_mention
         case "run_damuel_mention":
             return run_damuel_mention
+        case "run_damuel_description":
+            return run_damuel_description
         case "olpeat":
             return olpeat
         case "find_candidates":
             return find_candidates
+        case "reranking_train_ddp":
+            return reranking_train_ddp
+        case "create_default_binary_dataset":
+            return create_default_binary_dataset
+        case "create_default_multiclass_dataset":
+            return create_default_multiclass_dataset
+        case "reranking_train":
+            return reranking_train
         case _:
             raise ValueError(f"Unknown action: {action}")
 

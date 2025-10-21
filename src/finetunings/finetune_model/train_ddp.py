@@ -130,7 +130,7 @@ def _ddp_train(
             },
         )
 
-    optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY, fused=True)
     criterion = nn.CrossEntropyLoss()
 
     scaler = torch.amp.GradScaler("cuda")

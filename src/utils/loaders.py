@@ -5,6 +5,8 @@ from pathlib import Path
 import gin
 import numpy as np
 import pandas as pd
+from scipy.sparse import coo_matrix, csr_matrix
+from tqdm import tqdm
 
 # from tokenization.pipeline import DamuelAliasTablePipeline
 from tokenization.runner import run_alias_table_damuel
@@ -114,24 +116,37 @@ def load_qids_npy(file_path: str | Path) -> np.ndarray:
 @_sort_by_output(1)
 @qid_filter(qids_index=1)
 @remap_qids_decorator(qids_index=1, json_path=gin.REQUIRED)
-def load_tokens_qids_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+def load_tokens_qids_from_dir(
+    dir_path: str | Path, verbose=False, max_items_to_load: int | None = None
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Loads mention tokens and query IDs from all .npz files in a given directory.
 
     Args:
         dir_path (str | Path): Path to the directory containing .npz files.
+        verbose (bool): If True, displays a progress bar while loading files.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: A tuple containing two numpy arrays:
             - tokens: Array of mention tokens loaded from the files.
             - qids: Array of query IDs loaded from the files.
     """
+    if type(dir_path) == str:
+        dir_path = Path(dir_path)
     tokens, qids = [], []
-    for file in dir_path.iterdir():
+    iterator = dir_path.iterdir()
+    if verbose:
+        total = sum(1 for itm in dir_path.iterdir() if itm.is_file() and itm.suffix == ".npz")
+        iterator = tqdm(
+            dir_path.iterdir(), desc=f"Loading tokens and qids from {dir_path}", total=total
+        )
+    for file in iterator:
         if file.is_file() and file.suffix == ".npz":
             d = np.load(file)
             tokens.extend(d["tokens"])
             qids.extend(d["qids"])
+        if max_items_to_load is not None and len(tokens) >= max_items_to_load:
+            break
     return np.array(tokens), np.array(qids)
 
 
@@ -140,6 +155,49 @@ def load_tokens_qids_from_dir(dir_path: str | Path) -> tuple[np.ndarray, np.ndar
 def load_tokens_and_qids(file_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     d = np.load(file_path)
     return d["tokens"], d["qids"]
+
+
+def map_qids_to_token_matrix(
+    dir_path: str | Path, verbose: bool = False, max_items_to_load: int | None = None
+) -> csr_matrix:
+    """Builds a memory-efficient sparse matrix mapping qids to their token vectors.
+
+    Args:
+        dir_path (str | Path): Directory containing data files with 'tokens' and 'qids'.
+        verbose (bool): Forwarded to `load_tokens_qids_from_dir` to toggle progress output.
+        max_items_to_load (int | None): Optional cap on the number of token rows to read.
+
+    Returns:
+        scipy.sparse.csr_matrix: A CSR matrix where a row index corresponds to a qid
+                                 and the row's data is the token vector. Use
+                                 `matrix[qid]` to retrieve a vector.
+    """
+    tokens, qids = load_tokens_qids_from_dir(
+        dir_path=dir_path, verbose=verbose, max_items_to_load=max_items_to_load
+    )
+    # remove duplicated items by qids
+    print("Original number of items:", tokens.shape[0])
+    unique_qids, unique_indices = np.unique(qids, return_index=True)
+    tokens = tokens[unique_indices]
+    qids = unique_qids
+    print("New number of items after removing duplicates:", tokens.shape[0])
+
+    num_items, vector_len = tokens.shape
+
+    assert num_items == qids.shape[0], "Mismatch between number of token rows and qids"
+
+    row_indices = np.repeat(qids, vector_len)
+    col_indices = np.tile(np.arange(vector_len), num_items)
+    data = tokens.flatten()
+
+    print("MAX TOKENS", np.max(data))
+
+    shape = (qids.max() + 1, vector_len)
+
+    coo = coo_matrix((data, (row_indices, col_indices)), shape=shape, dtype=tokens.dtype)
+    csr = coo.tocsr()
+    print("MAX TOKENS", csr.data.max())
+    return csr
 
 
 class AliasTableLoader:

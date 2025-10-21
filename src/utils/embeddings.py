@@ -208,7 +208,7 @@ def embs_from_tokens_model_name_and_state_dict(
     target_dim: int | None = None,
     output_type: str | None = None,
 ):
-    model = ModelFactory.auto_load_from_file(model_name, state_dict_path, target_dim)
+    model = ModelFactory.auto_load_from_file(model_name, state_dict_path, target_dim, output_type)
     embs_from_tokens_and_model(source_path, model, batch_size, dest_path)
 
 
