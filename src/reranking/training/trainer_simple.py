@@ -47,7 +47,7 @@ def train(
         dataset,
         batch_size=training_config.batch_size,
         pin_memory=True,
-        num_workers=4,
+        num_workers=1,
     )
 
     num_validation_batches = training_config.validation_size // training_config.batch_size
@@ -55,7 +55,7 @@ def train(
     val_dataloader = validation_batches
 
     model.to(device)
-    model = torch.compile(model)
+    # model = torch.compile(model)
 
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler(device.type) if use_amp else None

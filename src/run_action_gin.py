@@ -21,7 +21,10 @@ from finetunings.generate_epochs.embed_links_for_generation import (
 from finetunings.generate_epochs.generate import generate
 from multilingual_dataset.combine_embs import combine_embs_by_qid
 from multilingual_dataset.creator import create_multilingual_dataset, run_kb_creator
-from reranking.dataset.create_dataset import create_default_binary_dataset
+from reranking.dataset.create_dataset import (
+    create_default_binary_dataset,
+    create_default_multiclass_dataset,
+)
 from reranking.training.trainer import train_ddp as reranking_train_ddp
 from reranking.training.trainer_simple import train as reranking_train
 from tokenization.runner import (
@@ -105,6 +108,8 @@ def choose_action(action):
             return reranking_train_ddp
         case "create_default_binary_dataset":
             return create_default_binary_dataset
+        case "create_default_multiclass_dataset":
+            return create_default_multiclass_dataset
         case "reranking_train":
             return reranking_train
         case _:

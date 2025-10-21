@@ -33,12 +33,14 @@ def _infer_output_dim(model: nn.Module) -> int:
 
 
 class _Model(nn.Module):
-    def __init__(self, base_model: nn.Module, embedding_dim: int, dropout: float) -> None:
+    def __init__(
+        self, base_model: nn.Module, embedding_dim: int, dropout: float, output_size: int
+    ) -> None:
         super().__init__()
         self.base_model = base_model
         self.embedding_dim = embedding_dim
         self.gpt_layer = GPTLayer(model_width=embedding_dim, dropout=dropout)
-        self.final_layer = nn.Linear(embedding_dim, 1)
+        self.final_layer = nn.Linear(embedding_dim, output_size)
 
     def forward(self, ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         # print(ids.sh1ape, attention_mask.shape)
@@ -46,12 +48,10 @@ class _Model(nn.Module):
         # print("base_embeddings", base_embeddings.shape)
         x = self.gpt_layer(base_embeddings)
         # print("x", x.shape)
-        logits = self.final_layer(x).squeeze(-1)
-        # print("logits", logits.shape)
-        return logits
+        return self.final_layer(x)
 
 
-class FullLEALLAReranker(BaseRerankingModel):
+class FullLEALLARerankerMulticlass(BaseRerankingModel):
     """Reranking model that augments a LEALLA encoder with an MLP head."""
 
     def __init__(
@@ -63,6 +63,7 @@ class FullLEALLAReranker(BaseRerankingModel):
         dropout: float = 0.1,
         ema_decay: float = 0.9999,
         embedding_dim: int | None = None,
+        output_size: int = 7,
     ) -> None:
         super().__init__()
 
@@ -81,12 +82,13 @@ class FullLEALLAReranker(BaseRerankingModel):
             base_model=self.base_model,
             embedding_dim=self.embedding_dim,
             dropout=dropout,
+            output_size=output_size,
         )
         self.model_ema = deepcopy(self.model)
 
         tokenizer_id = tokenizer_name_or_path or model_name_or_path
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-        self.loss_fn = nn.BCEWithLogitsLoss()
+        self.loss_fn = nn.CrossEntropyLoss()
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
@@ -101,6 +103,7 @@ class FullLEALLAReranker(BaseRerankingModel):
         return self.model(ids, attention_mask)
 
     def prepare_for_forward(self, mention_tokens: torch.Tensor, entity_tokens: torch.Tensor):
+        entity_tokens = torch.cat(entity_tokens, dim=1)
         ids = torch.cat([mention_tokens, entity_tokens], dim=1)
         attention_mask = create_attention_mask(ids).to(dtype=ids.dtype, device=ids.device)
         return ids, attention_mask
@@ -112,14 +115,6 @@ class FullLEALLAReranker(BaseRerankingModel):
         entity_tokens = data["entity_tokens"]
         labels = data["labels"].float()
         ids, attention_mask = self.prepare_for_forward(mention_tokens, entity_tokens)
-
-        print(f"Min token ID: {ids.min()}, Max token ID: {ids.max()}")
-        print(f"Model vocab size: {self.base_model.model.config.vocab_size}")
-        print(ids)
-
-        assert (
-            self.embedding_dim == ids.shape[-1]
-        ), f"Expected embedding dimension {self.embedding_dim}, but got {ids.shape[-1]}"
 
         logits = self.model(ids, attention_mask)
 

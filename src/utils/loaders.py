@@ -175,6 +175,12 @@ def map_qids_to_token_matrix(
     tokens, qids = load_tokens_qids_from_dir(
         dir_path=dir_path, verbose=verbose, max_items_to_load=max_items_to_load
     )
+    # remove duplicated items by qids
+    print("Original number of items:", tokens.shape[0])
+    unique_qids, unique_indices = np.unique(qids, return_index=True)
+    tokens = tokens[unique_indices]
+    qids = unique_qids
+    print("New number of items after removing duplicates:", tokens.shape[0])
 
     num_items, vector_len = tokens.shape
 
@@ -184,10 +190,14 @@ def map_qids_to_token_matrix(
     col_indices = np.tile(np.arange(vector_len), num_items)
     data = tokens.flatten()
 
+    print("MAX TOKENS", np.max(data))
+
     shape = (qids.max() + 1, vector_len)
 
     coo = coo_matrix((data, (row_indices, col_indices)), shape=shape, dtype=tokens.dtype)
-    return coo.tocsr()
+    csr = coo.tocsr()
+    print("MAX TOKENS", csr.data.max())
+    return csr
 
 
 class AliasTableLoader:

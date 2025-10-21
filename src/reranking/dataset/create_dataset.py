@@ -170,6 +170,124 @@ def create_binary_dataset(
         )
 
 
+def create_multiclass_dataset(
+    K: int,
+    index_embs_dir: Path,
+    link_tokens_path: Path,
+    model_name: str,
+    embedding_model_path_dict: Path,
+    output_path: Path,
+    target_dim: int = None,
+    batch_size: int = 512,
+) -> None:
+    # Load index embeddings, qids, and tokens
+    index_embs, index_qids = load_embs_and_qids(index_embs_dir)
+    index_embs = index_embs.astype(np.float16)
+
+    # Sort index_embs and index_qids based on index_qids
+    sort_indices = np.argsort(index_qids)
+    index_qids = index_qids[sort_indices]
+    index_embs = index_embs[sort_indices]
+
+    # Create BruteForceSearcher
+    searcher = BruteForceSearcher(index_embs, index_qids)
+
+    # Load link tokens and qids
+    link_tokens_path = Path(link_tokens_path)
+    output_path = Path(output_path)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    link_files = sorted(
+        [p for p in link_tokens_path.iterdir() if p.is_file() and p.suffix == ".npz"],
+        key=lambda p: p.name,
+    )
+
+    if not link_files:
+        raise FileNotFoundError(f"No .npz files found in {link_tokens_path}")
+
+    # Load embedding model
+    model = ModelFactory.auto_load_from_file(
+        model_name,
+        embedding_model_path_dict,
+        target_dim=target_dim,
+    )
+    model.eval()
+    model.to(device)
+    model.to(torch.bfloat16)
+    model = torch.compile(model)
+
+    index_qid_to_index = {int(qid): i for i, qid in enumerate(index_qids)}
+    index_qids_set = set(index_qid_to_index.keys())
+
+    for link_file in tqdm(link_files, desc="Processing link files"):
+        link_tokens, link_qids = load_tokens_qids(link_file)
+
+        # known_qids_mask = np.array([int(q) in index_qids_set for q in link_qids], dtype=bool)
+        # link_tokens = link_tokens[known_qids_mask]
+        # link_qids = link_qids[known_qids_mask]
+
+        link_tokens_tensor = torch.from_numpy(link_tokens.astype(np.int32, copy=False))
+        link_qids_tensor = torch.from_numpy(link_qids.astype(np.int64, copy=False))
+        dataset = torch.utils.data.TensorDataset(link_tokens_tensor, link_qids_tensor)
+        dataloader = torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=2
+        )
+
+        data_len = len(dataset)
+        if data_len == 0:
+            print(f"Skipping {link_file.name}: dataset length is zero after filtering")
+            continue
+
+        link_tokens_list = np.zeros((data_len, link_tokens.shape[1]), dtype=np.int32)
+        y = np.zeros(data_len, dtype=np.int32)
+        qids = np.zeros((data_len, K), dtype=np.int32)
+        output_index = 0
+
+        for batch_tokens, batch_qids in tqdm(
+            dataloader, desc=f"Creating dataset for {link_file.name}", total=len(dataloader)
+        ):
+            attention_mask = create_attention_mask(batch_tokens)
+
+            with torch.inference_mode():
+                batch_embs = (
+                    model(batch_tokens.to(device), attention_mask.to(device))
+                    .to(torch.float16)
+                    .cpu()
+                )
+
+            top_qids = searcher.find(batch_embs.numpy(), num_neighbors=K)
+            batch_labels = np.empty((len(batch_qids)), dtype=np.int32)
+
+            batch_qids = batch_qids.cpu().numpy()
+
+            for i, (bq, tq_r) in enumerate(zip(batch_qids, top_qids)):
+                if bq not in tq_r:
+                    top_qids[i][-1] = bq  # Ensure positive is in top K
+                    batch_labels[i] = K - 1
+                else:
+                    batch_labels[i] = np.where(tq_r == bq)[0][0]
+
+            batch_tokens_np = batch_tokens.cpu().numpy().astype(np.int32, copy=False)
+            data_size = len(batch_tokens)
+
+            link_tokens_list[output_index : output_index + data_size] = batch_tokens_np
+            y[output_index : output_index + data_size] = batch_labels
+            qids[output_index : output_index + data_size] = top_qids
+
+            output_index += data_size
+
+        output_file = output_path / f"{link_file.stem}_dataset.npz"
+
+        print(f"Saving dataset for {link_file.name} -> {output_file.name} | ")
+
+        np.savez(
+            output_file,
+            link_tokens=link_tokens_list,
+            y=y,
+            qids=qids,
+        )
+
+
 def create_default_binary_dataset():
     index_embs_dir = Path(
         "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/damuel_for_index_6"
@@ -191,6 +309,35 @@ def create_default_binary_dataset():
     create_binary_dataset(
         index_embs_dir,
         index_tokens_path,
+        link_tokens_path,
+        model_name,
+        embedding_model_path,
+        output_path,
+        batch_size=2560,
+    )
+
+
+def create_default_multiclass_dataset():
+    index_embs_dir = Path(
+        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/damuel_for_index_6"
+    )
+    index_tokens_path = Path(
+        "/lnet/work/home-students-external/farhan/troja/outputs/v2_normal_filtered/descs_pages"
+    )
+    link_tokens_path = Path(
+        "/lnet/work/home-students-external/farhan/troja/outputs/v2_normal_filtered/links"
+    )
+    embedding_model_path = Path(
+        "/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
+    )
+    output_path = Path(
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test/reranker_dataset_with_qids_multiclass"
+    )
+    model_name = "/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base"
+
+    create_multiclass_dataset(
+        7,
+        index_embs_dir,
         link_tokens_path,
         model_name,
         embedding_model_path,
