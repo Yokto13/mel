@@ -133,6 +133,7 @@ def run_damuel_description_mention(
     num_processes: int,
     remainder_mod: int,
     require_wiki_page: bool = True,
+    prefix: str = "2.0-dev",
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
@@ -142,7 +143,7 @@ def run_damuel_description_mention(
     pipelines_dict = {
         lang: [
             DamuelDescriptionMentionPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_{prefix}_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",
@@ -172,6 +173,7 @@ def run_damuel_description_context(
     compress: bool,
     remainder_mod: int,
     num_processes: int,
+    prefix: str = "2.0-dev",
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
@@ -184,7 +186,7 @@ def run_damuel_description_context(
     pipelines_dict = {
         lang: [
             DamuelDescriptionContextPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_{prefix}_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/descs_pages/tokens_qids_{i}.npz",
@@ -214,6 +216,7 @@ def run_damuel_link_context(
     compress: bool,
     remainder_mod: int,
     num_processes: int,
+    prefix: str = "2.0-dev",
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
@@ -223,7 +226,7 @@ def run_damuel_link_context(
     pipelines_dict = {
         lang: [
             DamuelLinkContextPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_{prefix}_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/links/tokens_qids_{i}.npz",
@@ -253,6 +256,7 @@ def run_damuel_link_mention(
     num_processes: int,
     require_link_wiki_origin: bool,
     remainder_mod: int,
+    prefix: str = "2.0-dev",
 ) -> None:
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
@@ -262,7 +266,7 @@ def run_damuel_link_mention(
     pipelines_dict = {
         lang: [
             DamuelLinkMentionPipeline(
-                damuel_path=f"{damuel_base_path}/damuel_2.0-dev_{lang}",
+                damuel_path=f"{damuel_base_path}/damuel_{prefix}_{lang}",
                 tokenizer=tokenizer,
                 expected_size=expected_size,
                 output_filename=f"{output_base_dir}/{lang}/tokens_qids_{i}.npz",
@@ -293,6 +297,7 @@ def run_damuel_mention(
     remainder_mod: int,
     require_link_wiki_origin: bool,
     require_wiki_page: bool,
+    prefix: str = "2.0-dev",
 ) -> None:
     """
     Run the DaMuEL mention tokenization process.
@@ -319,6 +324,7 @@ def run_damuel_mention(
             on the other hand, we avoid including links of lower quality that might be created by the addition.
         require_wiki_page (bool): If True, only entities from language L that have a wikipedia page in L are considered.
             if False, all entites of language L are considered.
+        prefix (str): Version prefix used in DaMuEL folder names (e.g., '2.0-dev').
     """
 
     # Run description mention tokenization
@@ -332,6 +338,7 @@ def run_damuel_mention(
         num_processes=num_processes,
         remainder_mod=remainder_mod,
         require_wiki_page=require_wiki_page,
+        prefix=prefix,
     )
 
     # Rename description mention files
@@ -352,6 +359,7 @@ def run_damuel_mention(
         num_processes=num_processes,
         require_link_wiki_origin=require_link_wiki_origin,
         remainder_mod=remainder_mod,
+        prefix=prefix,
     )
 
     # Rename link mention files
@@ -372,6 +380,7 @@ def run_damuel_description(
     compress: bool,
     remainder_mod: int,
     num_processes: int,
+    prefix: str = "2.0-dev",
 ) -> None:
     run_damuel_description_context(
         model_path=model_path,
@@ -386,6 +395,7 @@ def run_damuel_description(
         compress=compress,
         remainder_mod=remainder_mod,
         num_processes=num_processes,
+        prefix=prefix,
     )
 
 
