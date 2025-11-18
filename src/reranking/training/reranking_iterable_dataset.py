@@ -65,7 +65,6 @@ class RerankingIterableDataset(IterableDataset):
             link_tokens = link_tokens[permutation]
 
             for idx in range(len(qids)):
-                print(f"Yielding sample idx={idx} from file {file_path}")
                 yield (
                     link_tokens[idx],
                     description_tokens[idx],

@@ -62,7 +62,6 @@ class FullLEALLAReranker(BaseRerankingModel):
         tokenizer_name_or_path: str | None = None,
         dropout: float = 0.1,
         ema_decay: float = 0.9999,
-        embedding_dim: int | None = None,
     ) -> None:
         super().__init__()
 
@@ -72,10 +71,9 @@ class FullLEALLAReranker(BaseRerankingModel):
             model_name_or_path,
             state_dict_path=state_dict_path,
         )
-        if embedding_dim is None:
-            self.embedding_dim = _infer_output_dim(self.base_model)
-        else:
-            self.embedding_dim = embedding_dim
+        self.embedding_dim = _infer_output_dim(self.base_model)
+
+        print(self.embedding_dim)
 
         self.model = _Model(
             base_model=self.base_model,
@@ -112,14 +110,6 @@ class FullLEALLAReranker(BaseRerankingModel):
         entity_tokens = data["entity_tokens"]
         labels = data["labels"].float()
         ids, attention_mask = self.prepare_for_forward(mention_tokens, entity_tokens)
-
-        print(f"Min token ID: {ids.min()}, Max token ID: {ids.max()}")
-        print(f"Model vocab size: {self.base_model.model.config.vocab_size}")
-        print(ids)
-
-        assert (
-            self.embedding_dim == ids.shape[-1]
-        ), f"Expected embedding dimension {self.embedding_dim}, but got {ids.shape[-1]}"
 
         logits = self.model(ids, attention_mask)
 

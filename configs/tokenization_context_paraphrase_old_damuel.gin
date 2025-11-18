@@ -1,5 +1,5 @@
 expected_size=64
-output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/finetuning_damuel2_p/"
+output_base_dir="/lnet/work/home-students-external/farhan/troja/outputs/finetuning_damuel_old_p/"
 output_base_dir_mewsli="/lnet/work/home-students-external/farhan/troja/outputs/finetuning_mewsli2_p/"
 languages = [
     "af", "be", "ca", "da", "el", "es", "eu", "fi", "ga", "gl", "hi", "hu", "id", 
@@ -8,11 +8,12 @@ languages = [
     "it", "ko", "lt", "mr", "nl", "pl", "ro", "se", "sl", "sv", "te", "ug", "ur", 
     "wo"
 ]
-damuel_base_path="/lnet/work/home-students-external/farhan/damuel/dev"
+damuel_base_path="/lnet/work/home-students-external/farhan/damuel/1.0-xz"
 label_token="[M]"
 compress=True
 remainder_mod=128
 num_processes=90
+prefix="1.0"
 
 run_damuel_description_context.expected_size=%expected_size
 run_damuel_description_context.output_base_dir=%output_base_dir
@@ -22,6 +23,7 @@ run_damuel_description_context.label_token=%label_token
 run_damuel_description_context.compress=%compress
 run_damuel_description_context.remainder_mod=%remainder_mod
 run_damuel_description_context.num_processes=%num_processes
+run_damuel_description_context.prefix=%prefix
 
 run_damuel_link_context.expected_size=%expected_size
 run_damuel_link_context.output_base_dir=%output_base_dir
@@ -31,6 +33,7 @@ run_damuel_link_context.label_token=%label_token
 run_damuel_link_context.compress=%compress
 run_damuel_link_context.remainder_mod=%remainder_mod
 run_damuel_link_context.num_processes=%num_processes
+run_damuel_link_context.prefix=%prefix
 
 run_mewsli_context.expected_size=%expected_size
 run_mewsli_context.output_base_dir=%output_base_dir_mewsli

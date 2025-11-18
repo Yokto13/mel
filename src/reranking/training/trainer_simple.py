@@ -55,7 +55,7 @@ def train(
     val_dataloader = validation_batches
 
     model.to(device)
-    # model = torch.compile(model)
+    model = torch.compile(model)
 
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler(device.type) if use_amp else None
@@ -117,6 +117,8 @@ def train(
                     labels = labels.to(device, non_blocking=True)
                     # qids = qids.to(device, non_blocking=True)
 
+                    print(links.device, entities.device, labels.device)
+
                     val_steps += 1
 
                     with torch.inference_mode():
@@ -125,6 +127,8 @@ def train(
                             or training_config.config_name == "pairwise_mlp_debug"
                             or training_config.config_name == "full_lealla"
                             or training_config.config_name == "full_lealla_r"
+                            or training_config.config_name == "full_lealla_r_192"
+                            or training_config.config_name == "full_lealla_192"
                         ):
                             probs = model.score_from_tokens(links, entities)
                         elif training_config.config_name == "fusion":

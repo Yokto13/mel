@@ -139,7 +139,7 @@ def full_lealla_r(
 def full_lealla_r_192(
     LR: float = 0.00005,
     SAVE_EACH: int = 10000,
-    BATCH_SIZE: int = 1000,
+    BATCH_SIZE: int = 1728,
     VALIDATE_EACH: int = 10000,
     VALIDATION_SIZE: int = 10000,
     DROPOUT: float = 0.1,
@@ -156,7 +156,44 @@ def full_lealla_r_192(
         model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
         state_dict_path="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
         dropout=DROPOUT,
-        embedding_dim=192 + 64,
+    )
+
+    dataset = RerankingIterableDataset()
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, fused=True)
+    output_dir = "/lnet/work/home-students-external/farhan/troja/outputs/reranking_models"
+    return TrainingConfig(
+        config_name=name,
+        model=model,
+        dataset=dataset,
+        optimizer=optimizer,
+        output_dir=output_dir,
+        save_each=SAVE_EACH,
+        batch_size=BATCH_SIZE,
+        validate_each=VALIDATE_EACH,
+        validation_size=VALIDATION_SIZE,
+    )
+
+
+def full_lealla_192(
+    LR: float = 0.00005,
+    SAVE_EACH: int = 10000,
+    BATCH_SIZE: int = 1728,
+    VALIDATE_EACH: int = 10000,
+    VALIDATION_SIZE: int = 10000,
+    DROPOUT: float = 0.1,
+) -> TrainingConfig:
+    name = "full_lealla_192"
+
+    d = np.load(
+        "/lnet/work/home-students-external/farhan/troja/outputs/reranking_test/reranker_dataset_with_qids/mentions_5_dataset.npz"
+    )
+    description_tokens = d["description_tokens"]
+    assert description_tokens.shape[1] == 192, "Expected description tokens to have length 192"
+
+    model = FullLEALLAReranker(
+        model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
+        dropout=DROPOUT,
     )
 
     dataset = RerankingIterableDataset()
@@ -179,7 +216,7 @@ def full_lealla_r_192(
 def full_lealla_r_multiclass(
     LR: float = 0.00005,
     SAVE_EACH: int = 10000,
-    BATCH_SIZE: int = 1,
+    BATCH_SIZE: int = 1024,
     VALIDATE_EACH: int = 10000,
     VALIDATION_SIZE: int = 10000,
     DROPOUT: float = 0.1,
@@ -196,7 +233,6 @@ def full_lealla_r_multiclass(
         model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
         state_dict_path="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
         dropout=DROPOUT,
-        embedding_dim=8 * 64,
     )
 
     dataset = RerankingQIDsToDescriptionsIterableDataset()
@@ -234,7 +270,6 @@ def full_lealla_r_128(
         model_name_or_path="/lnet/work/home-students-external/farhan/troja/outputs/models/LEALLA-base",
         state_dict_path="/lnet/work/home-students-external/farhan/troja/outputs/workdirs/asi_se_to_rozbilo_init_all/models_5/ema.pth",
         dropout=DROPOUT,
-        embedding_dim=128 + 64,
     )
 
     dataset = RerankingIterableDataset()
@@ -514,5 +549,7 @@ def get_config_from_name(config_name: str) -> TrainingConfig:
         return full_lealla_r_192()
     if config_name == "full_lealla_r_multiclass":
         return full_lealla_r_multiclass()
+    if config_name == "full_lealla_192":
+        return full_lealla_192()
     else:
         raise ValueError(f"Unknown training configuration: {config_name}")

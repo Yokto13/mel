@@ -25,6 +25,7 @@ from reranking.dataset.create_dataset import (
     create_default_binary_dataset,
     create_default_multiclass_dataset,
 )
+from reranking.evaluation.evaluate import evaluate_reranking
 from reranking.training.trainer import train_ddp as reranking_train_ddp
 from reranking.training.trainer_simple import train as reranking_train
 from tokenization.runner import (
@@ -60,6 +61,8 @@ def choose_action(action):
             return train_ddp
         case "evaluate":
             return evaluate
+        case "evaluate_reranking":
+            return evaluate_reranking
         case "copy":
             return move_tokens
         case "rename":

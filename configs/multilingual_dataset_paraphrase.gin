@@ -1,0 +1,12 @@
+source_dir="/lnet/work/home-students-external/farhan/troja/outputs/finetuning_damuel2_p/"
+langs=["af", "be", "ca", "da", "el", "es", "eu", "fi", "ga", "gl", "hi", "hu", "id", "ja", "la", "lv", "mt", "nn", "pt", "ru", "sk", "sr", "ta", "tr", "uk", "vi", "zh", "ar", "bg", "cs", "de", "en", "et", "fa", "fr", "gd", "he", "hr", "hy", "it", "ko", "lt", "mr", "nl", "pl", "ro", "se", "sl", "sv", "te", "ug", "ur", "wo"] 
+dest_dir="/lnet/work/home-students-external/farhan/troja/outputs/v2_normal_p/"
+
+
+create_multilingual_dataset.source_dir=%source_dir
+create_multilingual_dataset.langs=%langs
+create_multilingual_dataset.dest_dir=%dest_dir
+create_multilingual_dataset.max_links_per_qid=10000
+
+run_kb_creator.langs=%langs
+

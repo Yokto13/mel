@@ -7,9 +7,7 @@ set -ueo pipefail
 
 cd ../../
 
-source ../venv/bin/activate
+uv run python run_action_gin.py ../configs/paraphrase_m.gin ../configs/tokenization_context_paraphrase.gin run_damuel_description_context
+uv run python run_action_gin.py ../configs/paraphrase_m.gin ../configs/tokenization_context_paraphrase.gin run_damuel_link_context
 
-python run_action_gin.py ../configs/lealla.gin ../configs/tokenization_context.gin run_damuel_description_context
-python run_action_gin.py ../configs/lealla.gin ../configs/tokenization_context.gin run_damuel_link_context
-
-python run_action_gin.py ../configs/lealla.gin ../configs/tokenization_context.gin run_mewsli_context
+uv run python run_action_gin.py ../configs/paraphrase_m.gin ../configs/tokenization_context_paraphrase.gin run_mewsli_context
