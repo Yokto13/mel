@@ -90,7 +90,8 @@ def generate(
             LINKS_EMBS_DIR, index_qids
         )
         negative_sampler_kwargs["randomly_sampled_cnt"] = 1
-    negative_sampler_kwargs["limit_negs"] = 10
+    # negative_sampler_kwargs["limit_negs"] = 10
+    negative_sampler_kwargs["limit_negs"] = None
 
     batch_sampler = BatchSampler(
         index_embs,
